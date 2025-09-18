@@ -305,7 +305,8 @@ function ItemForm({ item, onClose, onSave }) {
         
         console.log('📷 Uploading image:', file.name);
         
-        const response = await fetch('http://localhost:3000/api/motong/upload/image', {
+        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const response = await fetch(`${apiBaseUrl}/api/motong/upload/image`, {
           method: 'POST',
           body: formData,
         });

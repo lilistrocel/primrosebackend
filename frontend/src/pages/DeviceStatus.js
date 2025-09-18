@@ -256,7 +256,8 @@ function DeviceStatus() {
   const fetchDeviceStatus = async () => {
     try {
       // Fetch real ingredient data from backend
-      const response = await fetch('http://localhost:3000/api/motong/getLatestDeviceStatus', {
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiBaseUrl}/api/motong/getLatestDeviceStatus`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
