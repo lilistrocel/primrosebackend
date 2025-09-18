@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  coffee-backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: coffee-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - LOCAL_IP=${LOCAL_IP:-192.168.1.100}
+      - FRONTEND_PORT=3001
+      - BACKEND_PORT=3000
+      - MOCK_PORT=3002
+      - HOST=0.0.0.0
+    volumes:
+      - ./coffee_machine.db:/app/coffee_machine.db
+      - ./logs:/app/logs
+      - ./public/uploads:/app/public/uploads
+    networks:
+      - coffee-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  coffee-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_BASE_URL=http://${LOCAL_IP:-192.168.1.100}:3000
+    container_name: coffee-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    depends_on:
+      - coffee-backend
+    networks:
+      - coffee-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: coffee-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - coffee-backend
+      - coffee-frontend
+    networks:
+      - coffee-network
+
+networks:
+  coffee-network:
+    driver: bridge
