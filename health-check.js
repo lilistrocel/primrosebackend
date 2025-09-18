@@ -5,9 +5,11 @@
  * Comprehensive system health monitoring and diagnostics
  */
 
-const axios = require('axios');
+const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { URL } = require('url');
 
 // Configuration
 const config = {
@@ -59,12 +61,71 @@ class HealthChecker {
     };
   }
 
+  // Helper function to make HTTP requests without axios
+  makeRequest(url, options = {}) {
+    return new Promise((resolve, reject) => {
+      const urlObj = new URL(url);
+      const isHttps = urlObj.protocol === 'https:';
+      const httpModule = isHttps ? https : http;
+      
+      const requestOptions = {
+        hostname: urlObj.hostname,
+        port: urlObj.port || (isHttps ? 443 : 80),
+        path: urlObj.pathname + urlObj.search,
+        method: options.method || 'GET',
+        timeout: options.timeout || 5000,
+        headers: options.headers || {}
+      };
+
+      const req = httpModule.request(requestOptions, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const response = {
+              status: res.statusCode,
+              headers: res.headers,
+              data: res.headers['content-type']?.includes('application/json') ? JSON.parse(data) : data
+            };
+            resolve(response);
+          } catch (err) {
+            resolve({
+              status: res.statusCode,
+              headers: res.headers,
+              data: data
+            });
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        reject(err);
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Request timeout'));
+      });
+
+      if (options.data) {
+        const postData = typeof options.data === 'string' ? options.data : JSON.stringify(options.data);
+        req.write(postData);
+      }
+
+      req.end();
+    });
+  }
+
   async checkBackend() {
     console.log(colorText('🔍 Checking Backend Service...', 'blue'));
     
     try {
       // Health endpoint check
-      const healthResponse = await axios.get(`${config.backend.url}/health`, {
+      const healthResponse = await this.makeRequest(`${config.backend.url}/health`, {
         timeout: config.backend.timeout
       });
       
@@ -102,7 +163,7 @@ class HealthChecker {
     console.log(colorText('🔍 Checking Frontend Application...', 'blue'));
     
     try {
-      const response = await axios.get(config.frontend.url, {
+      const response = await this.makeRequest(config.frontend.url, {
         timeout: config.frontend.timeout
       });
       
@@ -210,12 +271,14 @@ class HealthChecker {
         
         let response;
         if (test.method === 'POST') {
-          response = await axios.post(`${config.backend.url}${test.endpoint}`, test.data, {
+          response = await this.makeRequest(`${config.backend.url}${test.endpoint}`, {
+            method: 'POST',
+            data: test.data,
             timeout: config.backend.timeout,
             headers: { 'Content-Type': 'application/json' }
           });
         } else {
-          response = await axios.get(`${config.backend.url}${test.endpoint}`, {
+          response = await this.makeRequest(`${config.backend.url}${test.endpoint}`, {
             timeout: config.backend.timeout
           });
         }
