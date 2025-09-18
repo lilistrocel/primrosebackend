@@ -134,13 +134,22 @@ export const getIngredientFullName = (code) => {
 
 /**
  * Get ingredient status based on level
+ * Coffee machine sends 0/1 values directly, not percentages
  */
 export const getIngredientStatus = (code, currentLevel) => {
   const ingredient = INGREDIENT_MAPPING[code];
   if (!ingredient) return 'unknown';
   
-  if (currentLevel <= ingredient.criticalLevel) return 'error';
-  if (currentLevel <= ingredient.warningLevel) return 'warning';
+  const level = typeof currentLevel === 'string' ? parseFloat(currentLevel) : currentLevel;
+  
+  // Coffee machine sends direct boolean values (0 or 1)
+  // For boolean values, use direct mapping
+  if (level === 0) return 'error';   // 0 = OUT OF STOCK = red/critical
+  if (level === 1) return 'ok';      // 1 = IN STOCK = green/available
+  
+  // For percentage values (fallback for mock data), use thresholds
+  if (level <= ingredient.criticalLevel) return 'error';
+  if (level <= ingredient.warningLevel) return 'warning';
   return 'ok';
 };
 
