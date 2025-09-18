@@ -163,13 +163,16 @@ function getIngredientStatus(code, currentLevel) {
   // Convert string to number if needed
   const level = typeof currentLevel === 'string' ? parseFloat(currentLevel) : currentLevel;
   
-  // Handle percentage values (0-100)
+  // Handle boolean values (0/1) - what the coffee machine sends
+  if (level === 0 || level === '0') return 'critical';
+  if (level === 1 || level === '1') return 'normal';
+  
+  // Handle percentage values (0-100) for mock data
   if (level <= ingredient.criticalLevel) return 'critical';
   if (level <= ingredient.warningLevel) return 'warning';
-  if (level >= ingredient.normalLevel * 0.8) return 'normal'; // 80% or above is normal
   
-  // Fallback: anything above warning is normal
-  return level > ingredient.warningLevel ? 'normal' : 'warning';
+  // Default: anything above warning is normal
+  return 'normal';
 }
 
 /**
