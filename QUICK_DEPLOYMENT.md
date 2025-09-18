@@ -136,8 +136,8 @@ sudo firewall-cmd --reload
 
 #### Configure Firewall (Windows):
 ```powershell
-New-NetFirewallRule -DisplayName "Coffee Backend" -Direction Inbound -Port 3000 -Protocol TCP -Action Allow
-New-NetFirewallRule -DisplayName "Coffee Frontend" -Direction Inbound -Port 3001 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "Coffee Backend" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "Coffee Frontend" -Direction Inbound -LocalPort 3001 -Protocol TCP -Action Allow
 ```
 
 ---

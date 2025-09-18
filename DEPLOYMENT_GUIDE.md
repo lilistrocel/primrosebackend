@@ -153,9 +153,9 @@ sudo firewall-cmd --list-all
 #### Windows Server
 ```powershell
 # Allow inbound traffic on required ports
-New-NetFirewallRule -DisplayName "Coffee Backend" -Direction Inbound -Port 3000 -Protocol TCP -Action Allow
-New-NetFirewallRule -DisplayName "Coffee Frontend" -Direction Inbound -Port 3001 -Protocol TCP -Action Allow
-New-NetFirewallRule -DisplayName "Coffee Mock" -Direction Inbound -Port 3002 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "Coffee Backend" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "Coffee Frontend" -Direction Inbound -LocalPort 3001 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "Coffee Mock" -Direction Inbound -LocalPort 3002 -Protocol TCP -Action Allow
 ```
 
 ---
