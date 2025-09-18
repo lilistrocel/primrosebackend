@@ -169,6 +169,27 @@ export const getStatusText = (status) => {
 };
 
 /**
+ * Convert percentage level to boolean (1 = available, 0 = unavailable)
+ * Uses warning threshold as the cutoff point
+ */
+export const getIngredientBoolean = (code, currentLevel) => {
+  const ingredient = INGREDIENT_MAPPING[code];
+  if (!ingredient) return 0;
+  
+  const level = typeof currentLevel === 'string' ? parseFloat(currentLevel) : currentLevel;
+  
+  // Return 1 if above warning level, 0 if at or below warning level
+  return level > ingredient.warningLevel ? 1 : 0;
+};
+
+/**
+ * Get simple boolean status text (Available/Unavailable)
+ */
+export const getBooleanStatusText = (code, currentLevel) => {
+  return getIngredientBoolean(code, currentLevel) === 1 ? 'AVAILABLE' : 'UNAVAILABLE';
+};
+
+/**
  * Format ingredient list for display
  */
 export const formatIngredientList = (matterCodes) => {

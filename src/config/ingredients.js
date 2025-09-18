@@ -153,18 +153,23 @@ function getIngredientName(code, language = 'en') {
 }
 
 /**
- * Get ingredient status level (0 = out of stock, 1 = in stock)
+ * Get ingredient status level 
+ * Handles both percentage values (0-100) and boolean values (0/1)
  */
 function getIngredientStatus(code, currentLevel) {
   const ingredient = INGREDIENT_MAPPING[code];
   if (!ingredient) return 'unknown';
   
-  // Convert boolean values: 0 = critical, 1 = normal
-  if (currentLevel === 0 || currentLevel === '0') return 'critical';
-  if (currentLevel === 1 || currentLevel === '1') return 'normal';
+  // Convert string to number if needed
+  const level = typeof currentLevel === 'string' ? parseFloat(currentLevel) : currentLevel;
   
-  // Fallback for other values
-  return currentLevel > 0 ? 'normal' : 'critical';
+  // Handle percentage values (0-100)
+  if (level <= ingredient.criticalLevel) return 'critical';
+  if (level <= ingredient.warningLevel) return 'warning';
+  if (level >= ingredient.normalLevel * 0.8) return 'normal'; // 80% or above is normal
+  
+  // Fallback: anything above warning is normal
+  return level > ingredient.warningLevel ? 'normal' : 'warning';
 }
 
 /**

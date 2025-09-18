@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Activity, AlertTriangle, CheckCircle, RefreshCw, Thermometer, Printer } from 'lucide-react';
-import { INGREDIENT_MAPPING, getIngredientStatus, getStatusText } from '../services/ingredients';
+import { Activity, AlertTriangle, CheckCircle, RefreshCw, Thermometer } from 'lucide-react';
+import { INGREDIENT_MAPPING, getIngredientStatus, getIngredientBoolean, getBooleanStatusText } from '../services/ingredients';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -406,11 +406,11 @@ function DeviceStatus() {
                   <div className="item-name">
                     {item.name} ({item.name_cn})
                   </div>
-                  <div className="item-code">{item.code} - {item.level}%</div>
+                  <div className="item-code">{item.code} - {getIngredientBoolean(item.code, item.level)}</div>
                 </div>
                 <div className="status-indicator">
                   <div className="status-dot"></div>
-                  <span className="status-text">{getStatusText(item.status)}</span>
+                  <span className="status-text">{getBooleanStatusText(item.code, item.level)}</span>
                 </div>
               </StatusItem>
             ))}
