@@ -169,8 +169,8 @@ export const getStatusText = (status) => {
 };
 
 /**
- * Convert percentage level to boolean (1 = available, 0 = unavailable)
- * Uses warning threshold as the cutoff point
+ * Convert coffee machine level to boolean (1 = available, 0 = unavailable)
+ * Coffee machine sends 0/1 values directly, not percentages
  */
 export const getIngredientBoolean = (code, currentLevel) => {
   const ingredient = INGREDIENT_MAPPING[code];
@@ -178,7 +178,13 @@ export const getIngredientBoolean = (code, currentLevel) => {
   
   const level = typeof currentLevel === 'string' ? parseFloat(currentLevel) : currentLevel;
   
-  // Return 1 if above warning level, 0 if at or below warning level
+  // Coffee machine sends direct boolean values (0 or 1)
+  // For boolean values, return them directly
+  if (level === 0 || level === 1) {
+    return level;
+  }
+  
+  // For percentage values (fallback for mock data), use warning threshold
   return level > ingredient.warningLevel ? 1 : 0;
 };
 

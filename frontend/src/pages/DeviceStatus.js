@@ -289,9 +289,14 @@ function DeviceStatus() {
           name_cn: ingredient ? ingredient.name_cn : code,
           code: code,
           level: level,
-          status: getIngredientStatus(code, level)
+          status: getIngredientStatus(code, level),
+          // Add debugging
+          booleanValue: getIngredientBoolean(code, level),
+          statusText: getBooleanStatusText(code, level)
         };
       });
+      
+      console.log('🔍 Converted ingredient data for display:', ingredientData);
 
       setIngredientStatus(ingredientData);
       setLastUpdate(new Date());
