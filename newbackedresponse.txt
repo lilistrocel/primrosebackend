@@ -1,0 +1,48 @@
+{
+    "code": 0,
+    "msg": "Request successfully",
+    "data": [
+        {
+            "id": 36,
+            "num": 1,
+            "realPrice": "2",
+            "status": 3,
+            "orderNum": "8190984499",
+            "created_at": 1758190984,
+            "language": "en",
+            "createdAt": "2025-09-18 10:23:04",
+            "statusName": "Queuing",
+            "typeList4": [],
+            "typeList3": [],
+            "typeList2": [
+                {
+                    "id": 39,
+                    "deviceGoodsId": 9,
+                    "type": 2,
+                    "orderId": 36,
+                    "goodsId": 9,
+                    "goodsName": "美式咖啡",
+                    "goodsNameEn": "Americano",
+                    "goodsNameOt": "أمريكانو",
+                    "goodsImg": 1,
+                    "goodsOptionName": "8oz纸杯;咖啡豆1;热水",
+                    "goodsOptionNameEn": "8ozCup;CoffeeBean1;HotWater",
+                    "goodsOptionNameOt": "8ozCup;CoffeeBean1;HotWater",
+                    "language": "en",
+                    "status": 3,
+                    "price": "2",
+                    "rePrice": "2",
+                    "matterCodes": "CoffeeMatter12,CoffeeMatter11,CoffeeMatter1,CoffeeMatter2,CoffeeMatter5",
+                    "num": 1,
+                    "totalPrice": "2",
+                    "lhImgPath": "",
+                    "jsonCodeVal": "[{\"classCode\":\"5004\"},{\"CupCode\":\"2\"},{\"BeanCode\":\"1\"}]",
+                    "path": "public/uploads/product_9.png",
+                    "goodsPath": "http://localhost:3000/public/uploads/product_9.png",
+                    "statusName": "Queuing"
+                }
+            ],
+            "typeList1": []
+        }
+    ]
+}

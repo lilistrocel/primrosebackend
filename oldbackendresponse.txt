@@ -1,0 +1,48 @@
+{
+    "code": 0,
+    "msg": "Request successfully",
+    "data": [
+        {
+            "id": 1015,
+            "num": 1,
+            "realPrice": "1.00",
+            "status": 4,
+            "orderNum": "2025091851544848",
+            "created_at": 1758183619,
+            "language": "en",
+            "createdAt": "2025-09-18 08:20:19",
+            "statusName": "Processing",
+            "typeList4": [],
+            "typeList3": [],
+            "typeList2": [
+                {
+                    "id": 1130,
+                    "deviceGoodsId": 5,
+                    "type": 2,
+                    "orderId": 1015,
+                    "goodsId": 5,
+                    "goodsName": "美式",
+                    "goodsNameEn": "Americano",
+                    "goodsNameOt": "أمريكانو",
+                    "goodsImg": 21,
+                    "goodsOptionName": "8oz纸杯;咖啡豆1",
+                    "goodsOptionNameEn": "8ozCup;CoffeeBean1",
+                    "goodsOptionNameOt": "8ozCup;CoffeeBean1",
+                    "language": "en",
+                    "status": 4,
+                    "price": "1.00",
+                    "rePrice": "1.00",
+                    "matterCodes": "CoffeeMatter1,CoffeeMatter2,CoffeeMatter5,CoffeeMatter12,CoffeeMatter11",
+                    "num": 1,
+                    "totalPrice": "1.00",
+                    "lhImgPath": "",
+                    "jsonCodeVal": "[{\"classCode\":\"5002\"},{\"CupCode\":\"2\"},{\"BeanCode\":\"1\"}]",
+                    "path": "public/uploads/20240803/6b00113e8890951736f84bea4671ea3d.png",
+                    "goodsPath": "http://kintsuji.motonbackend.top/public/uploads/20240803/6b00113e8890951736f84bea4671ea3d.png",
+                    "statusName": "Processing"
+                }
+            ],
+            "typeList1": []
+        }
+    ]
+}

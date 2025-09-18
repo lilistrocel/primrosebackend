@@ -1,0 +1,293 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const path = require('path');
+
+// Import network configuration
+const networkConfig = require('./config/network');
+const currencyConfig = require('./config/currency');
+
+// Import database
+const db = require('./database/db');
+
+// Import routes
+const deviceOrderQueueListRoute = require('./routes/deviceOrderQueueList');
+const editDeviceOrderStatusRoute = require('./routes/editDeviceOrderStatus');
+const orderQueueRoute = require('./routes/orderQueue');
+const saveDeviceMatterRoute = require('./routes/saveDeviceMatter');
+const createOrderRoute = require('./routes/createOrder');
+const getLatestDeviceStatusRoute = require('./routes/getLatestDeviceStatus');
+const productsRoute = require('./routes/products');
+const uploadRoute = require('./routes/upload');
+
+class CoffeeMachineBackend {
+  constructor() {
+    this.app = express();
+    this.port = networkConfig.BACKEND_PORT;
+    this.host = networkConfig.HOST;
+    
+    // Display network and currency configuration on startup
+    networkConfig.display();
+    currencyConfig.display();
+    
+    this.setupMiddleware();
+    this.setupRoutes();
+    this.setupStaticFiles();
+    this.setupErrorHandling();
+  }
+
+  setupMiddleware() {
+    // Security middleware
+    this.app.use(helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" }
+    }));
+    
+    // CORS - Allow coffee machine and frontend to connect (dynamic configuration)
+    this.app.use(cors({
+      origin: networkConfig.getCorsOrigins(),
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      credentials: true
+    }));
+    
+    // Request parsing
+    this.app.use(express.json({ limit: '10mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    
+    // Logging
+    this.app.use(morgan('combined'));
+    
+    // Handle preflight requests explicitly (dynamic configuration)
+    this.app.options('*', (req, res) => {
+      const allowedOrigins = networkConfig.getCorsOrigins();
+      const origin = req.headers.origin;
+      if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+      }
+      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.sendStatus(200);
+    });
+
+    // COMPREHENSIVE TRAFFIC MONITORING - ALL REQUESTS
+    this.app.use((req, res, next) => {
+      const userAgent = req.headers['user-agent'] || 'Unknown';
+      const remoteIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+      const isRealMachine = !userAgent.includes('Mozilla') && !userAgent.includes('Chrome') && !userAgent.includes('Safari');
+      const isMachineIP = remoteIP && (remoteIP.includes('192.168.10.') || remoteIP.includes('192.168.'));
+      
+      // Log ALL requests from potential machine IPs or non-browser user agents
+      if (isRealMachine || isMachineIP || req.path.includes('motong')) {
+        const clientType = isRealMachine ? '🤖 REAL COFFEE MACHINE' : '🌐 WEB BROWSER/FRONTEND';
+        
+        console.log('🔍 NETWORK REQUEST DETECTED:');
+        console.log(`   🎯 Client Type: ${clientType}`);
+        console.log(`   🌐 Remote IP: ${remoteIP}`);
+        console.log(`   📍 Method: ${req.method}`);
+        console.log(`   🌐 Full Path: ${req.path}`);
+        console.log(`   🌐 Original URL: ${req.originalUrl}`);
+        console.log(`   🎯 Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+        console.log(`   📡 User-Agent: ${userAgent}`);
+        console.log(`   🌐 Origin: ${req.headers.origin || 'None'}`);
+        console.log(`   📋 All Headers:`, JSON.stringify(req.headers, null, 2));
+        console.log(`   📦 Body:`, JSON.stringify(req.body, null, 2));
+        console.log(`   ⏰ Time: ${new Date().toISOString()}`);
+        
+        if (isRealMachine) {
+          console.log('   🚨 THIS IS LIKELY THE REAL COFFEE MACHINE! 🚨');
+        }
+        
+        if (isMachineIP && !req.path.includes('motong')) {
+          console.log('   ⚠️  MACHINE IP BUT WRONG PATH - Check machine configuration!');
+        }
+        
+        console.log('   ═══════════════════════════════════════');
+      }
+      
+      next();
+    });
+
+    // Catch 404 errors for machine debugging
+    this.app.use('*', (req, res, next) => {
+      const userAgent = req.headers['user-agent'] || 'Unknown';
+      const remoteIP = req.ip || req.connection.remoteAddress;
+      const isRealMachine = !userAgent.includes('Mozilla') && !userAgent.includes('Chrome') && !userAgent.includes('Safari');
+      const isMachineIP = remoteIP && remoteIP.includes('192.168.10.');
+      
+      if (isRealMachine || isMachineIP) {
+        console.log('🚨 404 ERROR FROM POTENTIAL MACHINE:');
+        console.log(`   🌐 IP: ${remoteIP}`);
+        console.log(`   📍 Requested: ${req.method} ${req.originalUrl}`);
+        console.log(`   📡 User-Agent: ${userAgent}`);
+        console.log(`   ⚠️  This might be your coffee machine calling the wrong endpoint!`);
+        console.log('   ═══════════════════════════════════════');
+      }
+      
+      next();
+    });
+  }
+
+  setupRoutes() {
+    // Health check
+    this.app.get('/health', (req, res) => {
+      res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        service: 'Coffee Machine Backend',
+        database: 'Connected'
+      });
+    });
+
+    // Coffee machine API routes (exact path matching)
+    this.app.use('/api/motong', deviceOrderQueueListRoute);
+    this.app.use('/api/motong', editDeviceOrderStatusRoute);
+    this.app.use('/api/motong', orderQueueRoute);
+    this.app.use('/api/motong', saveDeviceMatterRoute);
+    this.app.use('/api/motong', createOrderRoute); // New order creation endpoint
+    this.app.use('/api/motong', getLatestDeviceStatusRoute); // Frontend device status endpoint
+    this.app.use('/api/motong', productsRoute); // Products management endpoints
+    this.app.use('/api/motong', uploadRoute); // File upload endpoints
+
+    // Alternative route paths (in case machine uses different paths)
+    this.app.use('/swoft/api/motong', deviceOrderQueueListRoute);
+    this.app.use('/swoft/api/motong', editDeviceOrderStatusRoute);
+    this.app.use('/swoft/api/motong', orderQueueRoute);
+    this.app.use('/swoft/api/motong', saveDeviceMatterRoute);
+    this.app.use('/swoft/api/motong', createOrderRoute); // New order creation endpoint
+    this.app.use('/swoft/api/motong', getLatestDeviceStatusRoute); // Frontend device status endpoint
+    this.app.use('/swoft/api/motong', productsRoute); // Products management endpoints
+    this.app.use('/swoft/api/motong', uploadRoute); // File upload endpoints
+
+    // Root redirect
+    this.app.get('/', (req, res) => {
+      res.json({
+        message: 'Coffee Machine Backend Server',
+        version: '1.0.0',
+        endpoints: [
+          'POST /api/motong/deviceOrderQueueList',
+          'POST /api/motong/editDeviceOrderStatus', 
+          'POST /api/motong/orderQueue',
+          'POST /api/motong/saveDeviceMatter',
+          'POST /api/motong/createOrder',
+          'POST /api/motong/getLatestDeviceStatus',
+          'GET /api/motong/products',
+          'POST /api/motong/products',
+          'PUT /api/motong/products/:id',
+          'DELETE /api/motong/products/:id',
+          'POST /api/motong/upload/image'
+        ],
+        status: 'Running'
+      });
+    });
+  }
+
+  setupStaticFiles() {
+    // Serve uploaded images (for product images and print images)
+    this.app.use('/public', express.static(path.join(__dirname, '../public')));
+  }
+
+  setupErrorHandling() {
+    // 404 handler
+    this.app.use('*', (req, res) => {
+      console.log(`❌ 404 - Path not found: ${req.method} ${req.originalUrl}`);
+      res.status(404).json({
+        code: 404,
+        msg: 'Endpoint not found',
+        data: []
+      });
+    });
+
+    // Global error handler
+    this.app.use((error, req, res, next) => {
+      console.error('❌ Server Error:', error);
+      
+      res.status(500).json({
+        code: 500,
+        msg: 'Internal server error',
+        data: [],
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    });
+  }
+
+  start() {
+    this.app.listen(this.port, this.host, () => {
+      // Get network interfaces to show actual IP addresses
+      const os = require('os');
+      const networkInterfaces = os.networkInterfaces();
+      const localIPs = [];
+      
+      Object.keys(networkInterfaces).forEach((ifname) => {
+        networkInterfaces[ifname].forEach((iface) => {
+          if ('IPv4' !== iface.family || iface.internal !== false) return;
+          localIPs.push(iface.address);
+        });
+      });
+
+      console.log('');
+      console.log('☕ ================================');
+      console.log('   Coffee Machine Backend Server');
+      console.log('================================ ☕');
+      console.log('');
+      console.log(`🚀 Server running on: http://localhost:${this.port}`);
+      console.log(`🌐 Network accessible at: http://0.0.0.0:${this.port}`);
+      
+      if (localIPs.length > 0) {
+        console.log(`📡 Available on network:`);
+        localIPs.forEach(ip => {
+          console.log(`   http://${ip}:${this.port}/api/motong/`);
+        });
+      }
+      
+      console.log(`🔗 Machine API Base: http://localhost:${this.port}/api/motong/`);
+      console.log(`📊 Health Check: http://localhost:${this.port}/health`);
+      console.log('');
+      console.log('📡 Available Endpoints:');
+      console.log('   POST /api/motong/deviceOrderQueueList');
+      console.log('   POST /api/motong/editDeviceOrderStatus');
+      console.log('   POST /api/motong/orderQueue');
+      console.log('   POST /api/motong/saveDeviceMatter');
+      console.log('');
+      console.log('☕ Ready to serve your coffee machine! ☕');
+      console.log('');
+    });
+  }
+
+  // Graceful shutdown
+  shutdown() {
+    console.log('🛑 Shutting down server...');
+    if (db) {
+      db.close();
+      console.log('✅ Database connection closed');
+    }
+    process.exit(0);
+  }
+}
+
+// Handle shutdown signals
+process.on('SIGINT', () => {
+  console.log('\n🛑 Received SIGINT. Shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🛑 Received SIGTERM. Shutting down gracefully...');
+  process.exit(0);
+});
+
+// Create and start server
+let server;
+
+try {
+  console.log('🚀 Initializing Coffee Machine Backend...');
+  server = new CoffeeMachineBackend();
+  console.log('✅ Backend initialized, starting server...');
+  server.start();
+} catch (error) {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+}
+
+module.exports = server;

@@ -1,0 +1,48 @@
+{
+    "code": 0,
+    "msg": "Request successfully",
+    "data": [
+        {
+            "id": 1019,
+            "num": 1,
+            "realPrice": "1.00",
+            "status": 4,
+            "orderNum": "2025091854101495",
+            "created_at": 1758192774,
+            "language": "en",
+            "createdAt": "2025-09-18 10:52:54",
+            "statusName": "Processing",
+            "typeList4": [],
+            "typeList3": [],
+            "typeList2": [
+                {
+                    "id": 1134,
+                    "deviceGoodsId": 9,
+                    "type": 2,
+                    "orderId": 1019,
+                    "goodsId": 9,
+                    "goodsName": "郁金香拉花",
+                    "goodsNameEn": "Latte Art Tulip",
+                    "goodsNameOt": "Latte Art Tulip",
+                    "goodsImg": 97,
+                    "goodsOptionName": "8oz纸杯;咖啡豆1;牛奶１",
+                    "goodsOptionNameEn": "8ozCup;CoffeeBean1;Ｍilk１",
+                    "goodsOptionNameOt": "كوب سعة 8 أونصة;كوفي بين 1;الحليب1",
+                    "language": "en",
+                    "status": 4,
+                    "price": "1.00",
+                    "rePrice": "1.00",
+                    "matterCodes": "CoffeeMatter12,CoffeeMatter11,CoffeeMatter1,CoffeeMatter2,CoffeeMatter3,CoffeeMatter5",
+                    "num": 1,
+                    "totalPrice": "1.00",
+                    "lhImgPath": "",
+                    "jsonCodeVal": "[{\"classCode\":\"5307\"},{\"CupCode\":\"2\"},{\"BeanCode\":\"1\"},{\"MilkCode\":\"1\"}]",
+                    "path": "public/uploads/20250715/ec9cd9e9e11e1450878a776f46b6b642.png",
+                    "goodsPath": "http://kintsuji.motonbackend.top/public/uploads/20250715/ec9cd9e9e11e1450878a776f46b6b642.png",
+                    "statusName": "Processing"
+                }
+            ],
+            "typeList1": []
+        }
+    ]
+}

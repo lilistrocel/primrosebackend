@@ -1,0 +1,48 @@
+{
+    "code": 0,
+    "msg": "Request successfully",
+    "data": [
+        {
+            "id": 1020,
+            "num": 1,
+            "realPrice": "1.00",
+            "status": 4,
+            "orderNum": "2025091853485397",
+            "created_at": 1758192901,
+            "language": "en",
+            "createdAt": "2025-09-18 10:55:01",
+            "statusName": "Processing",
+            "typeList4": [],
+            "typeList3": [],
+            "typeList2": [
+                {
+                    "id": 1135,
+                    "deviceGoodsId": 7,
+                    "type": 2,
+                    "orderId": 1020,
+                    "goodsId": 7,
+                    "goodsName": "拿铁打印",
+                    "goodsNameEn": "Latte(Print)",
+                    "goodsNameOt": "اتيه(مطبوع)",
+                    "goodsImg": 19,
+                    "goodsOptionName": "8oz纸杯;咖啡豆1;牛奶１",
+                    "goodsOptionNameEn": "8ozCup;CoffeeBean1;Ｍilk１",
+                    "goodsOptionNameOt": "8ozCup;CoffeeBean1;Milk１",
+                    "language": "en",
+                    "status": 4,
+                    "price": "1.00",
+                    "rePrice": "1.00",
+                    "matterCodes": "CoffeeMatter9,CoffeeMatter1,CoffeeMatter2,CoffeeMatter3,CoffeeMatter5,CoffeeMatter12,CoffeeMatter11",
+                    "num": 1,
+                    "totalPrice": "1.00",
+                    "lhImgPath": "http://kintsuji.motonbackend.top/public/uploads/20250730/826b8a6a9dd5cebd599eb002c0bb0fe7.png",
+                    "jsonCodeVal": "[{\"classCode\":\"5105\"},{\"CupCode\":\"2\"},{\"BeanCode\":\"1\"},{\"MilkCode\":\"1\"}]",
+                    "path": "public/uploads/20240803/ed4ddcaa8835631db6a0bc3ebf5d4877.png",
+                    "goodsPath": "http://kintsuji.motonbackend.top/public/uploads/20240803/ed4ddcaa8835631db6a0bc3ebf5d4877.png",
+                    "statusName": "Processing"
+                }
+            ],
+            "typeList1": []
+        }
+    ]
+}
