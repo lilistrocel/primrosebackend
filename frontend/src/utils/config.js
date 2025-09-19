@@ -1,5 +1,9 @@
 // Configuration utility for API endpoints
 export const getApiBaseUrl = () => {
+  console.log('🔍 DEBUG: getApiBaseUrl() called');
+  console.log('🔍 DEBUG: process.env.REACT_APP_API_BASE_URL =', process.env.REACT_APP_API_BASE_URL);
+  console.log('🔍 DEBUG: window.location =', window.location);
+  
   // If environment variable is set and not empty, use it
   if (process.env.REACT_APP_API_BASE_URL && process.env.REACT_APP_API_BASE_URL.trim() !== '') {
     console.log('🔧 Using environment API URL:', process.env.REACT_APP_API_BASE_URL);
