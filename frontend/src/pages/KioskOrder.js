@@ -1253,6 +1253,32 @@ function KioskOrder() {
       return;
     }
     
+    // For simple products (no customization), apply default cup code logic
+    if (!hasOptions && !product.customization) {
+      const modifiedProduct = { ...product };
+      
+      try {
+        // Parse and update jsonCodeVal with default cup code
+        const jsonArray = JSON.parse(product.jsonCodeVal);
+        const updatedJson = [...jsonArray];
+        
+        // Set default CupCode to 2 (regular cup) for simple products
+        const cupIndex = updatedJson.findIndex(item => item.CupCode !== undefined);
+        if (cupIndex >= 0) {
+          updatedJson[cupIndex].CupCode = "2";
+        } else {
+          updatedJson.push({ CupCode: "2" });
+        }
+        
+        modifiedProduct.jsonCodeVal = JSON.stringify(updatedJson);
+        console.log(`🧊 Simple Product CupCode: ${product.goodsNameEn} → CupCode: 2 (No Ice Options)`);
+        
+        product = modifiedProduct;
+      } catch (error) {
+        console.error('Error updating simple product jsonCodeVal:', error);
+      }
+    }
+    
     // Generate unique key for customized products
     const productKey = `${product.id}-${JSON.stringify(product.customization || {})}`;
     const existingItem = cart.find(item => 

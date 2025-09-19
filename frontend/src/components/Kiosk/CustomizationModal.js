@@ -348,6 +348,18 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         updatedJson.push({ MilkCode: options.milkCode.toString() });
       }
 
+      // AUTOMATIC CupCode based on ice selection - APPLIES TO ALL ITEMS
+      const cupIndex = updatedJson.findIndex(item => item.CupCode !== undefined);
+      const cupCode = options.ice ? "3" : "2"; // 3 for iced (larger cup), 2 for regular
+      
+      if (cupIndex >= 0) {
+        updatedJson[cupIndex].CupCode = cupCode;
+      } else {
+        updatedJson.push({ CupCode: cupCode });
+      }
+      
+      console.log(`🧊 CupCode Logic: ${options.ice ? 'With Ice' : 'No Ice'} → CupCode: ${cupCode}`);
+
       // Note: We DON'T add IceCode or ShotCode anymore since those are handled by variant classCodes
       // Only add them if no variant classCode was used (fallback behavior)
       const usingVariantForIce = (options.ice && product.icedClassCode) || (options.ice && options.shots === 2 && product.icedAndDoubleClassCode);
