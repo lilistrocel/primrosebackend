@@ -232,7 +232,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
   const [selectedOptions, setSelectedOptions] = useState({
     beanCode: product?.default_bean_code || 1,
     milkCode: product?.default_milk_code || 1,
-    ice: product?.default_ice !== undefined ? product.default_ice : true,
+    ice: product?.defaultIce !== undefined ? product.defaultIce : true,
     shots: product?.default_shots || 1
   });
   

@@ -1066,4 +1066,84 @@ Commands supported:
 
 ---
 
-**PROJECT STATUS**: 🏆 **PRODUCTION COMPLETE** - Complete coffee machine ecosystem with professional K2-branded kiosk interface, **fully functional real-time image upload system**, robust database management, backend, frontend, mock machine simulator, fully functional variable editor, dynamic category management, live order queue display, enterprise-grade database migration system, and professional multi-method receipt printing ready for full production deployment!
+### Phase 13: Advanced Product Variant System ✅ COMPLETED
+**Date**: September 19, 2025
+**Status**: ✅ COMPLETED
+
+#### Dynamic ClassCode Variant System Implementation:
+
+##### 🎯 **Complete Variant ClassCode Architecture**
+- **Manual Variant Configuration**: Database schema supports custom classCodes for each product variant
+- **Database Schema**: Added `iced_class_code`, `double_shot_class_code`, `iced_and_double_class_code` columns
+- **Backend API Integration**: Products endpoint now returns variant classCodes to frontend
+- **Frontend Integration**: CustomizationModal dynamically selects appropriate classCode based on options
+- **Order Processing**: Complete flow from variant selection → order creation → machine production codes
+
+##### 🔧 **Technical Implementation Details**:
+
+###### Database Schema Extensions:
+```sql
+-- Enhanced products table with variant support
+ALTER TABLE products ADD COLUMN iced_class_code VARCHAR(10) DEFAULT NULL;
+ALTER TABLE products ADD COLUMN double_shot_class_code VARCHAR(10) DEFAULT NULL; 
+ALTER TABLE products ADD COLUMN iced_and_double_class_code VARCHAR(10) DEFAULT NULL;
+```
+
+###### Backend API Enhancements:
+- **Products API**: Returns variant classCodes (`icedClassCode`, `doubleShotClassCode`, `icedAndDoubleClassCode`)
+- **Order Creation**: Preserves customized `jsonCodeVal` with variant classCodes through entire pipeline
+- **Database Storage**: Correctly stores variant-modified production instructions
+
+###### Frontend Variant Logic:
+```javascript
+// Automatic variant classCode selection
+const getVariantClassCode = (product, options) => {
+  if (hasIce && hasDoubleShot && product.icedAndDoubleClassCode) {
+    return product.icedAndDoubleClassCode; // e.g., 5277
+  } else if (hasIce && product.icedClassCode) {
+    return product.icedClassCode; // e.g., 5277
+  } else if (hasDoubleShot && product.doubleShotClassCode) {
+    return product.doubleShotClassCode; // e.g., 5026
+  }
+  return originalClassCode; // e.g., 5002
+};
+```
+
+###### Order Monitor Enhancement:
+- **Production Codes Display**: Enhanced with priority system showing key codes (classCode, CupCode, BeanCode, MilkCode)
+- **Visual Differentiation**: Primary codes (green) vs secondary codes (blue) with human-readable labels
+- **Real-time Verification**: Live display of actual production codes sent to coffee machine
+
+##### 🧪 **Variant System Examples**:
+```
+Americano Product Variants:
+├── Regular Americano: classCode 5002
+├── Iced Americano: classCode 5277  
+├── Double Shot Americano: classCode 5026
+└── Iced + Double Shot: classCode 5277
+```
+
+##### 📱 **User Experience Flow**:
+1. **Kiosk Selection**: Customer selects Americano + Ice option
+2. **Variant Detection**: System automatically determines `icedClassCode: 5277`
+3. **JsonCodeVal Update**: `[{"classCode":"5277"},{"CupCode":"2"},{"BeanCode":"1"}]`
+4. **Order Creation**: Backend stores variant-specific production instructions
+5. **Machine Communication**: Coffee machine receives correct classCode for iced version
+6. **Order Monitor**: Displays "🎯 Product: 5277" for easy operator reference
+
+##### 🔍 **Debug & Monitoring System**:
+- **Console Logging**: Comprehensive variant selection tracking
+- **Production Code Parsing**: Enhanced Order Monitor with variant classCode visibility  
+- **Real-time Verification**: Immediate feedback on variant system operation
+- **Error Recovery**: Graceful fallback to original classCode if variants not configured
+
+#### Benefits Achieved:
+- ✅ **Machine Compatibility**: Different products produce different beverages based on options
+- ✅ **Operational Clarity**: Staff can immediately see which variant is being produced
+- ✅ **Scalable System**: Works for any product with manual variant configuration
+- ✅ **Quality Control**: Ensures ice/shot options result in correct machine behavior
+- ✅ **Future-Proof**: Easy to add new variant types and products
+
+---
+
+**PROJECT STATUS**: 🏆 **PRODUCTION COMPLETE** - Complete coffee machine ecosystem with professional K2-branded kiosk interface, **fully functional real-time image upload system**, **advanced product variant system with dynamic classCodes**, robust database management, backend, frontend, mock machine simulator, fully functional variable editor, dynamic category management, live order queue display, enterprise-grade database migration system, and professional multi-method receipt printing ready for full production deployment!
