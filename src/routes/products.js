@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const db = require('../database/db');
 const currencyConfig = require('../config/currency');
+const { checkMultipleProductsAvailability, getCurrentIngredientLevels, getAvailabilitySummary } = require('../utils/productAvailability');
 
 const router = express.Router();
 
@@ -88,10 +89,34 @@ router.get('/products', async (req, res) => {
       icedAndDoubleClassCode: product.iced_and_double_class_code
     }));
 
+    // Get current ingredient levels for availability checking
+    const currentIngredientLevels = getCurrentIngredientLevels(db);
+    
+    // Check ingredient availability for all products
+    const availabilityMap = checkMultipleProductsAvailability(transformedProducts, currentIngredientLevels);
+    
+    // Add availability information to each product
+    const productsWithAvailability = transformedProducts.map(product => ({
+      ...product,
+      // Ingredient availability information
+      available: availabilityMap[product.goodsId]?.available ?? true,
+      missingIngredients: availabilityMap[product.goodsId]?.missingIngredients ?? [],
+      availabilityReason: availabilityMap[product.goodsId]?.reason ?? 'Unknown'
+    }));
+    
+    // Get availability summary for logging
+    const summary = getAvailabilitySummary(availabilityMap);
+    console.log(`📊 Product Availability Summary:`, summary);
+
     res.json({
       code: 0,
       msg: 'Products retrieved successfully',
-      data: transformedProducts
+      data: productsWithAvailability,
+      // Include availability summary in metadata
+      meta: {
+        availability: summary,
+        ingredientLevelsChecked: Object.keys(currentIngredientLevels).length > 0
+      }
     });
 
   } catch (error) {

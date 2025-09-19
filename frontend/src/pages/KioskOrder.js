@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer, AlertTriangle } from 'lucide-react';
 import { receiptPrinter } from '../utils/receiptPrinter';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
 import { getApiUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
@@ -345,6 +345,45 @@ const ProductCard = styled.div`
     transform: translateY(-3px);
   }
   
+  /* Unavailable state */
+  &.unavailable {
+    background: #f7f7f7;
+    border-color: #d1d5db;
+    cursor: not-allowed;
+    opacity: 0.6;
+    
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border-color: #d1d5db;
+      
+      .product-image {
+        transform: none;
+        box-shadow: none;
+      }
+    }
+    
+    .product-image {
+      filter: grayscale(100%);
+      opacity: 0.5;
+    }
+    
+    .product-name, .product-price {
+      color: #9ca3af;
+    }
+    
+    .quantity-btn {
+      background: #e5e7eb;
+      color: #9ca3af;
+      cursor: not-allowed;
+      
+      &:hover {
+        background: #e5e7eb;
+        transform: none;
+      }
+    }
+  }
+  
   .product-image {
     width: 100%;
     height: 160px; /* Much larger image area */
@@ -496,6 +535,38 @@ const ProductCard = styled.div`
       width: 18px;
       height: 18px;
     }
+  }
+`;
+
+const AvailabilityBadge = styled.div`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 5;
+  
+  &.available {
+    background: #10b981;
+    color: white;
+    display: none; /* Only show when unavailable */
+  }
+  
+  &.unavailable {
+    background: #ef4444;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .icon {
+    width: 12px;
+    height: 12px;
   }
 `;
 
@@ -1443,33 +1514,47 @@ function KioskOrder() {
               const hasImage = product.goodsPath && product.goodsPath !== '';
               const dynamicImageUrl = hasImage ? getImageUrl(product.goodsPath) : '';
               
-              // Debug logging for images
-              if (product.goodsNameEn === 'Espresso') {
-                console.log('🔍 Espresso product data:', {
-                  id: product.id,
+              // Check ingredient availability
+              const isAvailable = product.available !== false; // Default to available if not specified
+              const missingIngredients = product.missingIngredients || [];
+              
+              // Debug logging for availability
+              if (product.goodsNameEn === 'Espresso' || !isAvailable) {
+                console.log('🔍 Product availability check:', {
                   name: product.goodsNameEn,
-                  goodsPath: product.goodsPath,
-                  dynamicImageUrl: dynamicImageUrl,
-                  hasImage: hasImage
+                  available: isAvailable,
+                  missingIngredients: missingIngredients,
+                  matterCodes: product.matterCodes
                 });
               }
+              
+              const handleProductClick = (e) => {
+                // Prevent action if product is unavailable
+                if (!isAvailable) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🚫 Product unavailable:', product.goodsNameEn, 'Missing:', missingIngredients.map(i => i.code).join(', '));
+                  return;
+                }
+                
+                // Only open modal if clicking on the card itself, not buttons
+                if (e.target === e.currentTarget || e.target.closest('.product-image') || e.target.closest('.product-name') || e.target.closest('.product-price')) {
+                  const hasOptions = product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options;
+                  console.log('🔄 Product card clicked:', product.goodsNameEn, 'Has options:', hasOptions);
+                  if (hasOptions) {
+                    openCustomizationModal(product);
+                  } else {
+                    addToCart(product);
+                  }
+                }
+              };
               
               return (
                 <ProductCard 
                   key={product.id}
-                  onClick={(e) => {
-                    // Only open modal if clicking on the card itself, not buttons
-                    if (e.target === e.currentTarget || e.target.closest('.product-image') || e.target.closest('.product-name') || e.target.closest('.product-price')) {
-                      const hasOptions = product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options;
-                      console.log('🔄 Product card clicked:', product.goodsNameEn, 'Has options:', hasOptions);
-                      if (hasOptions) {
-                        openCustomizationModal(product);
-                      } else {
-                        addToCart(product);
-                      }
-                    }
-                  }}
-                  style={{ cursor: 'pointer' }}
+                  className={!isAvailable ? 'unavailable' : ''}
+                  onClick={handleProductClick}
+                  style={{ cursor: isAvailable ? 'pointer' : 'not-allowed' }}
                 >
                   <button
                     className="favorite-btn"
@@ -1484,6 +1569,14 @@ function KioskOrder() {
                       color={isFavorite ? '#ff6b35' : '#a0aec0'}
                     />
                   </button>
+                  
+                  {/* Availability Badge */}
+                  {!isAvailable && (
+                    <AvailabilityBadge className="unavailable">
+                      <AlertTriangle className="icon" />
+                      <span>Unavailable</span>
+                    </AvailabilityBadge>
+                  )}
                   
                   <div className={`product-image ${product.imageClass}`}>
                     {hasImage ? (
@@ -1545,21 +1638,28 @@ function KioskOrder() {
                     <button 
                       className="quantity-btn minus"
                       onClick={() => updateQuantity(product.id, -1)}
-                      disabled={quantity <= 1}
+                      disabled={quantity <= 1 || !isAvailable}
                     >
                       <Minus size={16} />
                     </button>
                     <div className="quantity">{quantity}</div>
-                  <button 
-                    className="quantity-btn plus"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('🔄 Adding product:', product.goodsNameEn, 'Has options:', product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options);
-                      addToCart(product);
-                    }}
-                  >
-                    <Plus size={16} />
-                  </button>
+                    <button 
+                      className="quantity-btn plus"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        
+                        if (!isAvailable) {
+                          console.log('🚫 Cannot add unavailable product:', product.goodsNameEn);
+                          return;
+                        }
+                        
+                        console.log('🔄 Adding product:', product.goodsNameEn, 'Has options:', product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options);
+                        addToCart(product);
+                      }}
+                      disabled={!isAvailable}
+                    >
+                      <Plus size={16} />
+                    </button>
                   </div>
                 </ProductCard>
               );
