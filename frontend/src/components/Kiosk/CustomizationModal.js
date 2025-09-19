@@ -262,13 +262,23 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     const variantClassCode = getVariantClassCode(product, selectedOptions);
 
     // Create customized product object
+    const updatedJsonCodeVal = updateJsonCodeValWithVariant(product.jsonCodeVal, selectedOptions, variantClassCode);
+    
+    console.log('🎯 CUSTOMIZATION DEBUG:');
+    console.log('   Original jsonCodeVal:', product.jsonCodeVal);
+    console.log('   Selected options:', selectedOptions);
+    console.log('   Variant classCode:', variantClassCode);
+    console.log('   Updated jsonCodeVal:', updatedJsonCodeVal);
+    
     const customizedProduct = {
       ...product,
       price: finalPrice,
       customization: selectedOptions,
       // Update jsonCodeVal with variant classCode and remaining options
-      jsonCodeVal: updateJsonCodeValWithVariant(product.jsonCodeVal, selectedOptions, variantClassCode)
+      jsonCodeVal: updatedJsonCodeVal
     };
+    
+    console.log('🛒 FINAL CUSTOMIZED PRODUCT:', customizedProduct);
 
     onAddToCart(customizedProduct, quantity);
     onClose();

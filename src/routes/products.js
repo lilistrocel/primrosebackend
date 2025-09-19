@@ -81,7 +81,11 @@ router.get('/products', async (req, res) => {
       default_bean_code: product.default_bean_code || 1,
       default_milk_code: product.default_milk_code || 1,
       default_ice: Boolean(product.default_ice),
-      default_shots: product.default_shots || 1
+      default_shots: product.default_shots || 1,
+      // Variant system classCodes
+      icedClassCode: product.iced_class_code,
+      doubleShotClassCode: product.double_shot_class_code,
+      icedAndDoubleClassCode: product.iced_and_double_class_code
     }));
 
     res.json({

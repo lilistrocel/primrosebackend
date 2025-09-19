@@ -1241,27 +1241,38 @@ function KioskOrder() {
       const orderNum = generateOrderNumber();
       const totalPrice = getCartTotal();
 
+      console.log('🚀 KIOSK ORDER SUBMISSION DEBUG:');
+      console.log('Cart contents:', cart);
+      
       const orderData = {
         orderNum,
         deviceId: 1,
         totalPrice,
-        items: cart.map(item => ({
-          goodsId: item.product.id,
-          deviceGoodsId: item.product.deviceGoodsId,
-          goodsName: item.product.goodsName,
-          goodsNameEn: item.product.goodsNameEn,
-          goodsNameOt: item.product.goodsNameOt || '',
-          type: item.product.type,
-          price: item.product.price,
-          rePrice: item.product.rePrice,
-          quantity: item.quantity,
-          totalPrice: item.product.price * item.quantity,
-          matterCodes: item.product.matterCodes,
-          jsonCodeVal: item.product.jsonCodeVal, // Use the customized jsonCodeVal (includes variant classCodes)
-          goodsOptionName: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
-          goodsOptionNameEn: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`
-        }))
+        items: cart.map(item => {
+          console.log(`📦 Processing cart item:`, item.product.goodsNameEn);
+          console.log(`   Has customization:`, !!item.product.customization);
+          console.log(`   jsonCodeVal:`, item.product.jsonCodeVal);
+          
+          return {
+            goodsId: item.product.id,
+            deviceGoodsId: item.product.deviceGoodsId,
+            goodsName: item.product.goodsName,
+            goodsNameEn: item.product.goodsNameEn,
+            goodsNameOt: item.product.goodsNameOt || '',
+            type: item.product.type,
+            price: item.product.price,
+            rePrice: item.product.rePrice,
+            quantity: item.quantity,
+            totalPrice: item.product.price * item.quantity,
+            matterCodes: item.product.matterCodes,
+            jsonCodeVal: item.product.jsonCodeVal, // Use the customized jsonCodeVal (includes variant classCodes)
+            goodsOptionName: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
+            goodsOptionNameEn: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`
+          };
+        })
       };
+      
+      console.log('📤 Final order data being sent:', orderData);
 
       const response = await fetch(getApiUrl(API_ENDPOINTS.CREATE_ORDER), {
         method: 'POST',
