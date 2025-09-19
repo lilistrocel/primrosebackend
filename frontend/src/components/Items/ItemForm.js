@@ -345,6 +345,7 @@ function ItemForm({ item, onClose, onSave }) {
           setSelectedImage({
             ...file,
             serverPath: result.data.path,
+            url: result.data.url || result.data.path, // Use url field from backend
             serverUrl: result.data.fullUrl,
             filename: result.data.filename
           });
@@ -379,8 +380,8 @@ function ItemForm({ item, onClose, onSave }) {
       rePrice: data.rePrice ? parseFloat(data.rePrice) : parseFloat(data.price),
       jsonCodeVal: item?.jsonCodeVal || `[{"classCode":"${5000 + parseInt(data.type)}"}]`,
       matterCodes: item?.matterCodes || '',
-      path: selectedImage?.serverPath || item?.path || '',
-      goodsPath: selectedImage?.serverUrl || item?.goodsPath || '',
+      path: selectedImage?.serverPath || selectedImage?.url || item?.path || '',
+      goodsPath: selectedImage?.serverPath || selectedImage?.url || item?.goodsPath || '',
       status: item?.status || 'active',
       // Customization options
       hasBeanOptions: Boolean(data.hasBeanOptions),
