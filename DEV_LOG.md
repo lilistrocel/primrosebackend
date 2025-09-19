@@ -986,4 +986,84 @@ Commands supported:
 
 ---
 
-**PROJECT STATUS**: 🏆 **PRODUCTION COMPLETE** - Complete coffee machine ecosystem with professional K2-branded kiosk interface, real image upload system, backend, frontend, mock machine simulator, fully functional variable editor, dynamic category management, live order queue display, enterprise-grade database migration system, and professional multi-method receipt printing ready for full production deployment!
+---
+
+### Phase 12: Critical Image Upload & Database Fixes ✅ COMPLETED
+**Date**: September 19, 2025
+**Status**: ✅ COMPLETED
+
+#### Major Bug Fixes & System Improvements:
+
+##### 🐛 **Critical Database Method Conflicts Resolved**
+- **Issue**: Duplicate `updateProduct` methods in `src/database/db.js` causing image updates to fail
+- **Root Cause**: Old static method overriding new dynamic method that supports image path updates
+- **Fix**: Removed duplicate method, ensured enhanced version with proper field mapping is used
+- **Impact**: Image uploads now correctly update product records in database
+
+##### 📷 **Complete Image Upload System Overhaul**
+- **Frontend Path Mapping**: Fixed `ItemForm.js` to properly map uploaded image paths to database
+- **Backend Relative Paths**: Modified upload endpoints to return relative paths instead of hardcoded URLs  
+- **Dynamic URL Construction**: Added `getImageUrl()` helper for building full URLs from relative paths
+- **Cross-Environment Support**: Images now work seamlessly in both local and tunnel environments
+
+##### 🔧 **Database Schema & Migration Improvements**
+- **Field Mapping**: Enhanced `updateProduct` method with complete frontend→database field mapping
+- **Boolean Conversion**: Added proper SQLite boolean handling (true→1, false→0)
+- **Image Path Logging**: Added specific logging for image path updates for debugging
+- **Schema Validation**: Improved validation schema to allow flexible updates
+
+##### 🌐 **Tunnel & Local Access Fixes**
+- **Mixed Content Resolution**: Fixed HTTPS tunnel trying to load HTTP local images
+- **Dynamic API Detection**: Enhanced frontend URL detection for seamless tunnel/local switching
+- **CORS Configuration**: Updated backend CORS to support all tunnel domains
+- **Environment Variables**: Proper `.env` configuration for different deployment scenarios
+
+#### Technical Implementation Details:
+
+##### 🔄 **Fixed Update Workflow**:
+```
+1. User uploads image in ItemForm → ✅ Uploads to server successfully
+2. ItemForm maps image path correctly → ✅ Fixed path mapping logic  
+3. PUT request updates database → ✅ Fixed duplicate method conflict
+4. Kiosk fetches updated product → ✅ Shows new image immediately
+```
+
+##### 📂 **Files Modified**:
+- **`src/database/db.js`**: Removed duplicate updateProduct method, added image logging
+- **`frontend/src/components/Items/ItemForm.js`**: Fixed image path mapping for form submission
+- **`src/routes/upload.js`**: Modified to return relative paths instead of absolute URLs
+- **`src/routes/createOrder.js`**: Updated to store relative image paths for new orders
+- **`frontend/src/utils/config.js`**: Enhanced with `getImageUrl()` helper function
+- **`frontend/src/pages/KioskOrder.js`**: Updated to use dynamic image URL construction
+
+##### 🛠️ **Image Path Migration System**:
+```javascript
+// Created fix-image-urls.js migration script
+- Scans products and order_goods tables
+- Converts hardcoded URLs to relative paths
+- Preserves existing data while fixing old records
+- Safe, non-destructive database updates
+```
+
+##### ⚡ **Performance & Reliability**:
+- **Auto-refresh**: 30-second product refresh in kiosk for immediate image updates
+- **Fallback Systems**: Graceful handling when images fail to load
+- **Error Recovery**: Comprehensive error handling throughout upload pipeline
+- **Debug Logging**: Enhanced logging for troubleshooting image issues
+
+#### Database Persistence Fix:
+- **Schema Initialization**: Modified `initializeSchemaIfNeeded()` to prevent data loss
+- **Conditional Setup**: Only creates tables and inserts mock data if database is empty
+- **Production Safety**: Server restarts no longer reset user data
+
+#### Benefits Achieved:
+- ✅ **Real-time Image Updates**: Upload→Save→Immediate kiosk display
+- ✅ **Cross-Environment Compatibility**: Works in local IP and tunnel access
+- ✅ **Data Persistence**: No more database resets on server restart  
+- ✅ **Production Ready**: Robust error handling and fallback systems
+- ✅ **Developer Experience**: Enhanced logging and debugging capabilities
+- ✅ **User Experience**: Seamless image management for store operators
+
+---
+
+**PROJECT STATUS**: 🏆 **PRODUCTION COMPLETE** - Complete coffee machine ecosystem with professional K2-branded kiosk interface, **fully functional real-time image upload system**, robust database management, backend, frontend, mock machine simulator, fully functional variable editor, dynamic category management, live order queue display, enterprise-grade database migration system, and professional multi-method receipt printing ready for full production deployment!

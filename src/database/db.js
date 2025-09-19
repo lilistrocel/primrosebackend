@@ -96,6 +96,17 @@ class DatabaseManager {
         this.db.exec(`ALTER TABLE products ADD COLUMN display_order INTEGER DEFAULT 0`);
       }
 
+      // Add variant system columns for alternative classCodes
+      const variantColumns = ['iced_class_code', 'double_shot_class_code', 'iced_and_double_class_code'];
+      
+      variantColumns.forEach(columnName => {
+        const hasColumn = columnsResult.some(col => col.name === columnName);
+        if (!hasColumn) {
+          console.log(`📋 Adding ${columnName} column to products table...`);
+          this.db.exec(`ALTER TABLE products ADD COLUMN ${columnName} VARCHAR(10) DEFAULT NULL`);
+        }
+      });
+
       // Create indexes if they don't exist
       console.log('📋 Creating new indexes...');
       try {
@@ -364,7 +375,11 @@ class DatabaseManager {
         defaultIce: 'default_ice',
         defaultShots: 'default_shots',
         displayOrder: 'display_order',
-        category: 'category'
+        category: 'category',
+        // Variant system fields
+        icedClassCode: 'iced_class_code',
+        doubleShotClassCode: 'double_shot_class_code',
+        icedAndDoubleClassCode: 'iced_and_double_class_code'
       };
       
       // Handle ID change specially (dangerous operation)

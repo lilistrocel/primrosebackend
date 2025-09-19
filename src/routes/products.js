@@ -32,7 +32,11 @@ const productSchema = Joi.object({
   defaultShots: Joi.number().integer().min(1).max(2).default(1),
   // Kiosk display fields
   displayOrder: Joi.number().integer().min(0).default(0),
-  category: Joi.string().max(50).default('Classics')
+  category: Joi.string().max(50).default('Classics'),
+  // Variant system fields
+  icedClassCode: Joi.string().max(10).allow('', null).optional(),
+  doubleShotClassCode: Joi.string().max(10).allow('', null).optional(),
+  icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional()
 });
 
 /**
@@ -214,6 +218,10 @@ router.put('/products/:id', async (req, res) => {
       defaultMilkCode: Joi.number().integer().min(1).max(2).optional(),
       defaultIce: Joi.boolean().optional(),
       defaultShots: Joi.number().integer().min(1).max(2).optional(),
+      // Variant system fields
+      icedClassCode: Joi.string().max(10).allow('', null).optional(),
+      doubleShotClassCode: Joi.string().max(10).allow('', null).optional(),
+      icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional(),
       // Allow additional fields that might come from frontend (like id, createdAt, updatedAt)
       id: Joi.number().integer().optional(),
       createdAt: Joi.alternatives().try(Joi.date(), Joi.string()).optional(),

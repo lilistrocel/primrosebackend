@@ -391,7 +391,11 @@ function ItemForm({ item, onClose, onSave }) {
       defaultBeanCode: parseInt(data.defaultBeanCode) || 1,
       defaultMilkCode: parseInt(data.defaultMilkCode) || 1,
       defaultIce: data.defaultIce === 'true' || data.defaultIce === true,
-      defaultShots: parseInt(data.defaultShots) || 1
+      defaultShots: parseInt(data.defaultShots) || 1,
+      // Variant system classCodes
+      icedClassCode: data.icedClassCode?.trim() || null,
+      doubleShotClassCode: data.doubleShotClassCode?.trim() || null,
+      icedAndDoubleClassCode: data.icedAndDoubleClassCode?.trim() || null
     };
 
     // Remove undefined/null values
@@ -608,6 +612,47 @@ function ItemForm({ item, onClose, onSave }) {
                     placeholder="0"
                   />
                   <div className="helper-text">Lower numbers appear first in the menu (0 = first)</div>
+                </FormGroup>
+              </FormSection>
+
+              <FormSection>
+                <h3 className="section-title">🎯 Variant ClassCodes</h3>
+                <div className="helper-text" style={{ marginBottom: '16px' }}>
+                  Configure alternative classCodes for option variations (ice, double shot).
+                  Leave empty to disable that variant.
+                </div>
+                
+                <FormGroup>
+                  <label>Iced Version ClassCode</label>
+                  <Input
+                    type="text"
+                    {...register('icedClassCode')}
+                    placeholder="e.g., 5227"
+                    maxLength="10"
+                  />
+                  <div className="helper-text">ClassCode used when customer selects "with ice" (requires hasIceOptions enabled)</div>
+                </FormGroup>
+
+                <FormGroup>
+                  <label>Double Shot ClassCode</label>
+                  <Input
+                    type="text"
+                    {...register('doubleShotClassCode')}
+                    placeholder="e.g., 5003"
+                    maxLength="10"
+                  />
+                  <div className="helper-text">ClassCode used when customer selects "double shot" (requires hasShotOptions enabled)</div>
+                </FormGroup>
+
+                <FormGroup>
+                  <label>Iced + Double Shot ClassCode</label>
+                  <Input
+                    type="text"
+                    {...register('icedAndDoubleClassCode')}
+                    placeholder="e.g., 5228"
+                    maxLength="10"
+                  />
+                  <div className="helper-text">ClassCode used when customer selects both ice AND double shot</div>
                 </FormGroup>
               </FormSection>
 

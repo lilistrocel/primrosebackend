@@ -258,17 +258,115 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
       finalPrice += 0.5; // Add $0.50 for double shot
     }
 
+    // Determine the correct classCode based on variant options
+    const variantClassCode = getVariantClassCode(product, selectedOptions);
+
     // Create customized product object
     const customizedProduct = {
       ...product,
       price: finalPrice,
       customization: selectedOptions,
-      // Update jsonCodeVal with selected options
-      jsonCodeVal: updateJsonCodeVal(product.jsonCodeVal, selectedOptions)
+      // Update jsonCodeVal with variant classCode and remaining options
+      jsonCodeVal: updateJsonCodeValWithVariant(product.jsonCodeVal, selectedOptions, variantClassCode)
     };
 
     onAddToCart(customizedProduct, quantity);
     onClose();
+  };
+
+  // Determine which classCode to use based on ice and shot options
+  const getVariantClassCode = (product, options) => {
+    const hasIce = options.ice;
+    const hasDoubleShot = options.shots === 2;
+    
+    // Check if we have variant classCodes configured
+    if (hasIce && hasDoubleShot && product.icedAndDoubleClassCode) {
+      return product.icedAndDoubleClassCode;
+    } else if (hasIce && product.icedClassCode) {
+      return product.icedClassCode;
+    } else if (hasDoubleShot && product.doubleShotClassCode) {
+      return product.doubleShotClassCode;
+    }
+    
+    // Fall back to original classCode from jsonCodeVal
+    try {
+      const jsonArray = typeof product.jsonCodeVal === 'string' ? JSON.parse(product.jsonCodeVal) : product.jsonCodeVal;
+      const classCodeObj = jsonArray.find(item => item.classCode !== undefined);
+      return classCodeObj ? classCodeObj.classCode : null;
+    } catch (error) {
+      console.error('Error parsing original jsonCodeVal:', error);
+      return null;
+    }
+  };
+
+  // Update jsonCodeVal with new variant classCode and remaining customization options
+  const updateJsonCodeValWithVariant = (originalJson, options, variantClassCode) => {
+    try {
+      const jsonArray = typeof originalJson === 'string' ? JSON.parse(originalJson) : originalJson;
+      const updatedJson = [...jsonArray];
+
+      // Update or set the classCode (most important change)
+      const classCodeIndex = updatedJson.findIndex(item => item.classCode !== undefined);
+      if (classCodeIndex >= 0 && variantClassCode) {
+        updatedJson[classCodeIndex].classCode = variantClassCode;
+      } else if (variantClassCode) {
+        updatedJson.unshift({ classCode: variantClassCode }); // Add to beginning
+      }
+
+      // For non-variant options, we still update the jsonCodeVal
+      // (This handles bean type, milk type, etc. that aren't variants)
+      
+      // Update BeanCode (if not using variant)
+      const beanIndex = updatedJson.findIndex(item => item.BeanCode !== undefined);
+      if (beanIndex >= 0) {
+        updatedJson[beanIndex].BeanCode = options.beanCode.toString();
+      } else if (product.has_bean_options) {
+        updatedJson.push({ BeanCode: options.beanCode.toString() });
+      }
+
+      // Update MilkCode (if not using variant)
+      const milkIndex = updatedJson.findIndex(item => item.MilkCode !== undefined);
+      if (milkIndex >= 0) {
+        updatedJson[milkIndex].MilkCode = options.milkCode.toString();
+      } else if (product.has_milk_options) {
+        updatedJson.push({ MilkCode: options.milkCode.toString() });
+      }
+
+      // Note: We DON'T add IceCode or ShotCode anymore since those are handled by variant classCodes
+      // Only add them if no variant classCode was used (fallback behavior)
+      const usingVariantForIce = (options.ice && product.icedClassCode) || (options.ice && options.shots === 2 && product.icedAndDoubleClassCode);
+      const usingVariantForShots = (options.shots === 2 && product.doubleShotClassCode) || (options.ice && options.shots === 2 && product.icedAndDoubleClassCode);
+
+      if (!usingVariantForIce && product.has_ice_options) {
+        const iceIndex = updatedJson.findIndex(item => item.IceCode !== undefined);
+        if (iceIndex >= 0) {
+          updatedJson[iceIndex].IceCode = options.ice ? "1" : "0";
+        } else {
+          updatedJson.push({ IceCode: options.ice ? "1" : "0" });
+        }
+      }
+
+      if (!usingVariantForShots && product.has_shot_options) {
+        const shotIndex = updatedJson.findIndex(item => item.ShotCode !== undefined);
+        if (shotIndex >= 0) {
+          updatedJson[shotIndex].ShotCode = options.shots.toString();
+        } else {
+          updatedJson.push({ ShotCode: options.shots.toString() });
+        }
+      }
+
+      console.log('🎯 Variant ClassCode System:', {
+        originalClassCode: jsonArray.find(item => item.classCode)?.classCode,
+        selectedOptions: options,
+        variantClassCode,
+        finalJsonCodeVal: JSON.stringify(updatedJson)
+      });
+
+      return JSON.stringify(updatedJson);
+    } catch (error) {
+      console.error('Error updating jsonCodeVal with variant:', error);
+      return originalJson;
+    }
   };
 
   const updateJsonCodeVal = (originalJson, options) => {

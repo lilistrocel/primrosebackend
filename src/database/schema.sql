@@ -88,6 +88,11 @@ CREATE TABLE IF NOT EXISTS products (
     default_ice BOOLEAN DEFAULT 1, -- Default ice setting (1=ice, 0=no ice)
     default_shots INTEGER DEFAULT 1, -- Default shot count (1 or 2)
     
+    -- Variant system: Alternative classCodes for different options
+    iced_class_code VARCHAR(10) DEFAULT NULL, -- classCode for iced version (e.g., 5227)
+    double_shot_class_code VARCHAR(10) DEFAULT NULL, -- classCode for double shot version
+    iced_and_double_class_code VARCHAR(10) DEFAULT NULL, -- classCode for iced + double shot combo
+    
     status VARCHAR(20) DEFAULT 'active', -- active, inactive, deleted
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
