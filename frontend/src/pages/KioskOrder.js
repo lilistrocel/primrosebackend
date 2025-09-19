@@ -1665,7 +1665,7 @@ function KioskOrder() {
                     
                     {!isAvailable && missingIngredients.length > 0 && (
                       <div className="unavailable-message">
-                        Missing: {missingIngredients.map(ing => ing.code).join(', ')}
+                        Missing: {missingIngredients.map(ing => ing.name || ing.code).join(', ')}
                       </div>
                     )}
                   </div>

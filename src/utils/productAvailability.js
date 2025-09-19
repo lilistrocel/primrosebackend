@@ -3,7 +3,7 @@
  * Determines if products can be sold based on ingredient availability
  */
 
-const { getIngredientStatus } = require('../config/ingredients');
+const { INGREDIENT_MAPPING, getIngredientStatus } = require('../config/ingredients');
 
 /**
  * Check if a product is available based on its required ingredients
@@ -37,8 +37,10 @@ function checkProductAvailability(matterCodes, currentIngredientLevels) {
     
     // If ingredient is critical (0) or missing, product is not available
     if (status === 'critical' || currentLevel === 0 || currentLevel === '0' || currentLevel === undefined) {
+      const ingredient = INGREDIENT_MAPPING[ingredientCode];
       missingIngredients.push({
         code: ingredientCode,
+        name: ingredient ? ingredient.name_en : ingredientCode,
         level: currentLevel,
         status: status
       });
@@ -48,7 +50,7 @@ function checkProductAvailability(matterCodes, currentIngredientLevels) {
   const available = missingIngredients.length === 0;
   const reason = available 
     ? 'All ingredients available'
-    : `Missing ingredients: ${missingIngredients.map(ing => ing.code).join(', ')}`;
+    : `Missing ingredients: ${missingIngredients.map(ing => ing.name).join(', ')}`;
     
   console.log(`✅ Product availability: ${available ? 'AVAILABLE' : 'NOT AVAILABLE'} (${reason})`);
   
