@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer } from 'lucide-react';
+import { receiptPrinter } from '../utils/receiptPrinter';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
 import { getApiUrl, API_ENDPOINTS } from '../utils/config';
 import currencyUtils from '../utils/currency';
@@ -898,13 +899,23 @@ const SuccessModal = styled.div`
         }
         
         &.secondary {
-          background: #f7fafc;
-          color: #4a5568;
-          border: 1px solid #e2e8f0;
+          background: #f8f9fa;
+          color: #495057;
+          border: 2px solid #dee2e6;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-right: 12px;
           
-          &:hover {
-            background: #edf2f7;
-            transform: translateY(-2px);
+          &:hover:not(:disabled) {
+            background: #e9ecef;
+            border-color: #adb5bd;
+            transform: translateY(-1px);
+          }
+          
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
           }
         }
       }
@@ -952,6 +963,7 @@ function KioskOrder() {
     { id: 'All', name: 'All Items', icon: '🍽️' }
   ]);
   const [orderQueue, setOrderQueue] = useState([]);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // Fullscreen functionality
   const toggleFullscreen = async () => {
@@ -1274,6 +1286,38 @@ function KioskOrder() {
   const closeSuccessModal = () => {
     setShowSuccess(false);
     setOrderNumber('');
+  };
+
+  const printReceipt = async () => {
+    setIsPrinting(true);
+    
+    try {
+      // Prepare order data for printing
+      const orderData = {
+        orderNum: orderNumber,
+        items: cart.map(item => ({
+          name: item.product.goodsNameEn || item.product.goodsName,
+          quantity: item.quantity,
+          price: parseFloat(item.product.price),
+        })),
+        total: parseFloat(getCartTotal()),
+        timestamp: new Date().toISOString(),
+      };
+
+      const result = await receiptPrinter.printReceipt(orderData);
+      
+      if (result.success) {
+        console.log(`Receipt printed successfully via ${result.method}`);
+        // You could show a success toast here
+      } else {
+        console.error('Failed to print receipt:', result.error);
+        // You could show an error toast here
+      }
+    } catch (error) {
+      console.error('Error printing receipt:', error);
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   return (
@@ -1654,6 +1698,14 @@ function KioskOrder() {
             </p>
             <div className="order-number">Order #{orderNumber}</div>
             <div className="modal-actions">
+              <button 
+                className="modal-btn secondary" 
+                onClick={printReceipt}
+                disabled={isPrinting}
+              >
+                <Printer size={18} />
+                {isPrinting ? 'Printing...' : 'Print Receipt'}
+              </button>
               <button className="modal-btn primary" onClick={closeSuccessModal}>
                 Order More
               </button>
