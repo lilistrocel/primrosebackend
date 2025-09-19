@@ -16,12 +16,101 @@ class DatabaseManager {
       this.db.pragma('foreign_keys = ON');
       console.log(`✅ Foreign keys enabled`);
       
+      // Run migrations first (safely adds new columns to existing tables)
+      this.runMigrations();
+      
       // Initialize database schema
       this.initializeSchema();
       
       console.log(`✅ Database connected: ${dbPath}`);
     } catch (error) {
       console.error(`❌ Database connection error:`, error);
+      throw error;
+    }
+  }
+
+  runMigrations() {
+    console.log('🔄 Running database migrations...');
+
+    try {
+      // Check if categories table exists
+      const tablesResult = this.db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='categories'
+      `).get();
+
+      if (!tablesResult) {
+        console.log('📋 Creating categories table...');
+        this.db.exec(`
+          CREATE TABLE categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(50) NOT NULL UNIQUE,
+            icon VARCHAR(10) DEFAULT '☕',
+            display_order INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        
+        // Insert default categories
+        const defaultCategories = [
+          { name: 'Classics', icon: '☕', display_order: 0 },
+          { name: 'Latte Art', icon: '🎨', display_order: 1 },
+          { name: 'Specialty', icon: '⭐', display_order: 2 },
+          { name: 'Cold Brew', icon: '🧊', display_order: 3 },
+          { name: 'Seasonal', icon: '🍂', display_order: 4 }
+        ];
+
+        defaultCategories.forEach(category => {
+          try {
+            const query = `
+              INSERT INTO categories (name, icon, display_order, is_active)
+              VALUES (?, ?, ?, ?)
+            `;
+            this.db.prepare(query).run(
+              category.name,
+              category.icon || '☕',
+              category.display_order || 0,
+              1
+            );
+            console.log(`✅ Inserted default category: ${category.name}`);
+          } catch (error) {
+            console.error(`❌ Failed to insert category ${category.name}:`, error.message);
+          }
+        });
+      }
+
+      // Check if products table has new columns
+      const columnsResult = this.db.prepare(`PRAGMA table_info(products)`).all();
+      const hasCategory = columnsResult.some(col => col.name === 'category');
+      const hasDisplayOrder = columnsResult.some(col => col.name === 'display_order');
+
+      if (!hasCategory) {
+        console.log('📋 Adding category column to products table...');
+        this.db.exec(`ALTER TABLE products ADD COLUMN category VARCHAR(50) DEFAULT 'Classics'`);
+      }
+
+      if (!hasDisplayOrder) {
+        console.log('📋 Adding display_order column to products table...');
+        this.db.exec(`ALTER TABLE products ADD COLUMN display_order INTEGER DEFAULT 0`);
+      }
+
+      // Create indexes if they don't exist
+      console.log('📋 Creating new indexes...');
+      try {
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_categories_display_order ON categories(display_order)`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_products_display_order ON products(display_order)`);
+      } catch (error) {
+        console.log('📋 Indexes may already exist, continuing...');
+      }
+
+      console.log('✅ Database migrations completed successfully!');
+      return true;
+
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
       throw error;
     }
   }
@@ -193,8 +282,8 @@ class DatabaseManager {
         INSERT INTO products (
           goods_id, device_goods_id, goods_name, goods_name_en, goods_name_ot,
           type, price, re_price, matter_codes, json_code_val, goods_img,
-          path, goods_path, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          path, goods_path, status, display_order, category
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       return this.db.prepare(query).run(
@@ -211,7 +300,9 @@ class DatabaseManager {
         productData.goodsImg || null,
         productData.path || '',
         productData.goodsPath || '',
-        productData.status || 'active'
+        productData.status || 'active',
+        productData.displayOrder || 0,
+        productData.category || 'Classics'
       );
     } catch (error) {
       console.error('Error inserting product:', error);
@@ -276,7 +367,9 @@ class DatabaseManager {
         defaultBeanCode: 'default_bean_code',
         defaultMilkCode: 'default_milk_code',
         defaultIce: 'default_ice',
-        defaultShots: 'default_shots'
+        defaultShots: 'default_shots',
+        displayOrder: 'display_order',
+        category: 'category'
       };
       
       // Handle ID change specially (dangerous operation)
@@ -372,7 +465,82 @@ class DatabaseManager {
     this.db.exec('DELETE FROM orders');
     this.db.exec('DELETE FROM device_status');
     this.db.exec('DELETE FROM products');
+    this.db.exec('DELETE FROM categories');
     console.log('🗑️ All data cleared');
+  }
+
+  // Category management methods
+  insertCategory(categoryData) {
+    try {
+      const query = `
+        INSERT INTO categories (name, icon, display_order, is_active)
+        VALUES (?, ?, ?, ?)
+      `;
+      
+      return this.db.prepare(query).run(
+        categoryData.name,
+        categoryData.icon || '☕',
+        categoryData.display_order || 0,
+        categoryData.is_active !== undefined ? categoryData.is_active : 1
+      );
+    } catch (error) {
+      console.error('Error inserting category:', error);
+      throw error;
+    }
+  }
+
+  getAllCategories() {
+    try {
+      const query = `
+        SELECT * FROM categories 
+        WHERE is_active = 1 
+        ORDER BY display_order, name
+      `;
+      return this.db.prepare(query).all();
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  }
+
+  updateCategory(id, categoryData) {
+    try {
+      const query = `
+        UPDATE categories SET
+          name = ?, icon = ?, display_order = ?, is_active = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      
+      return this.db.prepare(query).run(
+        categoryData.name,
+        categoryData.icon,
+        categoryData.display_order,
+        categoryData.is_active,
+        id
+      );
+    } catch (error) {
+      console.error('Error updating category:', error);
+      throw error;
+    }
+  }
+
+  deleteCategory(id) {
+    try {
+      // First update all products using this category to use 'Classics'
+      const updateProductsQuery = `
+        UPDATE products SET category = 'Classics' 
+        WHERE category = (SELECT name FROM categories WHERE id = ?)
+      `;
+      this.db.prepare(updateProductsQuery).run(id);
+
+      // Then soft delete the category
+      const query = `UPDATE categories SET is_active = 0 WHERE id = ?`;
+      return this.db.prepare(query).run(id);
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      throw error;
+    }
   }
 }
 

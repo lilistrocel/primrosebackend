@@ -77,6 +77,10 @@ CREATE TABLE IF NOT EXISTS products (
     -- Customization options configuration
     has_bean_options BOOLEAN DEFAULT 0, -- Enable bean type selection
     has_milk_options BOOLEAN DEFAULT 0, -- Enable milk type selection
+    
+    -- Kiosk display configuration
+    display_order INTEGER DEFAULT 0, -- Order for kiosk display (lower = first)
+    category VARCHAR(50) DEFAULT 'Classics', -- Product category for filtering
     has_ice_options BOOLEAN DEFAULT 0, -- Enable ice/no ice selection
     has_shot_options BOOLEAN DEFAULT 0, -- Enable single/double shot
     default_bean_code INTEGER DEFAULT 1, -- Default bean type (1 or 2)
@@ -98,6 +102,17 @@ CREATE TABLE IF NOT EXISTS device_status (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Product categories for kiosk organization
+CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    icon VARCHAR(10) DEFAULT '☕',
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_orders_device_id ON orders(device_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
@@ -109,3 +124,6 @@ CREATE INDEX IF NOT EXISTS idx_products_goods_id ON products(goods_id);
 CREATE INDEX IF NOT EXISTS idx_products_type ON products(type);
 CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
 CREATE INDEX IF NOT EXISTS idx_device_status_device_id ON device_status(device_id);
+CREATE INDEX IF NOT EXISTS idx_categories_display_order ON categories(display_order);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_display_order ON products(display_order);

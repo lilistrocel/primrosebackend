@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { X, Save, Upload, Coffee } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { getApiUrl } from '../../utils/config';
 
 const FormContainer = styled.div`
   display: flex;
@@ -249,6 +250,10 @@ const FooterButton = styled.button`
 `;
 
 function ItemForm({ item, onClose, onSave }) {
+  const [categories, setCategories] = useState([
+    { name: 'Classics', icon: '☕' }
+  ]);
+  
   const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
     defaultValues: item || {
       goodsId: '',
@@ -292,6 +297,27 @@ function ItemForm({ item, onClose, onSave }) {
       reset(formData);
     }
   }, [item, reset]);
+
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const apiUrl = getApiUrl('/api/motong/categories');
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+        
+        if (result.code === 0 && result.data) {
+          setCategories(result.data);
+        } else {
+          console.error('Failed to fetch categories:', result.msg);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
@@ -544,6 +570,43 @@ function ItemForm({ item, onClose, onSave }) {
                       onChange={handleImageUpload}
                     />
                   </ImageUpload>
+                </FormGroup>
+              </FormSection>
+
+              <FormSection>
+                <h3 className="section-title">🏪 Kiosk Display Settings</h3>
+                
+                <FormGroup>
+                  <label>Category</label>
+                  <select 
+                    {...register('category')}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      background: 'white'
+                    }}
+                  >
+                    {categories.map(category => (
+                      <option key={category.name} value={category.name}>
+                        {category.icon} {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="helper-text">Category for kiosk menu organization</div>
+                </FormGroup>
+
+                <FormGroup>
+                  <label>Display Order</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    {...register('displayOrder')}
+                    placeholder="0"
+                  />
+                  <div className="helper-text">Lower numbers appear first in the menu (0 = first)</div>
                 </FormGroup>
               </FormSection>
 

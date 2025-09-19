@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize } from 'lucide-react';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
 import { getApiUrl, API_ENDPOINTS } from '../utils/config';
 import currencyUtils from '../utils/currency';
@@ -131,6 +131,39 @@ const Header = styled.div`
     }
   }
   
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .fullscreen-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    
+    &:hover {
+      background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+      color: #2d3748;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .fullscreen-icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+  
   /* Responsive design for different screen sizes */
   @media (max-width: 768px) {
     padding: 16px 0;
@@ -208,6 +241,61 @@ const SectionTitle = styled.h2`
   color: #2d3748;
   margin-bottom: 24px;
   letter-spacing: -0.3px;
+`;
+
+const CategoryTabs = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding: 8px;
+  background: #f8f9fb;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .category-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    min-width: max-content;
+    
+    &:hover {
+      background: rgba(255, 107, 53, 0.1);
+      color: #ff6b35;
+      transform: translateY(-1px);
+    }
+    
+    &.active {
+      background: #ff6b35;
+      color: white;
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+      
+      &:hover {
+        background: #e55a2b;
+        transform: translateY(-1px);
+      }
+    }
+    
+    .category-icon {
+      width: 16px;
+      height: 16px;
+    }
+  }
 `;
 
 const ProductGrid = styled.div`
@@ -417,6 +505,105 @@ const RightPanel = styled.div`
   display: flex;
   flex-direction: column;
   position: relative;
+`;
+
+const QueueSection = styled.div`
+  padding: 20px 24px;
+  border-bottom: 1px solid #4a5568;
+  
+  .queue-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    
+    h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      color: #e2e8f0;
+    }
+    
+    .queue-count {
+      background: #ff6b35;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+  }
+  
+  .queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+    
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #4a5568;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #718096;
+      border-radius: 4px;
+    }
+  }
+  
+  .queue-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    font-size: 14px;
+    
+    .order-info {
+      flex: 1;
+      
+      .order-num {
+        font-weight: 600;
+        color: #ff6b35;
+        font-size: 12px;
+      }
+      
+      .order-items {
+        color: #cbd5e0;
+        font-size: 12px;
+        margin-top: 2px;
+      }
+    }
+    
+    .order-status {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      
+      &.queuing {
+        background: rgba(59, 130, 246, 0.2);
+        color: #93c5fd;
+      }
+      
+      &.processing {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+      }
+    }
+  }
+  
+  .empty-queue {
+    text-align: center;
+    color: #718096;
+    font-size: 14px;
+    padding: 20px 0;
+  }
 `;
 
 const CartHeader = styled.div`
@@ -759,6 +946,131 @@ function KioskOrder() {
   const [orderNumber, setOrderNumber] = useState('');
   const [showCustomization, setShowCustomization] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [categories, setCategories] = useState([
+    { id: 'All', name: 'All Items', icon: '🍽️' }
+  ]);
+  const [orderQueue, setOrderQueue] = useState([]);
+
+  // Fullscreen functionality
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.error('Failed to toggle fullscreen:', error);
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Filter products by category
+  const getFilteredProducts = () => {
+    if (selectedCategory === 'All') {
+      return products;
+    }
+    
+    return products.filter(product => {
+      // Use the actual category field from the database
+      if (product.category) {
+        return product.category === selectedCategory;
+      }
+      
+      // Fallback to name-based categorization for existing products without category
+      const name = product.goodsNameEn.toLowerCase();
+      switch (selectedCategory) {
+        case 'Classics':
+          return name.includes('espresso') || name.includes('cappuccino') || name.includes('americano');
+        case 'Latte Art':
+          return name.includes('latte') || name.includes('macchiato');
+        case 'Specialty':
+          return name.includes('specialty') || name.includes('signature');
+        case 'Cold Brew':
+          return name.includes('cold') || name.includes('iced') || name.includes('frappé');
+        case 'Seasonal':
+          return name.includes('seasonal') || name.includes('limited');
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Sort products by display order
+  const getSortedProducts = (products) => {
+    return products.sort((a, b) => {
+      // Use displayOrder field, fallback to ID for sorting
+      const orderA = a.displayOrder !== undefined ? a.displayOrder : a.id;
+      const orderB = b.displayOrder !== undefined ? b.displayOrder : b.id;
+      return orderA - orderB;
+    });
+  };
+
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const apiUrl = getApiUrl('/api/motong/categories');
+        console.log('🏷️ KIOSK: Fetching categories from:', apiUrl);
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+        
+        if (result.code === 0 && result.data) {
+          console.log('🏷️ KIOSK: Found', result.data.length, 'categories');
+          const allCategories = [
+            { id: 'All', name: 'All Items', icon: '🍽️' },
+            ...result.data.map(cat => ({ id: cat.name, name: cat.name, icon: cat.icon }))
+          ];
+          setCategories(allCategories);
+        } else {
+          console.error('🏷️ KIOSK: Failed to fetch categories:', result.msg);
+        }
+      } catch (error) {
+        console.error('🏷️ KIOSK: Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Fetch order queue
+  const fetchOrderQueue = async () => {
+    try {
+      const apiUrl = getApiUrl('api/motong/deviceOrderQueueList');
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: '1' })
+      });
+      const result = await response.json();
+      
+      if (result.code === 0 && result.data) {
+        setOrderQueue(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching order queue:', error);
+    }
+  };
+
+  // Fetch order queue periodically
+  useEffect(() => {
+    fetchOrderQueue(); // Initial fetch
+    const interval = setInterval(fetchOrderQueue, 5000); // Update every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch products from backend
   useEffect(() => {
@@ -1008,13 +1320,36 @@ function KioskOrder() {
             </div>
           </div>
           
-          <div className="language-selector">
-            <div className="flag"></div>
-            <span>En</span>
+          <div className="header-controls">
+            <div className="language-selector">
+              <div className="flag"></div>
+              <span>En</span>
+            </div>
+            
+            <div className="fullscreen-btn" onClick={toggleFullscreen}>
+              {isFullscreen ? (
+                <Minimize className="fullscreen-icon" />
+              ) : (
+                <Maximize className="fullscreen-icon" />
+              )}
+            </div>
           </div>
         </Header>
 
         <SectionTitle>Main menu</SectionTitle>
+        
+        <CategoryTabs>
+          {categories.map(category => (
+            <button
+              key={category.id}
+              className={`category-tab ${selectedCategory === category.id ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category.id)}
+            >
+              <span className="category-icon">{category.icon}</span>
+              <span>{category.name}</span>
+            </button>
+          ))}
+        </CategoryTabs>
         
         <ProductGrid>
           {loading ? (
@@ -1038,7 +1373,7 @@ function KioskOrder() {
               </ProductCard>
             ))
           ) : (
-            products.map(product => {
+            getSortedProducts(getFilteredProducts()).map(product => {
               const quantity = getQuantity(product.id);
               const isFavorite = favorites.has(product.id);
               const hasImage = product.goodsPath && product.goodsPath !== '';
@@ -1178,7 +1513,40 @@ function KioskOrder() {
           </div>
           <div className="eat-in-toggle">Eat in</div>
         </CartHeader>
-        
+
+        <QueueSection>
+          <div className="queue-title">
+            <h4>Order Queue</h4>
+            {orderQueue.length > 0 && (
+              <span className="queue-count">{orderQueue.length}</span>
+            )}
+          </div>
+          
+          {orderQueue.length > 0 ? (
+            <div className="queue-list">
+              {orderQueue.map((order, index) => (
+                <div key={order.id} className="queue-item">
+                  <div className="order-info">
+                    <div className="order-num">#{index + 1} - {order.orderNum?.slice(-6) || order.id}</div>
+                    <div className="order-items">
+                      {[...order.typeList1, ...order.typeList2, ...order.typeList3, ...order.typeList4]
+                        .map(item => item.goodsNameEn)
+                        .join(', ')
+                        .substring(0, 30)}
+                      {[...order.typeList1, ...order.typeList2, ...order.typeList3, ...order.typeList4].length > 1 ? '...' : ''}
+                    </div>
+                  </div>
+                  <div className={`order-status ${order.status === 3 ? 'queuing' : 'processing'}`}>
+                    {order.status === 3 ? 'Queuing' : 'Making'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-queue">No orders in queue</div>
+          )}
+        </QueueSection>
+
         <CartItems>
           {cart.length === 0 ? (
             <div className="empty-cart">
@@ -1288,15 +1656,6 @@ function KioskOrder() {
             <div className="modal-actions">
               <button className="modal-btn primary" onClick={closeSuccessModal}>
                 Order More
-              </button>
-              <button 
-                className="modal-btn secondary" 
-                onClick={() => {
-                  closeSuccessModal();
-                  window.location.href = '/order-monitor';
-                }}
-              >
-                Track Order
               </button>
             </div>
           </div>

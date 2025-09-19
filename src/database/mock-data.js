@@ -26,6 +26,9 @@ class MockDataGenerator {
       // Clear existing data first
       db.clearAllData();
 
+      // Insert default categories first
+      this.insertDefaultCategories();
+
       // Insert mock products first
       this.insertMockProducts();
 
@@ -164,6 +167,27 @@ class MockDataGenerator {
         language: "en"
       }
     ];
+  }
+
+  static insertDefaultCategories() {
+    console.log('🏷️ Inserting default categories...');
+    
+    const defaultCategories = [
+      { name: 'Classics', icon: '☕', display_order: 0 },
+      { name: 'Latte Art', icon: '🎨', display_order: 1 },
+      { name: 'Specialty', icon: '⭐', display_order: 2 },
+      { name: 'Cold Brew', icon: '🧊', display_order: 3 },
+      { name: 'Seasonal', icon: '🍂', display_order: 4 }
+    ];
+
+    defaultCategories.forEach(category => {
+      try {
+        const result = db.insertCategory(category);
+        console.log(`✅ Inserted category: ${category.name} with ID: ${result.lastInsertRowid}`);
+      } catch (error) {
+        console.error(`❌ Failed to insert category ${category.name}:`, error.message);
+      }
+    });
   }
 
   static insertMockProducts() {
