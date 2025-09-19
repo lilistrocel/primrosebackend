@@ -19,8 +19,8 @@ class DatabaseManager {
       // Run migrations first (safely adds new columns to existing tables)
       this.runMigrations();
       
-      // Initialize database schema
-      this.initializeSchema();
+      // Initialize database schema only if tables don't exist
+      this.initializeSchemaIfNeeded();
       
       console.log(`✅ Database connected: ${dbPath}`);
     } catch (error) {
@@ -111,6 +111,31 @@ class DatabaseManager {
 
     } catch (error) {
       console.error('❌ Migration failed:', error);
+      throw error;
+    }
+  }
+
+  initializeSchemaIfNeeded() {
+    try {
+      // Check if main tables exist
+      const tablesExist = this.db.prepare(`
+        SELECT COUNT(*) as count FROM sqlite_master 
+        WHERE type='table' AND name IN ('orders', 'order_goods', 'products', 'device_status')
+      `).get();
+      
+      if (tablesExist.count < 4) {
+        console.log('📋 Tables missing, initializing database schema...');
+        this.initializeSchema();
+        
+        // Insert mock data only for new databases
+        console.log('📦 Inserting initial mock data...');
+        const MockDataGenerator = require('./mock-data');
+        MockDataGenerator.insertMockData();
+      } else {
+        console.log('✅ Database tables already exist, skipping initialization');
+      }
+    } catch (error) {
+      console.error('❌ Error checking database schema:', error);
       throw error;
     }
   }
