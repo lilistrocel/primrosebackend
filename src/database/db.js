@@ -335,37 +335,7 @@ class DatabaseManager {
     }
   }
 
-  updateProduct(id, productData) {
-    try {
-      const query = `
-        UPDATE products SET
-          goods_name = ?, goods_name_en = ?, goods_name_ot = ?,
-          type = ?, price = ?, re_price = ?, matter_codes = ?,
-          json_code_val = ?, goods_img = ?, path = ?, goods_path = ?,
-          status = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `;
-      
-      return this.db.prepare(query).run(
-        productData.goodsName,
-        productData.goodsNameEn,
-        productData.goodsNameOt || '',
-        productData.type,
-        productData.price,
-        productData.rePrice,
-        productData.matterCodes || '',
-        productData.jsonCodeVal,
-        productData.goodsImg || null,
-        productData.path || '',
-        productData.goodsPath || '',
-        productData.status || 'active',
-        id
-      );
-    } catch (error) {
-      console.error('Error updating product:', error);
-      throw error;
-    }
-  }
+  // Removed duplicate updateProduct method - using the enhanced version below
 
   updateProduct(id, updates) {
     try {
@@ -444,6 +414,11 @@ class DatabaseManager {
       const query = `UPDATE products SET ${updateFields.join(', ')} WHERE id = ?`;
       console.log('🔄 Update query:', query);
       console.log('📝 Update values:', values);
+      
+      // Log image updates specifically
+      if (updates.goodsPath) {
+        console.log('🖼️ Image path update detected:', updates.goodsPath);
+      }
       
       const stmt = this.db.prepare(query);
       console.log('✅ Statement prepared successfully');
