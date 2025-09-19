@@ -254,10 +254,33 @@ const OrderItem = styled.div`
 
 const ProductionCodes = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  gap: 6px;
   
-  .code {
+  .primary-codes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  
+  .secondary-codes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .code-primary {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  
+  .code-secondary {
     background: rgba(99, 102, 241, 0.2);
     color: #6366F1;
     padding: 2px 6px;
@@ -489,6 +512,74 @@ function OrderMonitor() {
     return { status: order.status, statusName: order.statusName };
   };
 
+  // Parse and extract key production codes for easy reference
+  const parseProductionCodes = (jsonCodeVal) => {
+    try {
+      const parsed = JSON.parse(jsonCodeVal);
+      const codes = {};
+      
+      // Extract key codes from the JSON array
+      parsed.forEach(obj => {
+        Object.entries(obj).forEach(([key, value]) => {
+          codes[key] = value;
+        });
+      });
+      
+      // Return key codes in priority order
+      const keyCodesOrder = ['classCode', 'CupCode', 'BeanCode', 'MilkCode'];
+      const keyCodes = [];
+      
+      // Add priority codes first
+      keyCodesOrder.forEach(codeType => {
+        if (codes[codeType] !== undefined) {
+          keyCodes.push({
+            type: codeType,
+            value: codes[codeType],
+            label: getCodeLabel(codeType, codes[codeType]),
+            isPrimary: true
+          });
+        }
+      });
+      
+      // Add remaining codes
+      Object.entries(codes).forEach(([key, value]) => {
+        if (!keyCodesOrder.includes(key)) {
+          keyCodes.push({
+            type: key,
+            value: value,
+            label: `${key}:${value}`,
+            isPrimary: false
+          });
+        }
+      });
+      
+      return keyCodes;
+    } catch (error) {
+      console.error('Error parsing jsonCodeVal:', error);
+      return [];
+    }
+  };
+
+  // Get human-readable labels for production codes
+  const getCodeLabel = (codeType, value) => {
+    switch (codeType) {
+      case 'classCode':
+        return `🎯 Product: ${value}`;
+      case 'CupCode':
+        const cupSizes = { '1': 'Small', '2': 'Medium', '3': 'Large' };
+        return `🥤 Cup: ${cupSizes[value] || value}`;
+      case 'BeanCode':
+        const beanTypes = { '1': 'House Blend', '2': 'Premium' };
+        return `☕ Bean: ${beanTypes[value] || value}`;
+      case 'MilkCode':
+        const milkTypes = { '1': 'Regular', '2': 'Oat Milk' };
+        return `🥛 Milk: ${milkTypes[value] || value}`;
+      default:
+        return `${codeType}: ${value}`;
+    }
+  };
+
+  // Keep the old function for backward compatibility
   const parseJsonCodeVal = (jsonCodeVal) => {
     try {
       const parsed = JSON.parse(jsonCodeVal);
@@ -610,11 +701,36 @@ function OrderMonitor() {
                     
                     <div className="item-details">
                       <div className="detail-group">
-                        <div className="label">Production Instructions</div>
+                        <div className="label">Production Codes</div>
                         <ProductionCodes>
-                          {parseJsonCodeVal(item.jsonCodeVal).map((code, index) => (
-                            <span key={index} className="code">{code}</span>
-                          ))}
+                          {(() => {
+                            const codes = parseProductionCodes(item.jsonCodeVal);
+                            const primaryCodes = codes.filter(code => code.isPrimary);
+                            const secondaryCodes = codes.filter(code => !code.isPrimary);
+                            
+                            return (
+                              <>
+                                {primaryCodes.length > 0 && (
+                                  <div className="primary-codes">
+                                    {primaryCodes.map((code, index) => (
+                                      <span key={index} className="code-primary" title={`${code.type}: ${code.value}`}>
+                                        {code.label}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {secondaryCodes.length > 0 && (
+                                  <div className="secondary-codes">
+                                    {secondaryCodes.map((code, index) => (
+                                      <span key={index} className="code-secondary" title={`${code.type}: ${code.value}`}>
+                                        {code.label}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </ProductionCodes>
                       </div>
                       
@@ -736,11 +852,36 @@ function OrderMonitor() {
                           
                           <div className="item-details">
                             <div className="detail-group">
-                              <div className="label">Production Instructions</div>
+                              <div className="label">Production Codes</div>
                               <ProductionCodes>
-                                {parseJsonCodeVal(item.jsonCodeVal).map((code, index) => (
-                                  <span key={index} className="code">{code}</span>
-                                ))}
+                                {(() => {
+                                  const codes = parseProductionCodes(item.jsonCodeVal);
+                                  const primaryCodes = codes.filter(code => code.isPrimary);
+                                  const secondaryCodes = codes.filter(code => !code.isPrimary);
+                                  
+                                  return (
+                                    <>
+                                      {primaryCodes.length > 0 && (
+                                        <div className="primary-codes">
+                                          {primaryCodes.map((code, index) => (
+                                            <span key={index} className="code-primary" title={`${code.type}: ${code.value}`}>
+                                              {code.label}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {secondaryCodes.length > 0 && (
+                                        <div className="secondary-codes">
+                                          {secondaryCodes.map((code, index) => (
+                                            <span key={index} className="code-secondary" title={`${code.type}: ${code.value}`}>
+                                              {code.label}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </ProductionCodes>
                             </div>
                             
