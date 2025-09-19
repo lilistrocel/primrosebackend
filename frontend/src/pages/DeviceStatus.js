@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Activity, AlertTriangle, CheckCircle, RefreshCw, Thermometer } from 'lucide-react';
 import { INGREDIENT_MAPPING, getIngredientStatus, getIngredientBoolean, getBooleanStatusText } from '../services/ingredients';
+import { getApiBaseUrl } from '../utils/config';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -256,7 +257,7 @@ function DeviceStatus() {
   const fetchDeviceStatus = async () => {
     try {
       // Fetch real ingredient data from backend
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const apiBaseUrl = getApiBaseUrl();
       const response = await fetch(`${apiBaseUrl}/api/motong/getLatestDeviceStatus`, {
         method: 'POST',
         headers: {

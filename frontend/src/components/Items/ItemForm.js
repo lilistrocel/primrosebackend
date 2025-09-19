@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { X, Save, Upload, Coffee } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { getApiUrl } from '../../utils/config';
+import { getApiUrl, getApiBaseUrl } from '../../utils/config';
 
 const FormContainer = styled.div`
   display: flex;
@@ -331,7 +331,7 @@ function ItemForm({ item, onClose, onSave }) {
         
         console.log('📷 Uploading image:', file.name);
         
-        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+        const apiBaseUrl = getApiBaseUrl();
         const response = await fetch(`${apiBaseUrl}/api/motong/upload/image`, {
           method: 'POST',
           body: formData,

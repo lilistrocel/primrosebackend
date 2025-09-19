@@ -1,13 +1,25 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/config';
 
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Create axios instance with dynamic base configuration
+const createAPI = () => {
+  return axios.create({
+    baseURL: getApiBaseUrl(),
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
+
+// Create initial instance
+let api = createAPI();
+
+// Function to recreate API instance with new baseURL
+export const refreshAPIInstance = () => {
+  api = createAPI();
+  console.log('🔄 API instance refreshed with URL:', getApiBaseUrl());
+};
 
 // Request interceptor for logging
 api.interceptors.request.use(

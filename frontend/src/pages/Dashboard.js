@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Coffee, Package, Activity, DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { getApiBaseUrl } from '../utils/config';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -192,7 +193,7 @@ function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       // Fetch orders for recent activity
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+      const apiBaseUrl = getApiBaseUrl();
       const response = await fetch(`${apiBaseUrl}/api/motong/deviceOrderQueueList`, {
         method: 'POST',
         headers: {
