@@ -372,14 +372,17 @@ const ProductCard = styled.div`
       color: #9ca3af;
     }
     
-    .quantity-btn {
+    .add-to-cart-btn {
       background: #e5e7eb;
       color: #9ca3af;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
       
       &:hover {
         background: #e5e7eb;
         transform: none;
+        box-shadow: none;
       }
     }
   }
@@ -445,64 +448,67 @@ const ProductCard = styled.div`
     flex-shrink: 0;
   }
   
-  .quantity-controls {
+  .add-to-cart-section {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     margin-top: auto; /* Push to bottom */
     padding-top: 8px;
     
-    .quantity-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      background: white;
-      color: #4a5568;
+    .add-to-cart-btn {
+      width: 100%;
+      height: 44px;
+      border-radius: 12px;
+      border: none;
+      background: #ff6b35;
+      color: white;
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
       
       &:hover {
-        background: #f7fafc;
-        border-color: #cbd5e0;
+        background: #e55a2b;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
       }
       
       &:active {
-        transform: scale(0.95);
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
       }
       
       &:disabled {
-        opacity: 0.5;
+        background: #e5e7eb;
+        color: #9ca3af;
         cursor: not-allowed;
-      }
-      
-      &.minus {
-        color: #e53e3e;
-      }
-      
-      &.plus {
-        background: #ff6b35;
-        border-color: #ff6b35;
-        color: white;
+        transform: none;
+        box-shadow: none;
         
         &:hover {
-          background: #e55a2b;
+          background: #e5e7eb;
+          transform: none;
+          box-shadow: none;
         }
+      }
+      
+      .cart-icon {
+        width: 18px;
+        height: 18px;
       }
     }
     
-    .quantity {
-      font-size: 18px;
-      font-weight: 600;
-      color: #2d3748;
-      min-width: 24px;
+    .unavailable-message {
       text-align: center;
+      font-size: 12px;
+      color: #ef4444;
+      font-weight: 500;
+      margin-top: 4px;
     }
   }
   
@@ -1637,17 +1643,9 @@ function KioskOrder() {
                   <div className="product-name">{product.goodsNameEn}</div>
                   <div className="product-price">{currencyUtils.formatPrice(product.price)}</div>
                   
-                  <div className="quantity-controls">
-                    <button 
-                      className="quantity-btn minus"
-                      onClick={() => updateQuantity(product.id, -1)}
-                      disabled={quantity <= 1 || !isAvailable}
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <div className="quantity">{quantity}</div>
-                    <button 
-                      className="quantity-btn plus"
+                  <div className="add-to-cart-section">
+                    <button
+                      className="add-to-cart-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         
@@ -1656,13 +1654,20 @@ function KioskOrder() {
                           return;
                         }
                         
-                        console.log('🔄 Adding product:', product.goodsNameEn, 'Has options:', product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options);
+                        console.log('🔄 Adding product to cart:', product.goodsNameEn, 'Has options:', product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options);
                         addToCart(product);
                       }}
                       disabled={!isAvailable}
                     >
-                      <Plus size={16} />
+                      <ShoppingCart className="cart-icon" />
+                      {isAvailable ? 'Add to Cart' : 'Unavailable'}
                     </button>
+                    
+                    {!isAvailable && missingIngredients.length > 0 && (
+                      <div className="unavailable-message">
+                        Missing: {missingIngredients.map(ing => ing.code).join(', ')}
+                      </div>
+                    )}
                   </div>
                 </ProductCard>
               );
