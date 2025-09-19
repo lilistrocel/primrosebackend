@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { X, Save, Upload, Coffee } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { getApiUrl, getApiBaseUrl } from '../../utils/config';
+import { getApiUrl, getApiBaseUrl, getImageUrl } from '../../utils/config';
 
 const FormContainer = styled.div`
   display: flex;

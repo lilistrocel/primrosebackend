@@ -22,6 +22,7 @@ export const getApiBaseUrl = () => {
   console.log('🔍 DEBUG: Starting API URL detection...');
   console.log('🔍 Environment var REACT_APP_API_BASE_URL:', process.env.REACT_APP_API_BASE_URL);
   console.log('🔍 Current location:', window.location.href);
+  console.log('🔍 TUNNEL DEBUG: Checking for hydromods.org...');
   
   const currentHost = window.location.hostname;
   const currentProtocol = window.location.protocol;
@@ -42,9 +43,10 @@ export const getApiBaseUrl = () => {
   }
   
   // ============================================================================
-  // PRIORITY 2: TUNNEL DOMAIN DETECTION (hydromods.org)
+  // PRIORITY 2: TUNNEL DOMAIN DETECTION (hydromods.org) - FIXED
   // ============================================================================
   else if (currentHost.includes('hydromods.org')) {
+    console.log('🎯 TUNNEL MATCH! currentHost:', currentHost);
     detectedUrl = 'https://coffee-api.hydromods.org';
     console.log('☁️ Tunnel domain detected, using tunnel API:', detectedUrl);
   }
@@ -177,6 +179,20 @@ export const getApiUrl = (endpoint) => {
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   return `${baseUrl}/${cleanEndpoint}`;
+};
+
+// Function to get a full image URL from relative path
+export const getImageUrl = (relativePath) => {
+  if (!relativePath) return '';
+  
+  // If already a full URL, return as-is
+  if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+    return relativePath;
+  }
+  
+  const baseUrl = getApiBaseUrl();
+  const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+  return `${baseUrl}/${cleanPath}`;
 };
 
 // Force refresh the API URL detection (clears cache)

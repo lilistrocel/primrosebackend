@@ -56,11 +56,10 @@ router.post('/upload/image', upload.single('image'), async (req, res) => {
     }
 
     const imageUrl = `/public/uploads/${req.file.filename}`;
-    const fullImageUrl = `${networkConfig.getFrontendApiUrl()}/public/uploads/${req.file.filename}`;
+    // Return relative path - frontend will construct full URL dynamically
     
     console.log(`✅ Image uploaded: ${req.file.filename}`);
     console.log(`📍 Image path: ${imageUrl}`);
-    console.log(`🔗 Full URL: ${fullImageUrl}`);
 
     res.json({
       code: 0,
@@ -69,7 +68,7 @@ router.post('/upload/image', upload.single('image'), async (req, res) => {
         filename: req.file.filename,
         originalName: req.file.originalname,
         path: imageUrl,
-        fullUrl: fullImageUrl,
+        url: imageUrl, // Relative path for frontend to build full URL
         size: req.file.size,
         mimetype: req.file.mimetype
       }

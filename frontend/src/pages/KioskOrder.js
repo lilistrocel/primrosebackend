@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer } from 'lucide-react';
 import { receiptPrinter } from '../utils/receiptPrinter';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
-import { getApiUrl, API_ENDPOINTS } from '../utils/config';
+import { getApiUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
 import currencyUtils from '../utils/currency';
 
 const fadeIn = keyframes`
@@ -1430,6 +1430,7 @@ function KioskOrder() {
               const quantity = getQuantity(product.id);
               const isFavorite = favorites.has(product.id);
               const hasImage = product.goodsPath && product.goodsPath !== '';
+              const dynamicImageUrl = hasImage ? getImageUrl(product.goodsPath) : '';
               
               // Debug logging for images
               if (product.goodsNameEn === 'Espresso') {
@@ -1437,6 +1438,7 @@ function KioskOrder() {
                   id: product.id,
                   name: product.goodsNameEn,
                   goodsPath: product.goodsPath,
+                  dynamicImageUrl: dynamicImageUrl,
                   hasImage: hasImage
                 });
               }
@@ -1476,7 +1478,7 @@ function KioskOrder() {
                     {hasImage ? (
                       <>
                         <img 
-                          src={product.goodsPath} 
+                          src={dynamicImageUrl} 
                           alt={product.goodsNameEn}
                           style={{
                             width: '100%',
@@ -1607,12 +1609,14 @@ function KioskOrder() {
               <p>Your order is empty</p>
             </div>
           ) : (
-            cart.map(item => (
+            cart.map(item => {
+              const cartItemImageUrl = getImageUrl(item.product.goodsPath);
+              return (
               <div key={item.product.id} className="cart-item">
                 <div className={`item-image ${item.product.imageClass}`}>
                   {item.product.goodsPath && item.product.goodsPath !== '' ? (
                     <img 
-                      src={item.product.goodsPath} 
+                      src={cartItemImageUrl} 
                       alt={item.product.goodsNameEn}
                       style={{
                         width: '100%',
@@ -1674,7 +1678,8 @@ function KioskOrder() {
                   <X size={16} />
                 </button>
               </div>
-            ))
+              );
+            })
           )}
         </CartItems>
         

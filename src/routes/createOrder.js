@@ -143,7 +143,7 @@ router.post('/createOrder', async (req, res) => {
         lhImgPath: '',
         jsonCodeVal: item.jsonCodeVal,
         path: `public/uploads/product_${item.goodsId}.png`,
-        goodsPath: `${networkConfig.getFrontendApiUrl()}/public/uploads/product_${item.goodsId}.png`,
+        goodsPath: `/public/uploads/product_${item.goodsId}.png`, // Relative path
         language: 'en'
       };
 
