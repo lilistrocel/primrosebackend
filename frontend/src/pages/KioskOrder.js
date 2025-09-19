@@ -1085,40 +1085,49 @@ function KioskOrder() {
   }, []);
 
   // Fetch products from backend
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const apiUrl = getApiUrl(API_ENDPOINTS.PRODUCTS);
-        console.log('🍕 KIOSK: Fetching products from:', apiUrl);
-        const response = await fetch(apiUrl);
-        const result = await response.json();
-        
-        console.log('🍕 KIOSK: API Response:', result);
-        
-        if (result.code === 0 && result.data) {
-          console.log('🍕 KIOSK: Found', result.data.length, 'products');
-          // Transform products for kiosk display
-          const transformedProducts = result.data.map(product => ({
-            ...product,
-            price: parseFloat(product.price),
-            rePrice: parseFloat(product.rePrice),
-            emoji: getProductEmoji(product.goodsNameEn, product.type),
-            imageClass: getImageClass(product.goodsNameEn)
-          }));
-          setProducts(transformedProducts);
-        } else {
-          console.error('🍕 KIOSK: Failed to fetch products:', result.msg);
-          console.error('🍕 KIOSK: Full result:', result);
-        }
-      } catch (error) {
-        console.error('🍕 KIOSK: Error fetching products:', error);
-      } finally {
-        setLoading(false);
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const apiUrl = getApiUrl(API_ENDPOINTS.PRODUCTS);
+      console.log('🍕 KIOSK: Fetching products from:', apiUrl);
+      const response = await fetch(apiUrl);
+      const result = await response.json();
+      
+      console.log('🍕 KIOSK: API Response:', result);
+      
+      if (result.code === 0 && result.data) {
+        console.log('🍕 KIOSK: Found', result.data.length, 'products');
+        // Transform products for kiosk display
+        const transformedProducts = result.data.map(product => ({
+          ...product,
+          price: parseFloat(product.price),
+          rePrice: parseFloat(product.rePrice),
+          emoji: getProductEmoji(product.goodsNameEn, product.type),
+          imageClass: getImageClass(product.goodsNameEn)
+        }));
+        setProducts(transformedProducts);
+      } else {
+        console.error('🍕 KIOSK: Failed to fetch products:', result.msg);
+        console.error('🍕 KIOSK: Full result:', result);
       }
-    };
+    } catch (error) {
+      console.error('🍕 KIOSK: Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProducts();
+  // Initial fetch and periodic refresh for products
+  useEffect(() => {
+    fetchProducts(); // Initial fetch
+    
+    // Auto-refresh products every 30 seconds to catch updates
+    const interval = setInterval(() => {
+      console.log('🔄 KIOSK: Auto-refreshing products...');
+      fetchProducts();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
   }, []);
 
   const getQuantity = (productId) => {

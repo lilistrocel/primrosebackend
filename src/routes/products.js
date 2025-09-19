@@ -29,7 +29,10 @@ const productSchema = Joi.object({
   defaultBeanCode: Joi.number().integer().min(1).max(2).default(1),
   defaultMilkCode: Joi.number().integer().min(1).max(2).default(1),
   defaultIce: Joi.boolean().default(true),
-  defaultShots: Joi.number().integer().min(1).max(2).default(1)
+  defaultShots: Joi.number().integer().min(1).max(2).default(1),
+  // Kiosk display fields
+  displayOrder: Joi.number().integer().min(0).default(0),
+  category: Joi.string().max(50).default('Classics')
 });
 
 /**
@@ -63,6 +66,9 @@ router.get('/products', async (req, res) => {
       status: product.status,
       createdAt: product.created_at,
       updatedAt: product.updated_at,
+      // Kiosk display fields
+      displayOrder: product.display_order || 0,
+      category: product.category || 'Classics',
       // Customization options
       has_bean_options: Boolean(product.has_bean_options),
       has_milk_options: Boolean(product.has_milk_options),
