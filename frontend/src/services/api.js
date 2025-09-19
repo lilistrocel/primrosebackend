@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { getApiBaseUrl } from '../utils/config';
+import { getApiBaseUrl, getApiBaseUrlWithFallback, refreshApiUrl } from '../utils/config';
 
 // Create axios instance with dynamic base configuration
-const createAPI = () => {
+const createAPI = (baseURL) => {
   return axios.create({
-    baseURL: getApiBaseUrl(),
+    baseURL: baseURL || getApiBaseUrl(),
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
@@ -16,9 +16,18 @@ const createAPI = () => {
 let api = createAPI();
 
 // Function to recreate API instance with new baseURL
-export const refreshAPIInstance = () => {
-  api = createAPI();
-  console.log('🔄 API instance refreshed with URL:', getApiBaseUrl());
+export const refreshAPIInstance = async () => {
+  // Force refresh the URL detection
+  refreshApiUrl();
+  
+  // Try to get working URL with fallback
+  const workingUrl = await getApiBaseUrlWithFallback();
+  
+  // Create new instance with working URL
+  api = createAPI(workingUrl);
+  console.log('🔄 API instance refreshed with URL:', workingUrl);
+  
+  return workingUrl;
 };
 
 // Request interceptor for logging

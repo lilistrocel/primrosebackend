@@ -249,7 +249,6 @@ function Start-Frontend {
         Push-Location "frontend"
         $env:PORT = $Port
         $env:BROWSER = "none"  # Don't auto-open browser
-        $env:REACT_APP_API_BASE_URL = ""  # Use smart detection
         npm start
         Pop-Location
     } -ArgumentList $FrontendPort
@@ -398,7 +397,6 @@ try {
             Push-Location "frontend"
             $env:PORT = $Port
             $env:BROWSER = "none"  # Don't auto-open browser
-            $env:REACT_APP_API_BASE_URL = ""  # Use smart detection
             npm start
             Pop-Location
         } -ArgumentList $FrontendPort
