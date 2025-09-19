@@ -26,6 +26,19 @@ const config = {
       `http://${this.LOCAL_IP}:${this.BACKEND_PORT}`,
       `http://${this.LOCAL_IP}:${this.FRONTEND_PORT}`,
       `http://${this.LOCAL_IP}:${this.MOCK_PORT}`,
+      
+      // Tunnel domains for hydromods.org
+      'https://coffee-api.hydromods.org',
+      'https://coffee.hydromods.org',
+      'https://k2.hydromods.org',
+      'https://api.hydromods.org',
+      
+      // Allow any hydromods.org subdomain
+      /https:\/\/.*\.hydromods\.org$/,
+      
+      // Development/testing origins
+      'https://localhost:3001',
+      'https://127.0.0.1:3001'
     ];
     
     console.log('🌐 CORS Origins configured for:', origins);

@@ -47,9 +47,19 @@ class CoffeeMachineBackend {
     // CORS - Allow coffee machine and frontend to connect (dynamic configuration)
     this.app.use(cors({
       origin: networkConfig.getCorsOrigins(),
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      credentials: true
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+      allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'Access-Control-Request-Method',
+        'Access-Control-Request-Headers'
+      ],
+      credentials: true,
+      preflightContinue: false,
+      optionsSuccessStatus: 200
     }));
     
     // Request parsing

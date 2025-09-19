@@ -3,13 +3,30 @@ credentials-file: ~/.cloudflared/26b4d1b7-28f0-46f1-894a-8165d521bc7f.json
 
 ingress:
   # Backend API for coffee machine
-  - hostname: k2-api.yourdomain.com
+  - hostname: coffee-api.hydromods.org
     service: http://localhost:3000
     originRequest:
       httpHostHeader: localhost:3000
+      # Ensure CORS headers are passed through
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      tcpKeepAlive: 30s
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
   
-  # Frontend kiosk interface
-  - hostname: k2-kiosk.yourdomain.com
+  # Frontend kiosk interface  
+  - hostname: k2.hydromods.org
+    service: http://localhost:3001
+    originRequest:
+      httpHostHeader: localhost:3001
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      tcpKeepAlive: 30s
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
+  
+  # Alternative frontend hostname
+  - hostname: coffee.hydromods.org
     service: http://localhost:3001
     originRequest:
       httpHostHeader: localhost:3001
