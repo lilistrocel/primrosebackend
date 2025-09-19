@@ -1515,18 +1515,21 @@ function KioskOrder() {
               const dynamicImageUrl = hasImage ? getImageUrl(product.goodsPath) : '';
               
               // Check ingredient availability
-              const isAvailable = product.available !== false; // Default to available if not specified
+              const isAvailable = product.available !== false; // Default to available if not specified  
               const missingIngredients = product.missingIngredients || [];
               
-              // Debug logging for availability
-              if (product.goodsNameEn === 'Espresso' || !isAvailable) {
-                console.log('🔍 Product availability check:', {
-                  name: product.goodsNameEn,
-                  available: isAvailable,
-                  missingIngredients: missingIngredients,
-                  matterCodes: product.matterCodes
-                });
-              }
+              // Debug logging for availability - ENHANCED DEBUGGING
+              console.log('🔍 DETAILED Product availability check:', {
+                name: product.goodsNameEn,
+                productAvailableRaw: product.available,
+                productAvailableType: typeof product.available,
+                isAvailable: isAvailable,
+                missingIngredients: missingIngredients,
+                missingCount: missingIngredients.length,
+                matterCodes: product.matterCodes,
+                currentURL: window.location.href,
+                apiURL: window.cachedApiUrl || 'not-detected'
+              });
               
               const handleProductClick = (e) => {
                 // Prevent action if product is unavailable
