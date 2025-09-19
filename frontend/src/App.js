@@ -10,6 +10,7 @@ import CreateOrder from './pages/CreateOrder';
 import KioskOrder from './pages/KioskOrder';
 import DeviceStatus from './pages/DeviceStatus';
 import Settings from './pages/Settings';
+import LatteArtManagement from './pages/LatteArtManagement';
 
 const AppContainer = styled.div`
   display: flex;
@@ -52,6 +53,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/items" element={<ItemManagement />} />
+            <Route path="/latte-art" element={<LatteArtManagement />} />
             <Route path="/orders" element={<OrderMonitor />} />
             <Route path="/order-monitor" element={<OrderMonitor />} />
             <Route path="/create-order" element={<CreateOrder />} />

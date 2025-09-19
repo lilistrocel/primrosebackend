@@ -37,7 +37,9 @@ const productSchema = Joi.object({
   // Variant system fields
   icedClassCode: Joi.string().max(10).allow('', null).optional(),
   doubleShotClassCode: Joi.string().max(10).allow('', null).optional(),
-  icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional()
+  icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional(),
+  // Latte art printing option
+  hasLatteArt: Joi.boolean().default(false)
 });
 
 /**
@@ -86,7 +88,9 @@ router.get('/products', async (req, res) => {
       // Variant system classCodes
       icedClassCode: product.iced_class_code,
       doubleShotClassCode: product.double_shot_class_code,
-      icedAndDoubleClassCode: product.iced_and_double_class_code
+      icedAndDoubleClassCode: product.iced_and_double_class_code,
+      // Latte art printing option
+      hasLatteArt: Boolean(product.has_latte_art)
     }));
 
     // Get current ingredient levels for availability checking
@@ -251,6 +255,8 @@ router.put('/products/:id', async (req, res) => {
       icedClassCode: Joi.string().max(10).allow('', null).optional(),
       doubleShotClassCode: Joi.string().max(10).allow('', null).optional(),
       icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional(),
+      // Latte art printing option  
+      hasLatteArt: Joi.boolean().optional(),
       // Allow additional fields that might come from frontend (like id, createdAt, updatedAt)
       id: Joi.number().integer().optional(),
       createdAt: Joi.alternatives().try(Joi.date(), Joi.string()).optional(),

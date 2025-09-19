@@ -38,7 +38,8 @@ const createOrderSchema = Joi.object({
       matterCodes: Joi.string().allow(''),
       jsonCodeVal: Joi.string().required(),
       goodsOptionName: Joi.string().allow(''),
-      goodsOptionNameEn: Joi.string().allow('')
+      goodsOptionNameEn: Joi.string().allow(''),
+      lhImgPath: Joi.string().allow('').optional()
     })
   ).min(1).required()
 });
@@ -140,7 +141,7 @@ router.post('/createOrder', async (req, res) => {
         matterCodes: item.matterCodes || '',
         num: item.quantity,
         totalPrice: item.totalPrice,
-        lhImgPath: '',
+        lhImgPath: item.lhImgPath || '',
         jsonCodeVal: item.jsonCodeVal,
         path: `public/uploads/product_${item.goodsId}.png`,
         goodsPath: `/public/uploads/product_${item.goodsId}.png`, // Relative path

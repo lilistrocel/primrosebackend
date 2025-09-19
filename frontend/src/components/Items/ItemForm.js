@@ -271,6 +271,7 @@ function ItemForm({ item, onClose, onSave }) {
       hasMilkOptions: false,
       hasIceOptions: false,
       hasShotOptions: false,
+      hasLatteArt: false,
       defaultBeanCode: 1,
       defaultMilkCode: 1,
       defaultIce: true,
@@ -745,6 +746,18 @@ function ItemForm({ item, onClose, onSave }) {
                       </Select>
                     </div>
                   )}
+                </FormGroup>
+
+                <FormGroup>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      {...register('hasLatteArt')}
+                      style={{ marginRight: '8px' }}
+                    />
+                    🎨 Enable Latte Art Printing
+                  </label>
+                  <div className="helper-text">Allows customers to select latte art designs or upload custom images</div>
                 </FormGroup>
               </FormSection>
             </div>

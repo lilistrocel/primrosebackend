@@ -107,6 +107,67 @@ class DatabaseManager {
         }
       });
 
+      // Add latte art printing option
+      const hasLatteArt = columnsResult.some(col => col.name === 'has_latte_art');
+      if (!hasLatteArt) {
+        console.log('🎨 Adding has_latte_art column to products table...');
+        this.db.exec(`ALTER TABLE products ADD COLUMN has_latte_art BOOLEAN DEFAULT 0`);
+      }
+
+      // Create latte art designs table
+      const latteArtTable = this.db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='latte_art_designs'
+      `).get();
+
+      if (!latteArtTable) {
+        console.log('🎨 Creating latte_art_designs table...');
+        this.db.exec(`
+          CREATE TABLE latte_art_designs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(100) NOT NULL,
+            description TEXT,
+            image_path VARCHAR(255) NOT NULL,
+            is_default BOOLEAN DEFAULT 1,
+            is_active BOOLEAN DEFAULT 1,
+            display_order INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        
+        // Insert some default latte art designs
+        const defaultDesigns = [
+          { name: 'Heart', description: 'Classic heart design', image_path: '/public/uploads/latte-art/heart.png', display_order: 1 },
+          { name: 'Leaf', description: 'Beautiful leaf pattern', image_path: '/public/uploads/latte-art/leaf.png', display_order: 2 },
+          { name: 'Tulip', description: 'Elegant tulip design', image_path: '/public/uploads/latte-art/tulip.png', display_order: 3 },
+          { name: 'Rose', description: 'Intricate rose pattern', image_path: '/public/uploads/latte-art/rose.png', display_order: 4 }
+        ];
+
+        defaultDesigns.forEach(design => {
+          try {
+            const query = `
+              INSERT INTO latte_art_designs (name, description, image_path, is_default, is_active, display_order)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `;
+            this.db.prepare(query).run(
+              design.name,
+              design.description,
+              design.image_path,
+              1, // is_default
+              1, // is_active
+              design.display_order
+            );
+            console.log(`✅ Inserted default latte art design: ${design.name}`);
+          } catch (error) {
+            console.error(`❌ Failed to insert latte art design ${design.name}:`, error.message);
+          }
+        });
+
+        // Create index for performance
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_latte_art_display_order ON latte_art_designs(display_order)`);
+      }
+
       // Create indexes if they don't exist
       console.log('📋 Creating new indexes...');
       try {
@@ -379,7 +440,9 @@ class DatabaseManager {
         // Variant system fields
         icedClassCode: 'iced_class_code',
         doubleShotClassCode: 'double_shot_class_code',
-        icedAndDoubleClassCode: 'iced_and_double_class_code'
+        icedAndDoubleClassCode: 'iced_and_double_class_code',
+        // Latte art printing option
+        hasLatteArt: 'has_latte_art'
       };
       
       // Handle ID change specially (dangerous operation)
@@ -570,6 +633,102 @@ class DatabaseManager {
       return this.db.prepare(query).run(id);
     } catch (error) {
       console.error('Error deleting category:', error);
+      throw error;
+    }
+  }
+
+  // Latte Art Designs Management
+  getAllLatteArtDesigns() {
+    try {
+      const query = `
+        SELECT * FROM latte_art_designs 
+        WHERE is_active = 1 
+        ORDER BY display_order ASC, name ASC
+      `;
+      return this.db.prepare(query).all();
+    } catch (error) {
+      console.error('Error fetching latte art designs:', error);
+      throw error;
+    }
+  }
+
+  getLatteArtDesignById(id) {
+    try {
+      const query = `SELECT * FROM latte_art_designs WHERE id = ?`;
+      return this.db.prepare(query).get(id);
+    } catch (error) {
+      console.error('Error fetching latte art design:', error);
+      throw error;
+    }
+  }
+
+  insertLatteArtDesign(design) {
+    try {
+      const query = `
+        INSERT INTO latte_art_designs (name, description, image_path, is_default, is_active, display_order)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      
+      return this.db.prepare(query).run(
+        design.name,
+        design.description || '',
+        design.image_path,
+        design.is_default || 0,
+        design.is_active !== undefined ? design.is_active : 1,
+        design.display_order || 0
+      );
+    } catch (error) {
+      console.error('Error inserting latte art design:', error);
+      throw error;
+    }
+  }
+
+  updateLatteArtDesign(id, updates) {
+    try {
+      const allowedFields = ['name', 'description', 'image_path', 'is_default', 'is_active', 'display_order'];
+      const updateFields = [];
+      const values = [];
+      
+      Object.keys(updates).forEach(key => {
+        if (allowedFields.includes(key)) {
+          updateFields.push(`${key} = ?`);
+          values.push(updates[key]);
+        }
+      });
+      
+      if (updateFields.length === 0) {
+        throw new Error('No valid fields to update');
+      }
+      
+      values.push(id);
+      
+      const query = `
+        UPDATE latte_art_designs 
+        SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      
+      const result = this.db.prepare(query).run(...values);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error updating latte art design:', error);
+      throw error;
+    }
+  }
+
+  deleteLatteArtDesign(id) {
+    try {
+      // Soft delete - mark as inactive
+      const query = `
+        UPDATE latte_art_designs 
+        SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      
+      const result = this.db.prepare(query).run(id);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error deleting latte art design:', error);
       throw error;
     }
   }

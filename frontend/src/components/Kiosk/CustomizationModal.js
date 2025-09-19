@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, Coffee, Milk, Snowflake, Zap } from 'lucide-react';
+import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera } from 'lucide-react';
+import { getApiUrl, getImageUrl } from '../../utils/config';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -204,6 +205,107 @@ const QuantitySection = styled.div`
   }
 `;
 
+const LatteArtGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 12px;
+`;
+
+const LatteArtOption = styled.button`
+  padding: 8px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  
+  &:hover {
+    border-color: #ff6b35;
+    background: #fff5f0;
+  }
+  
+  &.selected {
+    border-color: #ff6b35;
+    background: #ff6b35;
+    color: white;
+  }
+  
+  .art-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-bottom: 4px;
+  }
+  
+  .art-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+    opacity: 0.7;
+  }
+  
+  .art-name {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+`;
+
+const UploadSection = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+`;
+
+const UploadButton = styled.button`
+  flex: 1;
+  padding: 12px 8px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  
+  &:hover {
+    border-color: #ff6b35;
+    background: #fff5f0;
+  }
+  
+  &.selected {
+    border-color: #ff6b35;
+    background: #ff6b35;
+    color: white;
+  }
+  
+  .upload-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .upload-text {
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
+  }
+  
+  input[type="file"] {
+    display: none;
+  }
+`;
+
 const AddToCartButton = styled.button`
   width: 100%;
   padding: 16px;
@@ -233,10 +335,83 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     beanCode: product?.default_bean_code || 1,
     milkCode: product?.default_milk_code || 1,
     ice: product?.defaultIce !== undefined ? product.defaultIce : true,
-    shots: product?.default_shots || 1
+    shots: product?.default_shots || 1,
+    latteArt: null, // Selected latte art design ID or 'custom' for uploaded image
+    latteArtImage: null // Path to selected latte art image
   });
   
   const [quantity, setQuantity] = useState(1);
+  const [latteArtDesigns, setLatteArtDesigns] = useState([]);
+  const [customImage, setCustomImage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Fetch latte art designs when product has latte art option
+  useEffect(() => {
+    if (product?.hasLatteArt && isOpen) {
+      fetchLatteArtDesigns();
+    }
+  }, [product?.hasLatteArt, isOpen]);
+
+  const fetchLatteArtDesigns = async () => {
+    try {
+      const response = await fetch(getApiUrl('/api/motong/latte-art'));
+      const result = await response.json();
+      
+      if (result.code === 0) {
+        setLatteArtDesigns(result.data);
+      } else {
+        console.error('Failed to fetch latte art designs:', result.msg);
+      }
+    } catch (error) {
+      console.error('Error fetching latte art designs:', error);
+    }
+  };
+
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(getApiUrl('/api/motong/latte-art/upload-temp'), {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.code === 0) {
+        setCustomImage(result.data);
+        updateOption('latteArt', 'custom');
+        updateOption('latteArtImage', result.data.imagePath);
+        console.log('🎨 Custom latte art uploaded:', result.data.imagePath);
+      } else {
+        alert('Failed to upload image: ' + result.msg);
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleLatteArtSelect = (design) => {
+    if (design === 'none') {
+      updateOption('latteArt', null);
+      updateOption('latteArtImage', null);
+    } else if (design === 'custom') {
+      // Will be handled by file upload
+      updateOption('latteArt', 'custom');
+    } else {
+      updateOption('latteArt', design.id);
+      updateOption('latteArtImage', design.imagePath);
+      setCustomImage(null); // Clear custom image if selecting predefined
+    }
+  };
 
   if (!isOpen || !product) return null;
 
@@ -275,7 +450,9 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
       price: finalPrice,
       customization: selectedOptions,
       // Update jsonCodeVal with variant classCode and remaining options
-      jsonCodeVal: updatedJsonCodeVal
+      jsonCodeVal: updatedJsonCodeVal,
+      // Add latte art image path for printing
+      lhImgPath: selectedOptions.latteArtImage || ""
     };
     
     console.log('🛒 FINAL CUSTOMIZED PRODUCT:', customizedProduct);
@@ -552,6 +729,103 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
                   <div className="option-desc">+$0.50</div>
                 </OptionButton>
               </OptionGrid>
+            </OptionSection>
+          )}
+
+          {product.hasLatteArt && (
+            <OptionSection>
+              <div className="section-header">
+                <Palette className="icon" />
+                <div className="title">Latte Art Design</div>
+              </div>
+              
+              <LatteArtGrid>
+                {/* No latte art option */}
+                <LatteArtOption
+                  className={selectedOptions.latteArt === null ? 'selected' : ''}
+                  onClick={() => handleLatteArtSelect('none')}
+                >
+                  <X className="art-icon" />
+                  <div className="art-name">None</div>
+                </LatteArtOption>
+
+                {/* Predefined designs */}
+                {latteArtDesigns.map(design => (
+                  <LatteArtOption
+                    key={design.id}
+                    className={selectedOptions.latteArt === design.id ? 'selected' : ''}
+                    onClick={() => handleLatteArtSelect(design)}
+                  >
+                    {design.imagePath ? (
+                      <img 
+                        src={getImageUrl(design.imagePath)} 
+                        alt={design.name}
+                        className="art-image"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                    ) : null}
+                    <Palette className="art-icon" style={{ display: design.imagePath ? 'none' : 'block' }} />
+                    <div className="art-name">{design.name}</div>
+                  </LatteArtOption>
+                ))}
+              </LatteArtGrid>
+
+              <UploadSection>
+                <UploadButton
+                  className={selectedOptions.latteArt === 'custom' ? 'selected' : ''}
+                  onClick={() => document.getElementById('custom-image-upload').click()}
+                  disabled={uploadingImage}
+                >
+                  <Upload className="upload-icon" />
+                  <div className="upload-text">
+                    {uploadingImage ? 'Uploading...' : 'Upload Custom'}
+                  </div>
+                  <input
+                    id="custom-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        handleImageUpload(file);
+                      }
+                    }}
+                  />
+                </UploadButton>
+                
+                <UploadButton
+                  onClick={() => {
+                    // For future implementation - camera capture
+                    alert('Camera feature coming soon!');
+                  }}
+                >
+                  <Camera className="upload-icon" />
+                  <div className="upload-text">Take Photo</div>
+                </UploadButton>
+              </UploadSection>
+
+              {/* Show preview of selected custom image */}
+              {customImage && selectedOptions.latteArt === 'custom' && (
+                <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
+                    Custom Image Preview:
+                  </div>
+                  <img 
+                    src={getImageUrl(customImage.imagePath)} 
+                    alt="Custom latte art"
+                    style={{ 
+                      width: '60px', 
+                      height: '60px', 
+                      borderRadius: '8px', 
+                      objectFit: 'cover',
+                      border: '2px solid #ff6b35'
+                    }}
+                  />
+                </div>
+              )}
             </OptionSection>
           )}
 

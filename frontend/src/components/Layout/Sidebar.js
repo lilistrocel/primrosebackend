@@ -9,7 +9,8 @@ import {
   Settings,
   Home,
   ShoppingCart,
-  Monitor
+  Monitor,
+  Palette
 } from 'lucide-react';
 
 const SidebarContainer = styled.div`
@@ -125,6 +126,11 @@ function Sidebar() {
         <NavItem to="/items">
           <Package />
           Item Management
+        </NavItem>
+        
+        <NavItem to="/latte-art">
+          <Palette />
+          Latte Art Designs
         </NavItem>
         
         <NavItem to="/create-order">

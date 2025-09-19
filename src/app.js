@@ -21,6 +21,7 @@ const getLatestDeviceStatusRoute = require('./routes/getLatestDeviceStatus');
 const productsRoute = require('./routes/products');
 const uploadRoute = require('./routes/upload');
 const categoriesRoute = require('./routes/categories');
+const latteArtRoute = require('./routes/latteArt');
 
 class CoffeeMachineBackend {
   constructor() {
@@ -161,6 +162,7 @@ class CoffeeMachineBackend {
     this.app.use('/api/motong', productsRoute); // Products management endpoints
     this.app.use('/api/motong', uploadRoute); // File upload endpoints
     this.app.use('/api/motong/categories', categoriesRoute); // Categories management endpoints
+    this.app.use('/api/motong/latte-art', latteArtRoute); // Latte art designs management endpoints
 
     // Alternative route paths (in case machine uses different paths)
     this.app.use('/swoft/api/motong', deviceOrderQueueListRoute);
@@ -172,6 +174,7 @@ class CoffeeMachineBackend {
     this.app.use('/swoft/api/motong', productsRoute); // Products management endpoints
     this.app.use('/swoft/api/motong', uploadRoute); // File upload endpoints
     this.app.use('/swoft/api/motong/categories', categoriesRoute); // Categories management endpoints
+    this.app.use('/swoft/api/motong/latte-art', latteArtRoute); // Latte art designs management endpoints
 
     // Root redirect
     this.app.get('/', (req, res) => {
