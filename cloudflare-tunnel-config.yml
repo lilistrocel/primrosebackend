@@ -1,0 +1,18 @@
+tunnel: 26b4d1b7-28f0-46f1-894a-8165d521bc7f
+credentials-file: ~/.cloudflared/26b4d1b7-28f0-46f1-894a-8165d521bc7f.json
+
+ingress:
+  # Backend API for coffee machine
+  - hostname: k2-api.yourdomain.com
+    service: http://localhost:3000
+    originRequest:
+      httpHostHeader: localhost:3000
+  
+  # Frontend kiosk interface
+  - hostname: k2-kiosk.yourdomain.com
+    service: http://localhost:3001
+    originRequest:
+      httpHostHeader: localhost:3001
+  
+  # Catch-all rule (required)
+  - service: http_status:404
