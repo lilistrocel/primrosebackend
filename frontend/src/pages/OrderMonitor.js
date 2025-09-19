@@ -372,10 +372,10 @@ function OrderMonitor() {
       if (!order) return;
 
       const allItems = [
-        ...order.typeList1,
-        ...order.typeList2, 
-        ...order.typeList3,
-        ...order.typeList4
+        ...(order.typeList1 || []),
+        ...(order.typeList2 || []), 
+        ...(order.typeList3 || []),
+        ...(order.typeList4 || [])
       ];
 
       // Cancel each item in the order
@@ -390,7 +390,7 @@ function OrderMonitor() {
         
         console.log('📤 Sending cancel request:', requestBody);
         
-        const response = await fetch(getApiUrl(API_ENDPOINTS.CANCEL_ORDER), {
+        const response = await fetch(getApiUrl(API_ENDPOINTS.EDIT_ORDER_STATUS), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -474,10 +474,10 @@ function OrderMonitor() {
 
   const getOrderStatus = (order) => {
     const allItems = [
-      ...order.typeList1 || [],
-      ...order.typeList2 || [],
-      ...order.typeList3 || [],
-      ...order.typeList4 || []
+      ...(order.typeList1 || []),
+      ...(order.typeList2 || []),
+      ...(order.typeList3 || []),
+      ...(order.typeList4 || [])
     ];
 
     if (allItems.length === 0) {
@@ -634,10 +634,10 @@ function OrderMonitor() {
         <OrdersGrid>
           {activeOrders.map(order => {
           const allItems = [
-            ...order.typeList1 || [],
-            ...order.typeList2 || [],
-            ...order.typeList3 || [],
-            ...order.typeList4 || []
+            ...(order.typeList1 || []),
+            ...(order.typeList2 || []),
+            ...(order.typeList3 || []),
+            ...(order.typeList4 || [])
           ];
 
           const orderStatus = getOrderStatus(order);
@@ -795,10 +795,10 @@ function OrderMonitor() {
             <OrdersGrid>
               {historicalOrders.map(order => {
                 const allItems = [
-                  ...order.typeList1 || [],
-                  ...order.typeList2 || [],
-                  ...order.typeList3 || [],
-                  ...order.typeList4 || []
+                  ...(order.typeList1 || []),
+                  ...(order.typeList2 || []),
+                  ...(order.typeList3 || []),
+                  ...(order.typeList4 || [])
                 ];
 
                 const orderStatus = getOrderStatus(order);

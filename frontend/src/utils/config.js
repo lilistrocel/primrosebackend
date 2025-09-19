@@ -176,6 +176,16 @@ const testApiUrl = async (url) => {
 
 // Get full API endpoint URL
 export const getApiUrl = (endpoint) => {
+  if (!endpoint) {
+    console.error('❌ getApiUrl called with undefined endpoint');
+    throw new Error('Endpoint is required for getApiUrl');
+  }
+  
+  if (typeof endpoint !== 'string') {
+    console.error('❌ getApiUrl called with non-string endpoint:', endpoint);
+    throw new Error('Endpoint must be a string');
+  }
+  
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   return `${baseUrl}/${cleanEndpoint}`;

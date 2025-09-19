@@ -279,12 +279,16 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     const hasIce = options.ice;
     const hasDoubleShot = options.shots === 2;
     
-    // Check if we have variant classCodes configured
+    // 🎯 MANUAL VARIANT CLASSCODES ONLY
+    // Use manually configured variant classCodes from database
     if (hasIce && hasDoubleShot && product.icedAndDoubleClassCode) {
+      console.log(`🧊⚡ Using iced + double shot classCode: ${product.icedAndDoubleClassCode}`);
       return product.icedAndDoubleClassCode;
     } else if (hasIce && product.icedClassCode) {
+      console.log(`🧊 Using iced classCode: ${product.icedClassCode}`);
       return product.icedClassCode;
     } else if (hasDoubleShot && product.doubleShotClassCode) {
+      console.log(`⚡ Using double shot classCode: ${product.doubleShotClassCode}`);
       return product.doubleShotClassCode;
     }
     
@@ -292,7 +296,9 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     try {
       const jsonArray = typeof product.jsonCodeVal === 'string' ? JSON.parse(product.jsonCodeVal) : product.jsonCodeVal;
       const classCodeObj = jsonArray.find(item => item.classCode !== undefined);
-      return classCodeObj ? classCodeObj.classCode : null;
+      const originalClassCode = classCodeObj ? classCodeObj.classCode : null;
+      console.log(`📋 Using original classCode: ${originalClassCode}`);
+      return originalClassCode;
     } catch (error) {
       console.error('Error parsing original jsonCodeVal:', error);
       return null;

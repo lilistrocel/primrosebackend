@@ -1257,9 +1257,9 @@ function KioskOrder() {
           quantity: item.quantity,
           totalPrice: item.product.price * item.quantity,
           matterCodes: item.product.matterCodes,
-          jsonCodeVal: item.product.jsonCodeVal, // Already a JSON string from database
-          goodsOptionName: `${item.product.goodsNameEn} - Kiosk Order`,
-          goodsOptionNameEn: `${item.product.goodsNameEn} - Kiosk Order`
+          jsonCodeVal: item.product.jsonCodeVal, // Use the customized jsonCodeVal (includes variant classCodes)
+          goodsOptionName: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
+          goodsOptionNameEn: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`
         }))
       };
 
