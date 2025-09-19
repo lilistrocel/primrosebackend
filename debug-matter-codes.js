@@ -3,10 +3,7 @@
  * This script helps debug why matterCodes aren't updating in Item Manager
  */
 
-const DatabaseManager = require('./src/database/db');
-
-// Initialize database
-const db = new DatabaseManager();
+const db = require('./src/database/db');
 
 async function debugMatterCodes() {
   console.log('🔍 Debugging MatterCodes Update Issue');

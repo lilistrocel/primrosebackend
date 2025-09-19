@@ -399,6 +399,8 @@ class DatabaseManager {
       }
 
       // Build the SET clause dynamically
+      const usedDbFields = new Set(); // Track which database fields we've already processed
+      
       Object.keys(updates).forEach(key => {
         // Skip id, createdAt, updatedAt fields (id handled separately above)
         if (key === 'id' || key === 'createdAt' || key === 'updatedAt') {
@@ -406,6 +408,14 @@ class DatabaseManager {
         }
         
         const dbField = fieldMapping[key] || key;
+        
+        // Skip if we've already processed this database field to avoid duplicates
+        if (usedDbFields.has(dbField)) {
+          console.log(`⚠️ Skipping duplicate field: ${key} -> ${dbField}`);
+          return;
+        }
+        
+        usedDbFields.add(dbField);
         updateFields.push(`${dbField} = ?`);
         
         // Convert boolean values to integers for SQLite compatibility
