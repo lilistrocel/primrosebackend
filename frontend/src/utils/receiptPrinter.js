@@ -1,3 +1,5 @@
+import { androidUSBPrinter } from './androidUsbPrinter';
+
 /**
  * Receipt Printer Utility
  * Supports multiple printing methods for tablet-connected receipt printers
@@ -24,40 +26,64 @@ export class ReceiptPrinter {
    */
   async printReceipt(orderData) {
     try {
-      // Method 1: Try Web Bluetooth for ESC/POS thermal printers
+      console.log('🖨️ ReceiptPrinter: Starting print process...', {
+        printerType: this.printerType,
+        isAndroid: /Android/i.test(navigator.userAgent),
+        orderData: orderData
+      });
+
+      // Method 1: Try Android USB Printer (PRIMARY for USB thermal printers on Android)
+      if (/Android/i.test(navigator.userAgent)) {
+        try {
+          console.log('🔄 Trying Android USB printer...');
+          const result = await androidUSBPrinter.printReceipt(orderData);
+          if (result.success) {
+            console.log('✅ Android USB printer successful');
+            return result;
+          }
+        } catch (error) {
+          console.log('❌ Android USB printer failed, trying next method...', error);
+        }
+      }
+
+      // Method 2: Try Web Bluetooth for ESC/POS thermal printers
       if ('bluetooth' in navigator) {
         try {
+          console.log('🔄 Trying Bluetooth printing...');
           await this.printViaBluetooth(orderData);
           return { success: true, method: 'bluetooth' };
         } catch (error) {
-          console.log('Bluetooth printing failed, trying next method...', error);
+          console.log('❌ Bluetooth printing failed, trying next method...', error);
         }
       }
 
-      // Method 2: Try browser printing (works for many tablet printers)
+      // Method 3: Try browser printing (works for many tablet printers)
       try {
+        console.log('🔄 Trying browser printing...');
         await this.printViaBrowser(orderData);
         return { success: true, method: 'browser' };
       } catch (error) {
-        console.log('Browser printing failed, trying next method...', error);
+        console.log('❌ Browser printing failed, trying next method...', error);
       }
 
-      // Method 3: Try Android Intent (for Android tablets)
+      // Method 4: Try legacy Android Intent
       if (this.printerType === 'mobile' && window.Android) {
         try {
+          console.log('🔄 Trying legacy Android intent...');
           await this.printViaAndroidIntent(orderData);
-          return { success: true, method: 'android' };
+          return { success: true, method: 'android-legacy' };
         } catch (error) {
-          console.log('Android intent printing failed...', error);
+          console.log('❌ Android intent printing failed...', error);
         }
       }
 
-      // Method 4: Download receipt as PDF/image (fallback)
+      // Method 5: Download receipt as fallback
+      console.log('🔄 Using download fallback...');
       this.downloadReceipt(orderData);
       return { success: true, method: 'download' };
 
     } catch (error) {
-      console.error('All printing methods failed:', error);
+      console.error('❌ All printing methods failed:', error);
       return { success: false, error: error.message };
     }
   }
