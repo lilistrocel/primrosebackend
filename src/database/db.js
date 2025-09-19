@@ -407,6 +407,12 @@ class DatabaseManager {
           return;
         }
         
+        // Skip computed availability fields - these are not stored in database
+        if (key === 'available' || key === 'missingIngredients' || key === 'availabilityReason') {
+          console.log(`⚠️ Skipping computed field: ${key}`);
+          return;
+        }
+        
         const dbField = fieldMapping[key] || key;
         
         // Skip if we've already processed this database field to avoid duplicates
