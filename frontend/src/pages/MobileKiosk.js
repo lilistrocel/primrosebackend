@@ -857,6 +857,7 @@ function MobileKiosk() {
   }
 
   return (
+    <>
     <MobileContainer>
       {/* Header */}
       <MobileHeader>
@@ -998,21 +999,23 @@ function MobileKiosk() {
         )}
       </BottomCartSheet>
 
-      {/* Customization Modal */}
-      {customizationModal && (
-        <>
-          {console.log('📱 MOBILE: Rendering CustomizationModal for:', customizationModal.goodsNameEn)}
-          <CustomizationModal
-            product={customizationModal}
-            onClose={() => {
-              console.log('📱 MOBILE: Closing customization modal');
-              setCustomizationModal(null);
-            }}
-            onAddToCart={addCustomizedToCart}
-          />
-        </>
-      )}
     </MobileContainer>
+
+    {/* Customization Modal - OUTSIDE the container for proper positioning */}
+    {customizationModal && (
+      <>
+        {console.log('📱 MOBILE: Rendering CustomizationModal for:', customizationModal.goodsNameEn)}
+        <CustomizationModal
+          product={customizationModal}
+          onClose={() => {
+            console.log('📱 MOBILE: Closing customization modal');
+            setCustomizationModal(null);
+          }}
+          onAddToCart={addCustomizedToCart}
+        />
+      </>
+    )}
+  </>
   );
 }
 
