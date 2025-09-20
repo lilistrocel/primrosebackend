@@ -515,11 +515,32 @@ function MobileKiosk() {
   const [frontendStatus, setFrontendStatus] = useState({ enabled: true, message: null });
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [latteArtDesigns, setLatteArtDesigns] = useState([]);
+  const [selectedLatteArt, setSelectedLatteArt] = useState(null);
 
   // Refs
   const categoryTabsRef = useRef(null);
 
   // Fetch data functions
+  const fetchLatteArtDesigns = async () => {
+    try {
+      console.log('📱 MOBILE: Fetching latte art designs...');
+      const response = await fetch(getApiUrl('/api/motong/latte-art'));
+      const result = await response.json();
+      
+      if (result.code === 0) {
+        console.log('📱 MOBILE: Found latte art designs:', result.data);
+        setLatteArtDesigns(result.data || []);
+      } else {
+        console.error('📱 MOBILE: Error fetching latte art designs:', result.msg);
+        setLatteArtDesigns([]);
+      }
+    } catch (error) {
+      console.error('📱 MOBILE: Error fetching latte art designs:', error);
+      setLatteArtDesigns([]);
+    }
+  };
+
   const fetchCategories = async () => {
     try {
       const apiUrl = getApiUrl(API_ENDPOINTS.CATEGORIES);
@@ -610,11 +631,12 @@ function MobileKiosk() {
 
     console.log('📱 MOBILE: Has options?', hasOptions);
 
-    if (hasOptions) {
-      console.log('📱 MOBILE: Opening customization modal for:', product.goodsNameEn);
-      setCustomizationModal(product);
-      return;
-    }
+      if (hasOptions) {
+        console.log('📱 MOBILE: Opening customization modal for:', product.goodsNameEn);
+        setSelectedLatteArt(null); // Reset latte art selection
+        setCustomizationModal(product);
+        return;
+      }
 
     // Add directly to cart
     setCart(prevCart => {
@@ -813,6 +835,7 @@ function MobileKiosk() {
     
     fetchCategories();
     fetchProducts();
+    fetchLatteArtDesigns();
     checkFrontendStatus();
   }, []);
 
@@ -1123,6 +1146,83 @@ function MobileKiosk() {
                   </select>
                 </div>
               )}
+              
+              {/* Latte Art Option */}
+              {customizationModal.hasLatteArt && (
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                    🎨 Latte Art:
+                  </label>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {/* None option */}
+                    <button 
+                      onClick={() => setSelectedLatteArt(null)}
+                      style={{ 
+                        padding: '8px 16px', 
+                        border: '2px solid #4f46e5', 
+                        borderRadius: '8px',
+                        background: selectedLatteArt === null ? '#4f46e5' : 'white',
+                        color: selectedLatteArt === null ? 'white' : '#4f46e5',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      ❌ None
+                    </button>
+                    
+                    {/* Dynamic latte art designs from backend */}
+                    {latteArtDesigns.map(design => (
+                      <button 
+                        key={design.id}
+                        onClick={() => setSelectedLatteArt(design)}
+                        style={{ 
+                          padding: '8px 16px', 
+                          border: '2px solid #4f46e5', 
+                          borderRadius: '8px',
+                          background: selectedLatteArt?.id === design.id ? '#4f46e5' : 'white',
+                          color: selectedLatteArt?.id === design.id ? 'white' : '#4f46e5',
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}
+                      >
+                        {design.name}
+                      </button>
+                    ))}
+                    
+                    {/* Upload Custom option */}
+                    <button style={{ 
+                      padding: '8px 16px', 
+                      border: '2px solid #4f46e5', 
+                      borderRadius: '8px',
+                      background: 'white',
+                      color: '#4f46e5',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}>
+                      📤 Upload Custom
+                    </button>
+                  </div>
+                  
+                  {/* Selected design preview */}
+                  {selectedLatteArt && (
+                    <div style={{ 
+                      marginTop: '10px', 
+                      padding: '10px', 
+                      backgroundColor: '#f8f9fa', 
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: '#666'
+                    }}>
+                      <strong>Selected:</strong> {selectedLatteArt.name}
+                      {selectedLatteArt.description && (
+                        <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                          {selectedLatteArt.description}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
@@ -1143,12 +1243,26 @@ function MobileKiosk() {
               <button 
                 onClick={() => {
                   console.log('📱 MOBILE: Adding customized product to cart');
+                  
+                  // Create customized product with latte art
+                  const customizedProduct = {
+                    ...customizationModal,
+                    lhImgPath: selectedLatteArt ? selectedLatteArt.imagePath : '',
+                    customization: 'Mobile customized',
+                    latteArt: selectedLatteArt ? selectedLatteArt.name : 'None'
+                  };
+                  
+                  console.log('📱 MOBILE: Selected latte art:', selectedLatteArt);
+                  console.log('📱 MOBILE: Final product with latte art:', customizedProduct);
+                  
                   setCart(prev => [...prev, { 
-                    product: customizationModal, 
+                    product: customizedProduct, 
                     quantity: 1,
-                    id: Date.now(),
-                    customization: 'Mobile customized'
+                    id: Date.now()
                   }]);
+                  
+                  // Reset selection and close modal
+                  setSelectedLatteArt(null);
                   setCustomizationModal(null);
                 }}
                 style={{
