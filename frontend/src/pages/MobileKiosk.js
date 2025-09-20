@@ -679,16 +679,25 @@ function MobileKiosk() {
       // Generate unique order number
       const orderNum = `${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
       
+      const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      
       const orderData = {
-        deviceId: 1,
         orderNum: orderNum,
-        totalAmount: cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
+        deviceId: 1,
+        totalPrice: total,
         items: cart.map(item => ({
           goodsId: item.product.id,
+          deviceGoodsId: item.product.id, // Required field
+          goodsName: item.product.goodsName || item.product.goodsNameEn,
+          goodsNameEn: item.product.goodsNameEn,
+          goodsNameOt: item.product.goodsNameOt || '',
+          type: item.product.type || 2, // Default to coffee (type 2)
+          price: item.product.price,
+          rePrice: item.product.rePrice || item.product.price,
           quantity: item.quantity,
           totalPrice: item.product.price * item.quantity,
-          matterCodes: item.product.matterCodes,
-          jsonCodeVal: item.product.jsonCodeVal,
+          matterCodes: item.product.matterCodes || '',
+          jsonCodeVal: item.product.jsonCodeVal || `[{"classCode":"${item.product.id}"}]`,
           goodsOptionName: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Mobile Kiosk`,
           goodsOptionNameEn: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Mobile Kiosk`,
           lhImgPath: item.product.lhImgPath ? `${getApiBaseUrl()}${item.product.lhImgPath}` : ''
