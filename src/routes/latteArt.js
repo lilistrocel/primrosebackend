@@ -267,12 +267,21 @@ router.put('/:id', upload.single('image'), (req, res) => {
     
     const updates = {};
     
-    // Add fields that were provided
+    // Add fields that were provided with proper type conversion
     if (value.name !== undefined) updates.name = value.name;
     if (value.description !== undefined) updates.description = value.description;
-    if (value.isDefault !== undefined) updates.is_default = value.isDefault;
-    if (value.isActive !== undefined) updates.is_active = value.isActive;
-    if (value.displayOrder !== undefined) updates.display_order = value.displayOrder;
+    if (value.isDefault !== undefined) {
+      // Convert string boolean to integer for SQLite
+      updates.is_default = (value.isDefault === 'true' || value.isDefault === true) ? 1 : 0;
+    }
+    if (value.isActive !== undefined) {
+      // Convert string boolean to integer for SQLite  
+      updates.is_active = (value.isActive === 'true' || value.isActive === true) ? 1 : 0;
+    }
+    if (value.displayOrder !== undefined) {
+      // Convert string to integer
+      updates.display_order = parseInt(value.displayOrder) || 0;
+    }
     
     // Handle image update
     if (req.file) {
