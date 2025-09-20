@@ -19,7 +19,7 @@ const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(255, 0, 0, 0.9); /* BRIGHT RED for debugging - should be visible! */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -33,10 +33,23 @@ const ModalContent = styled.div`
   border-radius: 24px;
   max-width: 500px;
   width: 100%;
-  max-height: 80vh;
+  max-height: 90vh;
   overflow-y: auto;
   animation: ${slideUp} 0.3s ease;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    max-width: 95vw;
+    max-height: 85vh;
+    margin: 10px;
+    border-radius: 16px;
+  }
+  
+  /* Mobile landscape */
+  @media (max-width: 768px) and (orientation: landscape) {
+    max-height: 90vh;
+  }
 `;
 
 const ModalHeader = styled.div`
