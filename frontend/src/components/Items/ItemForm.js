@@ -389,6 +389,7 @@ function ItemForm({ item, onClose, onSave }) {
       hasMilkOptions: Boolean(data.hasMilkOptions),
       hasIceOptions: Boolean(data.hasIceOptions),
       hasShotOptions: Boolean(data.hasShotOptions),
+      hasLatteArt: Boolean(data.hasLatteArt),
       defaultBeanCode: parseInt(data.defaultBeanCode) || 1,
       defaultMilkCode: parseInt(data.defaultMilkCode) || 1,
       defaultIce: data.defaultIce === 'true' || data.defaultIce === true,
