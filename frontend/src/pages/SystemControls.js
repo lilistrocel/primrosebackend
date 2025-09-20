@@ -324,7 +324,7 @@ function SystemControls() {
         <AlertBanner type="warning">
           <TestTube className="alert-icon" />
           <div className="alert-text">
-            <strong>Test Mode Active:</strong> Coffee orders are being sent to typeList100 instead of typeList2. The machine will not process these orders.
+            <strong>Test Mode Active:</strong> Coffee orders are being sent to typeList100 instead of typeList2, and all ingredients are forced to full stock. The machine will not process these orders.
           </div>
         </AlertBanner>
       )}
@@ -385,7 +385,7 @@ function SystemControls() {
           </div>
           
           <div className="card-description">
-            When enabled, coffee orders are sent to typeList100 instead of typeList2, allowing you to debug API responses without triggering the coffee machine.
+            When enabled, coffee orders are sent to typeList100 instead of typeList2, and all ingredients are forced to full stock, allowing you to test orders without ingredient restrictions or triggering the coffee machine.
           </div>
           
           <div className="card-actions">

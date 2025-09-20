@@ -42,12 +42,12 @@ router.post('/saveDeviceMatter', async (req, res) => {
       matterStatus = JSON.parse(matterStatusJson);
       deviceStatus = JSON.parse(deviceStatusJson);
       
-      // TEST MODE: Force all matterCodes to 1 (out of stock) for ingredient testing
+      // TEST MODE: Force all matterCodes to 0 (fully stocked) for order testing
       const isTestMode = db.isTestMode();
       if (isTestMode) {
-        console.log('🧪 TEST MODE: Forcing all matterCodes to 1 (out of stock) for ingredient testing');
+        console.log('🧪 TEST MODE: Forcing all matterCodes to 0 (fully stocked) for order testing');
         Object.keys(matterStatus).forEach(key => {
-          matterStatus[key] = 1; // Set all ingredients to out of stock (1 = no stock)
+          matterStatus[key] = 0; // Set all ingredients to fully stocked (0 = full stock)
         });
         console.log('🧪 TEST MODE: Modified matterStatus:', matterStatus);
       }

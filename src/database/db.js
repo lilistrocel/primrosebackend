@@ -200,7 +200,7 @@ class DatabaseManager {
             key: 'test_mode', 
             value: 'false', 
             type: 'boolean', 
-            description: 'When enabled, orders go to typeList100 instead of normal typeList2 for debugging' 
+            description: 'When enabled, orders go to typeList100 and all ingredients are forced to full stock for testing' 
           },
           { 
             key: 'out_of_order_message', 
