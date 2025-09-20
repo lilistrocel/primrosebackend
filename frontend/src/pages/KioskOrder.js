@@ -5,6 +5,7 @@ import { receiptPrinter } from '../utils/receiptPrinter';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
 import { getApiUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
 import currencyUtils from '../utils/currency';
+import webSocketClient from '../utils/websocket';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -1041,6 +1042,8 @@ function KioskOrder() {
   ]);
   const [orderQueue, setOrderQueue] = useState([]);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [frontendStatus, setFrontendStatus] = useState({ enabled: true, message: null });
+  const [checkingStatus, setCheckingStatus] = useState(true);
 
   // Fullscreen functionality
   const toggleFullscreen = async () => {
@@ -1135,6 +1138,30 @@ function KioskOrder() {
     fetchCategories();
   }, []);
 
+  // Check frontend status
+  const checkFrontendStatus = async () => {
+    try {
+      setCheckingStatus(true);
+      const response = await fetch(getApiUrl('/api/motong/system-settings/status/frontend'));
+      const result = await response.json();
+      
+      if (result.code === 0) {
+        setFrontendStatus(result.data);
+        console.log('📱 Frontend status:', result.data.enabled ? 'ENABLED' : 'DISABLED');
+      } else {
+        console.error('Failed to check frontend status:', result.msg);
+        // Default to enabled if we can't check
+        setFrontendStatus({ enabled: true, message: null });
+      }
+    } catch (error) {
+      console.error('Error checking frontend status:', error);
+      // Default to enabled if we can't check
+      setFrontendStatus({ enabled: true, message: null });
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
   // Fetch order queue
   const fetchOrderQueue = async () => {
     try {
@@ -1153,6 +1180,64 @@ function KioskOrder() {
       console.error('Error fetching order queue:', error);
     }
   };
+
+  // Initialize WebSocket connection and event listeners
+  useEffect(() => {
+    // Connect to WebSocket
+    webSocketClient.connect();
+
+    // Set up event listeners
+    const handleInitialStatus = (data) => {
+      console.log('🔌 Initial status received:', data);
+      setFrontendStatus({
+        enabled: data.frontendEnabled,
+        message: data.outOfOrderMessage
+      });
+      setCheckingStatus(false);
+    };
+
+    const handleFrontendStatusChange = (data) => {
+      console.log('🔌 Frontend status changed:', data);
+      setFrontendStatus({
+        enabled: data.enabled,
+        message: data.message
+      });
+    };
+
+    const handleMatterCodesUpdate = (data) => {
+      console.log('🔌 Matter codes updated, refreshing products...');
+      fetchProducts(); // Refresh products to update availability
+    };
+
+    const handleProductsUpdate = (data) => {
+      console.log('🔌 Products updated, refreshing...');
+      fetchProducts();
+    };
+
+    // Register event listeners
+    webSocketClient.on('initial_status', handleInitialStatus);
+    webSocketClient.on('frontend_status_changed', handleFrontendStatusChange);
+    webSocketClient.on('matter_codes_updated', handleMatterCodesUpdate);
+    webSocketClient.on('products_updated', handleProductsUpdate);
+
+    // Cleanup on unmount
+    return () => {
+      webSocketClient.off('initial_status', handleInitialStatus);
+      webSocketClient.off('frontend_status_changed', handleFrontendStatusChange);
+      webSocketClient.off('matter_codes_updated', handleMatterCodesUpdate);
+      webSocketClient.off('products_updated', handleProductsUpdate);
+      // Note: Don't disconnect WebSocket as other components might be using it
+    };
+  }, []);
+
+  // Check frontend status periodically (fallback)
+  useEffect(() => {
+    checkFrontendStatus(); // Initial check
+    
+    // Check status every 60 seconds as fallback (WebSocket should handle most updates)
+    const statusInterval = setInterval(checkFrontendStatus, 60000);
+    return () => clearInterval(statusInterval);
+  }, []);
 
   // Fetch order queue periodically
   useEffect(() => {
@@ -1880,6 +1965,55 @@ function KioskOrder() {
         onClose={closeCustomizationModal}
         onAddToCart={handleCustomizedAddToCart}
       />
+
+      {/* Out of Order Overlay */}
+      {!frontendStatus.enabled && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          color: 'white',
+          textAlign: 'center',
+          padding: '40px'
+        }}>
+          <AlertTriangle size={80} style={{ color: '#F59E0B', marginBottom: '24px' }} />
+          <h1 style={{ 
+            fontSize: '3rem', 
+            fontWeight: '700', 
+            marginBottom: '16px',
+            color: '#F59E0B'
+          }}>
+            Out of Order
+          </h1>
+          <p style={{ 
+            fontSize: '1.5rem', 
+            lineHeight: '1.6', 
+            maxWidth: '600px',
+            color: '#E5E7EB'
+          }}>
+            {frontendStatus.message || 'Sorry, our coffee machine is temporarily out of order. Please try again later.'}
+          </p>
+          <div style={{
+            marginTop: '32px',
+            padding: '12px 24px',
+            background: 'rgba(249, 115, 22, 0.1)',
+            border: '1px solid rgba(249, 115, 22, 0.3)',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            color: '#FED7AA'
+          }}>
+            System Status: Maintenance Mode
+          </div>
+        </div>
+      )}
     </Container>
   );
 }

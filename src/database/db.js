@@ -168,6 +168,76 @@ class DatabaseManager {
         this.db.exec(`CREATE INDEX IF NOT EXISTS idx_latte_art_display_order ON latte_art_designs(display_order)`);
       }
 
+      // Create system settings table
+      const systemSettingsTable = this.db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='system_settings'
+      `).get();
+
+      if (!systemSettingsTable) {
+        console.log('⚙️ Creating system_settings table...');
+        this.db.exec(`
+          CREATE TABLE system_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            setting_key VARCHAR(100) NOT NULL UNIQUE,
+            setting_value TEXT NOT NULL,
+            setting_type VARCHAR(20) DEFAULT 'string', -- 'string', 'boolean', 'number'
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        
+        // Insert default system settings
+        const defaultSettings = [
+          { 
+            key: 'frontend_enabled', 
+            value: 'true', 
+            type: 'boolean', 
+            description: 'Controls if the kiosk frontend is enabled for customer orders' 
+          },
+          { 
+            key: 'test_mode', 
+            value: 'false', 
+            type: 'boolean', 
+            description: 'When enabled, orders go to typeList100 instead of normal typeList2 for debugging' 
+          },
+          { 
+            key: 'out_of_order_message', 
+            value: 'Sorry, our coffee machine is temporarily out of order. Please try again later.', 
+            type: 'string', 
+            description: 'Message displayed when frontend is disabled' 
+          },
+          { 
+            key: 'test_mode_message', 
+            value: 'TEST MODE ACTIVE - Orders will not be sent to the coffee machine', 
+            type: 'string', 
+            description: 'Message displayed in admin when test mode is active' 
+          }
+        ];
+
+        defaultSettings.forEach(setting => {
+          try {
+            const query = `
+              INSERT INTO system_settings (setting_key, setting_value, setting_type, description)
+              VALUES (?, ?, ?, ?)
+            `;
+            this.db.prepare(query).run(
+              setting.key,
+              setting.value,
+              setting.type,
+              setting.description
+            );
+            console.log(`✅ Inserted default system setting: ${setting.key}`);
+          } catch (error) {
+            console.error(`❌ Failed to insert system setting ${setting.key}:`, error.message);
+          }
+        });
+
+        // Create index for performance
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(setting_key)`);
+      }
+
       // Create indexes if they don't exist
       console.log('📋 Creating new indexes...');
       try {
@@ -730,6 +800,96 @@ class DatabaseManager {
     } catch (error) {
       console.error('Error deleting latte art design:', error);
       throw error;
+    }
+  }
+
+  // System Settings Management
+  getAllSystemSettings() {
+    try {
+      const query = `SELECT * FROM system_settings ORDER BY setting_key`;
+      return this.db.prepare(query).all();
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+      throw error;
+    }
+  }
+
+  getSystemSetting(key) {
+    try {
+      const query = `SELECT * FROM system_settings WHERE setting_key = ?`;
+      const setting = this.db.prepare(query).get(key);
+      
+      if (!setting) {
+        return null;
+      }
+
+      // Convert value based on type
+      if (setting.setting_type === 'boolean') {
+        return {
+          ...setting,
+          setting_value: setting.setting_value === 'true'
+        };
+      } else if (setting.setting_type === 'number') {
+        return {
+          ...setting,
+          setting_value: parseFloat(setting.setting_value)
+        };
+      }
+      
+      return setting;
+    } catch (error) {
+      console.error('Error fetching system setting:', error);
+      throw error;
+    }
+  }
+
+  updateSystemSetting(key, value) {
+    try {
+      // Convert value to string for storage
+      const stringValue = typeof value === 'boolean' ? value.toString() : value.toString();
+      
+      const query = `
+        UPDATE system_settings 
+        SET setting_value = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE setting_key = ?
+      `;
+      
+      const result = this.db.prepare(query).run(stringValue, key);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error updating system setting:', error);
+      throw error;
+    }
+  }
+
+  // Convenience methods for specific settings
+  isFrontendEnabled() {
+    try {
+      const setting = this.getSystemSetting('frontend_enabled');
+      return setting ? setting.setting_value : true; // Default to enabled
+    } catch (error) {
+      console.error('Error checking frontend status:', error);
+      return true; // Default to enabled if error
+    }
+  }
+
+  isTestMode() {
+    try {
+      const setting = this.getSystemSetting('test_mode');
+      return setting ? setting.setting_value : false; // Default to disabled
+    } catch (error) {
+      console.error('Error checking test mode status:', error);
+      return false; // Default to disabled if error
+    }
+  }
+
+  getOutOfOrderMessage() {
+    try {
+      const setting = this.getSystemSetting('out_of_order_message');
+      return setting ? setting.setting_value : 'Sorry, our coffee machine is temporarily out of order. Please try again later.';
+    } catch (error) {
+      console.error('Error fetching out of order message:', error);
+      return 'Sorry, our coffee machine is temporarily out of order. Please try again later.';
     }
   }
 }

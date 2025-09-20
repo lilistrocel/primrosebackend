@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const db = require('../database/db');
 const { getIngredientsWithStatus, getCriticalIngredients, getIngredientName } = require('../config/ingredients');
+const webSocketManager = require('../websocket/WebSocketManager');
 
 const router = express.Router();
 
@@ -40,6 +41,17 @@ router.post('/saveDeviceMatter', async (req, res) => {
     try {
       matterStatus = JSON.parse(matterStatusJson);
       deviceStatus = JSON.parse(deviceStatusJson);
+      
+      // TEST MODE: Force all matterCodes to 1 (out of stock) for ingredient testing
+      const isTestMode = db.isTestMode();
+      if (isTestMode) {
+        console.log('🧪 TEST MODE: Forcing all matterCodes to 1 (out of stock) for ingredient testing');
+        Object.keys(matterStatus).forEach(key => {
+          matterStatus[key] = 1; // Set all ingredients to out of stock (1 = no stock)
+        });
+        console.log('🧪 TEST MODE: Modified matterStatus:', matterStatus);
+      }
+      
     } catch (parseError) {
       console.log('❌ JSON parsing error:', parseError.message);
       return res.status(400).json({
@@ -63,6 +75,9 @@ router.post('/saveDeviceMatter', async (req, res) => {
       
       // Check for low ingredients or device issues
       checkAlerts(matterStatus, deviceStatus, deviceId);
+      
+      // Notify WebSocket clients about matterCodes update
+      webSocketManager.notifyMatterCodesUpdate(deviceId, JSON.stringify(matterStatus));
       
       // Return exact API response format - TESTING DIFFERENT RESPONSES
       const response = {

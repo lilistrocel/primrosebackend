@@ -153,6 +153,11 @@ function Sidebar() {
           Device Status
         </NavItem>
         
+        <NavItem to="/system-controls">
+          <Settings />
+          System Controls
+        </NavItem>
+        
         <NavItem to="/settings">
           <Settings />
           Settings

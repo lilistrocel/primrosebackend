@@ -11,6 +11,7 @@ import KioskOrder from './pages/KioskOrder';
 import DeviceStatus from './pages/DeviceStatus';
 import Settings from './pages/Settings';
 import LatteArtManagement from './pages/LatteArtManagement';
+import SystemControls from './pages/SystemControls';
 
 const AppContainer = styled.div`
   display: flex;
@@ -58,6 +59,7 @@ function App() {
             <Route path="/order-monitor" element={<OrderMonitor />} />
             <Route path="/create-order" element={<CreateOrder />} />
             <Route path="/device" element={<DeviceStatus />} />
+            <Route path="/system-controls" element={<SystemControls />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </ContentArea>

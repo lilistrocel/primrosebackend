@@ -35,6 +35,10 @@ router.post('/deviceOrderQueueList', async (req, res) => {
     const orders = db.getAllOrdersForDevice(parseInt(deviceId));
     console.log(`📋 Found ${orders.length} active orders for device ${deviceId}`);
 
+    // Check if test mode is enabled
+    const isTestMode = db.isTestMode();
+    console.log(`🧪 Test Mode: ${isTestMode ? 'ENABLED' : 'DISABLED'}`);
+
     // Transform orders to exact API response format
     const responseData = orders.map(order => {
       // Get all goods for this order
@@ -46,8 +50,15 @@ router.post('/deviceOrderQueueList', async (req, res) => {
       const typeList3 = allGoods.filter(goods => goods.type === 3).map(goods => transformGoods(goods));
       const typeList4 = allGoods.filter(goods => goods.type === 4).map(goods => transformGoods(goods));
 
+      // In test mode, move coffee orders (type 2) to typeList100 for debugging
+      let typeList100 = [];
+      if (isTestMode) {
+        typeList100 = typeList2; // Move all coffee orders to typeList100
+        console.log(`🧪 TEST MODE: Moving ${typeList2.length} coffee orders to typeList100`);
+      }
+
       // Transform order to exact response format
-      return {
+      const orderResponse = {
         id: order.id,
         num: order.num,
         realPrice: order.real_price.toString(),
@@ -59,9 +70,16 @@ router.post('/deviceOrderQueueList', async (req, res) => {
         statusName: getStatusName(order.status),
         typeList4: typeList4,
         typeList3: typeList3,
-        typeList2: typeList2,
+        typeList2: isTestMode ? [] : typeList2, // Empty in test mode
         typeList1: typeList1
       };
+
+      // Add typeList100 if in test mode
+      if (isTestMode) {
+        orderResponse.typeList100 = typeList100;
+      }
+
+      return orderResponse;
     });
 
     // Return exact API response format
