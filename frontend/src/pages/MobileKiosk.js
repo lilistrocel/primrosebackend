@@ -1005,6 +1005,37 @@ function MobileKiosk() {
     {customizationModal && (
       <>
         {console.log('📱 MOBILE: Rendering CustomizationModal for:', customizationModal.goodsNameEn)}
+        {/* Simple test modal first */}
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(255, 0, 0, 0.9)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '24px',
+          color: 'white',
+          fontWeight: 'bold'
+        }}>
+          TEST MODAL - {customizationModal.goodsNameEn}
+          <br/>
+          <button 
+            onClick={() => setCustomizationModal(null)}
+            style={{ 
+              padding: '10px 20px', 
+              fontSize: '18px', 
+              marginTop: '20px',
+              cursor: 'pointer' 
+            }}
+          >
+            CLOSE
+          </button>
+        </div>
+        {/* 
         <CustomizationModal
           product={customizationModal}
           onClose={() => {
@@ -1013,6 +1044,7 @@ function MobileKiosk() {
           }}
           onAddToCart={addCustomizedToCart}
         />
+        */}
       </>
     )}
   </>
