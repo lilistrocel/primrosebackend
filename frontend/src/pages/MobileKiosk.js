@@ -507,6 +507,11 @@ function MobileKiosk() {
   const [cart, setCart] = useState([]);
   const [cartExpanded, setCartExpanded] = useState(false);
   const [customizationModal, setCustomizationModal] = useState(null);
+  
+  // Debug logging for modal state changes
+  useEffect(() => {
+    console.log('📱 MOBILE: Modal state changed:', customizationModal ? customizationModal.goodsNameEn : 'null');
+  }, [customizationModal]);
   const [frontendStatus, setFrontendStatus] = useState({ enabled: true, message: null });
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -608,6 +613,13 @@ function MobileKiosk() {
     if (hasOptions) {
       console.log('📱 MOBILE: Opening customization modal for:', product.goodsNameEn);
       setCustomizationModal(product);
+      
+      // Debug: Force modal to stay open for 10 seconds to test
+      console.log('📱 MOBILE: Setting 10-second timer to test modal persistence');
+      setTimeout(() => {
+        console.log('📱 MOBILE: 10 seconds passed, modal should still be visible');
+      }, 10000);
+      
       return;
     }
 
