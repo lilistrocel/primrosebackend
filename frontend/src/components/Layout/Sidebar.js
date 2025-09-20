@@ -10,7 +10,8 @@ import {
   Home,
   ShoppingCart,
   Monitor,
-  Palette
+  Palette,
+  Smartphone
 } from 'lucide-react';
 
 const SidebarContainer = styled.div`
@@ -146,6 +147,11 @@ function Sidebar() {
         <NavItem to="/kiosk" target="_blank">
           <Monitor />
           Kiosk Mode
+        </NavItem>
+        
+        <NavItem to="/mobile-kiosk" target="_blank">
+          <Smartphone />
+          Mobile Kiosk
         </NavItem>
         
         <NavItem to="/device">

@@ -12,6 +12,7 @@ import DeviceStatus from './pages/DeviceStatus';
 import Settings from './pages/Settings';
 import LatteArtManagement from './pages/LatteArtManagement';
 import SystemControls from './pages/SystemControls';
+import MobileKiosk from './pages/MobileKiosk';
 
 const AppContainer = styled.div`
   display: flex;
@@ -38,10 +39,15 @@ const ContentArea = styled.div`
 function App() {
   const location = useLocation();
   const isKioskMode = location.pathname === '/kiosk';
+  const isMobileKioskMode = location.pathname === '/mobile-kiosk';
 
-  // Full-screen kiosk mode
+  // Full-screen kiosk modes
   if (isKioskMode) {
     return <KioskOrder />;
+  }
+
+  if (isMobileKioskMode) {
+    return <MobileKiosk />;
   }
 
   // Regular admin interface with sidebar
