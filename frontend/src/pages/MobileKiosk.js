@@ -1010,49 +1010,163 @@ function MobileKiosk() {
     {customizationModal && (
       <>
         {console.log('📱 MOBILE: Rendering CustomizationModal for:', customizationModal.goodsNameEn)}
-        {(() => {
-          try {
-            console.log('📱 MOBILE: About to render CustomizationModal...');
-            return (
-              <CustomizationModal
-                product={customizationModal}
-                onClose={() => {
-                  console.log('📱 MOBILE: Closing customization modal');
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            padding: '30px',
+            maxWidth: '450px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '24px', color: '#333' }}>
+                Customize {customizationModal.goodsNameEn}
+              </h2>
+              <button 
+                onClick={() => setCustomizationModal(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  padding: '5px',
+                  color: '#666'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ marginBottom: '10px', color: '#555' }}>Options:</h3>
+              
+              {/* Ice Option */}
+              {customizationModal.has_ice_options && (
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                    🧊 Ice Preference:
+                  </label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button style={{ 
+                      padding: '8px 16px', 
+                      border: '2px solid #4f46e5', 
+                      borderRadius: '8px',
+                      background: '#4f46e5',
+                      color: 'white',
+                      cursor: 'pointer'
+                    }}>
+                      With Ice
+                    </button>
+                    <button style={{ 
+                      padding: '8px 16px', 
+                      border: '2px solid #4f46e5', 
+                      borderRadius: '8px',
+                      background: 'white',
+                      color: '#4f46e5',
+                      cursor: 'pointer'
+                    }}>
+                      No Ice
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Bean Options */}
+              {customizationModal.has_bean_options && (
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                    ☕ Bean Type:
+                  </label>
+                  <select style={{ 
+                    width: '100%', 
+                    padding: '10px', 
+                    border: '2px solid #e5e5e5', 
+                    borderRadius: '8px',
+                    fontSize: '16px'
+                  }}>
+                    <option>Coffee Bean 1</option>
+                    <option>Coffee Bean 2</option>
+                  </select>
+                </div>
+              )}
+              
+              {/* Milk Options */}
+              {customizationModal.has_milk_options && (
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                    🥛 Milk Type:
+                  </label>
+                  <select style={{ 
+                    width: '100%', 
+                    padding: '10px', 
+                    border: '2px solid #e5e5e5', 
+                    borderRadius: '8px',
+                    fontSize: '16px'
+                  }}>
+                    <option>Regular Milk</option>
+                    <option>Oat Milk</option>
+                    <option>Almond Milk</option>
+                  </select>
+                </div>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setCustomizationModal(null)}
+                style={{
+                  padding: '12px 24px',
+                  border: '2px solid #e5e5e5',
+                  borderRadius: '8px',
+                  background: 'white',
+                  color: '#666',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  console.log('📱 MOBILE: Adding customized product to cart');
+                  setCart(prev => [...prev, { 
+                    product: customizationModal, 
+                    quantity: 1,
+                    id: Date.now(),
+                    customization: 'Mobile customized'
+                  }]);
                   setCustomizationModal(null);
                 }}
-                onAddToCart={addCustomizedToCart}
-              />
-            );
-          } catch (error) {
-            console.error('📱 MOBILE: Error rendering CustomizationModal:', error);
-            return (
-              <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(255, 0, 0, 0.8)',
-                zIndex: 9999,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '18px',
-                textAlign: 'center',
-                padding: '20px'
-              }}>
-                <div>
-                  <h2>CustomizationModal Error!</h2>
-                  <p>{error.message}</p>
-                  <button onClick={() => setCustomizationModal(null)} style={{marginTop: '20px', padding: '10px'}}>
-                    Close
-                  </button>
-                </div>
-              </div>
-            );
-          }
-        })()}
+                style={{
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: '#4f46e5',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '500'
+                }}
+              >
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
       </>
     )}
   </>
