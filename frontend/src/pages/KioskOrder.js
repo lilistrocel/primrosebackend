@@ -1456,7 +1456,7 @@ function KioskOrder() {
             jsonCodeVal: item.product.jsonCodeVal, // Use the customized jsonCodeVal (includes variant classCodes)
             goodsOptionName: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
             goodsOptionNameEn: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
-            lhImgPath: item.product.lhImgPath || '' // Include latte art image path
+            lhImgPath: item.product.lhImgPath ? `${getApiUrl('')}${item.product.lhImgPath}` : '' // Full web-accessible URL for external machine
           };
         })
       };
