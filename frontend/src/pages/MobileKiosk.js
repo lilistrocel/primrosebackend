@@ -96,8 +96,8 @@ const IconButton = styled.button`
   height: 44px;
   border-radius: 22px;
   border: none;
-  background: ${props => props.primary ? '#4f46e5' : 'rgba(79, 70, 229, 0.1)'};
-  color: ${props => props.primary ? 'white' : '#4f46e5'};
+  background: ${props => props.$primary ? '#4f46e5' : 'rgba(79, 70, 229, 0.1)'};
+  color: ${props => props.$primary ? 'white' : '#4f46e5'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,8 +158,8 @@ const CategoryTab = styled.button`
   padding: 12px 20px;
   border-radius: 25px;
   border: none;
-  background: ${props => props.active ? '#4f46e5' : 'rgba(255, 255, 255, 0.9)'};
-  color: ${props => props.active ? 'white' : '#4b5563'};
+  background: ${props => props.$active ? '#4f46e5' : 'rgba(255, 255, 255, 0.9)'};
+  color: ${props => props.$active ? 'white' : '#4b5563'};
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -192,7 +192,7 @@ const ProductCard = styled.div`
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
-  opacity: ${props => props.available ? 1 : 0.6};
+  opacity: ${props => props.$available ? 1 : 0.6};
   
   &:hover {
     transform: translateY(-4px);
@@ -290,7 +290,7 @@ const BottomCartSheet = styled.div`
   border-top-right-radius: 20px;
   box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.15);
   z-index: 1001;
-  transform: translateY(${props => props.expanded ? '0' : 'calc(100% - 70px)'});
+  transform: translateY(${props => props.$expanded ? '0' : 'calc(100% - 70px)'});
   transition: transform 0.3s ease;
   max-height: 80vh;
   display: flex;
@@ -761,8 +761,18 @@ function MobileKiosk() {
     selectedCategory,
     totalProducts: products.length,
     filteredProducts: filteredProducts.length,
-    categories: categories.length
+    categories: categories.length,
+    sampleProduct: products[0],
+    sampleFilteredProduct: filteredProducts[0]
   });
+  
+  // Emergency debug
+  if (products.length > 0 && filteredProducts.length === 0) {
+    console.error('🚨 MOBILE: Products exist but filtered to zero!');
+    console.log('🔍 MOBILE: Sample product structure:', products[0]);
+    console.log('🔍 MOBILE: Selected category:', selectedCategory);
+    console.log('🔍 MOBILE: Available categories:', categories);
+  }
 
   // Calculate cart totals
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -834,7 +844,7 @@ function MobileKiosk() {
           K2 Coffee
         </HeaderTitle>
         <HeaderActions>
-          <IconButton onClick={() => setCartExpanded(!cartExpanded)} primary>
+          <IconButton onClick={() => setCartExpanded(!cartExpanded)} $primary>
             <ShoppingCart size={20} />
             {cartItemCount > 0 && (
               <CartBadge>{cartItemCount}</CartBadge>
@@ -848,7 +858,7 @@ function MobileKiosk() {
         {/* Category Tabs */}
         <CategoryTabs ref={categoryTabsRef}>
           <CategoryTab
-            active={selectedCategory === 'All'}
+            $active={selectedCategory === 'All'}
             onClick={() => setSelectedCategory('All')}
           >
             All Items
@@ -856,7 +866,7 @@ function MobileKiosk() {
           {categories.map(category => (
             <CategoryTab
               key={category.id}
-              active={selectedCategory === category.id}
+              $active={selectedCategory === category.id}
               onClick={() => setSelectedCategory(category.id)}
             >
               {category.categoryName}
@@ -869,7 +879,7 @@ function MobileKiosk() {
           {filteredProducts.map(product => (
             <ProductCard 
               key={product.id} 
-              available={product.available}
+              $available={product.available}
               onClick={() => addToCart(product)}
             >
               <ProductImage src={getImageUrl(product.goodsPath)}>
@@ -902,7 +912,7 @@ function MobileKiosk() {
       </MainContent>
 
       {/* Bottom Cart Sheet */}
-      <BottomCartSheet expanded={cartExpanded}>
+      <BottomCartSheet $expanded={cartExpanded}>
         <CartHandle onClick={() => setCartExpanded(!cartExpanded)} />
         
         <CartSummary onClick={() => setCartExpanded(!cartExpanded)}>
