@@ -586,12 +586,25 @@ function MobileKiosk() {
   const addToCart = (product) => {
     if (!product.available) return;
 
+    // Debug logging for options
+    console.log('📱 MOBILE: Adding product to cart:', {
+      name: product.goodsNameEn,
+      hasBeanOptions: product.hasBeanOptions,
+      hasMilkOptions: product.hasMilkOptions,
+      hasIceOptions: product.hasIceOptions,
+      hasShotOptions: product.hasShotOptions,
+      hasLatteArt: product.hasLatteArt
+    });
+
     // Check if product has options that need customization
     const hasOptions = product.hasBeanOptions || product.hasMilkOptions || 
                       product.hasIceOptions || product.hasShotOptions || 
                       product.hasLatteArt;
 
+    console.log('📱 MOBILE: Has options?', hasOptions);
+
     if (hasOptions) {
+      console.log('📱 MOBILE: Opening customization modal for:', product.goodsNameEn);
       setCustomizationModal(product);
       return;
     }
@@ -663,8 +676,12 @@ function MobileKiosk() {
     if (cart.length === 0) return;
 
     try {
+      // Generate unique order number
+      const orderNum = `${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      
       const orderData = {
         deviceId: 1,
+        orderNum: orderNum,
         totalAmount: cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
         items: cart.map(item => ({
           goodsId: item.product.id,
