@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer, AlertTriangle } from 'lucide-react';
 import { receiptPrinter } from '../utils/receiptPrinter';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
-import { getApiUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
+import { getApiUrl, getApiBaseUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
 import currencyUtils from '../utils/currency';
 import webSocketClient from '../utils/websocket';
 
@@ -1456,7 +1456,7 @@ function KioskOrder() {
             jsonCodeVal: item.product.jsonCodeVal, // Use the customized jsonCodeVal (includes variant classCodes)
             goodsOptionName: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
             goodsOptionNameEn: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
-            lhImgPath: item.product.lhImgPath ? `${getApiUrl('')}${item.product.lhImgPath}` : '' // Full web-accessible URL for external machine
+            lhImgPath: item.product.lhImgPath ? `${getApiBaseUrl()}${item.product.lhImgPath}` : '' // Full web-accessible URL for external machine
           };
         })
       };
