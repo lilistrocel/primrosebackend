@@ -23,7 +23,7 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1100; /* Higher than mobile cart (1001) */
   animation: ${fadeIn} 0.3s ease;
   padding: 20px;
 `;

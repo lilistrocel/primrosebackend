@@ -1000,11 +1000,17 @@ function MobileKiosk() {
 
       {/* Customization Modal */}
       {customizationModal && (
-        <CustomizationModal
-          product={customizationModal}
-          onClose={() => setCustomizationModal(null)}
-          onAddToCart={addCustomizedToCart}
-        />
+        <>
+          {console.log('📱 MOBILE: Rendering CustomizationModal for:', customizationModal.goodsNameEn)}
+          <CustomizationModal
+            product={customizationModal}
+            onClose={() => {
+              console.log('📱 MOBILE: Closing customization modal');
+              setCustomizationModal(null);
+            }}
+            onAddToCart={addCustomizedToCart}
+          />
+        </>
       )}
     </MobileContainer>
   );
