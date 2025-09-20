@@ -503,7 +503,7 @@ function MobileKiosk() {
   // State management
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [cart, setCart] = useState([]);
   const [cartExpanded, setCartExpanded] = useState(false);
   const [customizationModal, setCustomizationModal] = useState(null);
@@ -522,9 +522,7 @@ function MobileKiosk() {
       if (result.code === 0) {
         console.log('📱 MOBILE: Found categories:', result.data.length);
         setCategories(result.data);
-        if (result.data.length > 0 && !selectedCategory) {
-          setSelectedCategory(result.data[0].id);
-        }
+        // Default to "All" category is already set in state
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -702,9 +700,53 @@ function MobileKiosk() {
   };
 
   // Filter products by category
-  const filteredProducts = selectedCategory 
-    ? products.filter(product => product.categoryId === selectedCategory)
-    : products;
+  const getFilteredProducts = () => {
+    if (!selectedCategory || selectedCategory === 'All') {
+      return products;
+    }
+    
+    // Find the selected category name
+    const selectedCategoryData = categories.find(cat => cat.id === selectedCategory);
+    if (!selectedCategoryData) {
+      return products;
+    }
+    
+    const categoryName = selectedCategoryData.categoryName;
+    
+    return products.filter(product => {
+      // Use the actual category field from the database
+      if (product.category) {
+        return product.category === categoryName;
+      }
+      
+      // Fallback to name-based categorization for existing products without category
+      const name = product.goodsNameEn.toLowerCase();
+      switch (categoryName) {
+        case 'Classics':
+          return name.includes('espresso') || name.includes('cappuccino') || name.includes('americano');
+        case 'Latte Art':
+          return name.includes('latte') || name.includes('art');
+        case 'Specialty':
+          return name.includes('mocha') || name.includes('macchiato') || name.includes('specialty');
+        case 'Cold Brew':
+          return name.includes('cold') || name.includes('iced') || name.includes('frappuccino');
+        case 'Seasonal':
+          return name.includes('pumpkin') || name.includes('holiday') || name.includes('seasonal');
+        default:
+          return true;
+      }
+    });
+  };
+
+  const filteredProducts = getFilteredProducts();
+  
+  // Debug logging
+  console.log('📱 MOBILE: Current filtering state:', {
+    selectedCategory,
+    totalProducts: products.length,
+    filteredProducts: filteredProducts.length,
+    categories: categories.length
+  });
 
   // Calculate cart totals
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -784,6 +826,12 @@ function MobileKiosk() {
       <MainContent>
         {/* Category Tabs */}
         <CategoryTabs ref={categoryTabsRef}>
+          <CategoryTab
+            active={selectedCategory === 'All'}
+            onClick={() => setSelectedCategory('All')}
+          >
+            All Items
+          </CategoryTab>
           {categories.map(category => (
             <CategoryTab
               key={category.id}
