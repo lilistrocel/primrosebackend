@@ -517,29 +517,45 @@ function MobileKiosk() {
   // Fetch data functions
   const fetchCategories = async () => {
     try {
-      const response = await fetch(getApiUrl(API_ENDPOINTS.CATEGORIES));
+      const apiUrl = getApiUrl(API_ENDPOINTS.CATEGORIES);
+      console.log('📱 MOBILE: Fetching categories from:', apiUrl);
+      
+      const response = await fetch(apiUrl);
       const result = await response.json();
+      
+      console.log('📱 MOBILE: Categories API response:', result);
+      
       if (result.code === 0) {
         console.log('📱 MOBILE: Found categories:', result.data.length);
         setCategories(result.data);
         // Default to "All" category is already set in state
+      } else {
+        console.error('📱 MOBILE: Categories API error:', result);
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('📱 MOBILE: Error fetching categories:', error);
     }
   };
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl(API_ENDPOINTS.PRODUCTS));
+      const apiUrl = getApiUrl(API_ENDPOINTS.PRODUCTS);
+      console.log('📱 MOBILE: Fetching products from:', apiUrl);
+      
+      const response = await fetch(apiUrl);
       const result = await response.json();
+      
+      console.log('📱 MOBILE: Products API response:', result);
+      
       if (result.code === 0) {
         console.log('📱 MOBILE: Found products:', result.data.length);
         setProducts(result.data);
+      } else {
+        console.error('📱 MOBILE: Products API error:', result);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('📱 MOBILE: Error fetching products:', error);
     } finally {
       setLoading(false);
     }
@@ -754,6 +770,11 @@ function MobileKiosk() {
 
   // Initialize data
   useEffect(() => {
+    // Debug API URL detection
+    console.log('📱 MOBILE: Initializing mobile kiosk...');
+    console.log('📱 MOBILE: Current location:', window.location.href);
+    console.log('📱 MOBILE: Detected API base URL:', getApiUrl(''));
+    
     fetchCategories();
     fetchProducts();
     checkFrontendStatus();
