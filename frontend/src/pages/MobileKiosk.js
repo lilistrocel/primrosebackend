@@ -783,7 +783,7 @@ function MobileKiosk() {
     // Debug API URL detection
     console.log('📱 MOBILE: Initializing mobile kiosk...');
     console.log('📱 MOBILE: Current location:', window.location.href);
-    console.log('📱 MOBILE: Detected API base URL:', getApiUrl(''));
+    console.log('📱 MOBILE: Detected API base URL:', getApiBaseUrl());
     
     fetchCategories();
     fetchProducts();
