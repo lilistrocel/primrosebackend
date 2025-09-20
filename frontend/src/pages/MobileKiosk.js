@@ -593,13 +593,15 @@ function MobileKiosk() {
       has_milk_options: product.has_milk_options,
       has_ice_options: product.has_ice_options,
       has_shot_options: product.has_shot_options,
-      has_latte_art: product.has_latte_art
+      hasLatteArt: product.hasLatteArt, // Backend sends this as camelCase
+      // Show ALL fields for debugging
+      allFields: Object.keys(product).filter(key => key.includes('option') || key.includes('bean') || key.includes('milk') || key.includes('ice') || key.includes('shot') || key.includes('latte'))
     });
 
     // Check if product has options that need customization
     const hasOptions = product.has_bean_options || product.has_milk_options || 
                       product.has_ice_options || product.has_shot_options || 
-                      product.has_latte_art;
+                      product.hasLatteArt; // Backend sends this as camelCase
 
     console.log('📱 MOBILE: Has options?', hasOptions);
 
