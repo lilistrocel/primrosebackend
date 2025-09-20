@@ -153,6 +153,11 @@ router.get('/:id', (req, res) => {
  * Create new latte art design
  */
 router.post('/', upload.single('image'), (req, res) => {
+  console.log('🎨 LATTE ART POST ROUTE HIT!');
+  console.log('📍 Route: POST /api/motong/latte-art');
+  console.log('🌐 Request URL:', req.url);
+  console.log('📊 Request headers:', req.headers);
+  
   try {
     console.log('🎨 Creating new latte art design...');
     console.log('📝 Request body:', req.body);
