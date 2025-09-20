@@ -1010,14 +1010,62 @@ function MobileKiosk() {
     {customizationModal && (
       <>
         {console.log('📱 MOBILE: Rendering CustomizationModal for:', customizationModal.goodsNameEn)}
-        <CustomizationModal
-          product={customizationModal}
-          onClose={() => {
-            console.log('📱 MOBILE: Closing customization modal');
-            setCustomizationModal(null);
-          }}
-          onAddToCart={addCustomizedToCart}
-        />
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '10px',
+            maxWidth: '400px',
+            width: '90%'
+          }}>
+            <h2>Customize {customizationModal.goodsNameEn}</h2>
+            <p>This is a simple test modal to verify positioning works.</p>
+            <button 
+              onClick={() => setCustomizationModal(null)}
+              style={{ 
+                padding: '10px 20px', 
+                fontSize: '16px',
+                cursor: 'pointer',
+                marginRight: '10px'
+              }}
+            >
+              Close
+            </button>
+            <button 
+              onClick={() => {
+                console.log('📱 MOBILE: Adding basic product to cart');
+                setCart(prev => [...prev, { 
+                  product: customizationModal, 
+                  quantity: 1,
+                  id: Date.now()
+                }]);
+                setCustomizationModal(null);
+              }}
+              style={{ 
+                padding: '10px 20px', 
+                fontSize: '16px',
+                cursor: 'pointer',
+                backgroundColor: '#4f46e5',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px'
+              }}
+            >
+              Add to Cart
+            </button>
+          </div>
+        </div>
       </>
     )}
   </>
