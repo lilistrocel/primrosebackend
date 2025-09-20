@@ -375,7 +375,8 @@ function OrderMonitor() {
         ...(order.typeList1 || []),
         ...(order.typeList2 || []), 
         ...(order.typeList3 || []),
-        ...(order.typeList4 || [])
+        ...(order.typeList4 || []),
+        ...(order.typeList100 || []) // Include test mode orders
       ];
 
       // Cancel each item in the order
@@ -477,7 +478,8 @@ function OrderMonitor() {
       ...(order.typeList1 || []),
       ...(order.typeList2 || []),
       ...(order.typeList3 || []),
-      ...(order.typeList4 || [])
+      ...(order.typeList4 || []),
+      ...(order.typeList100 || []) // Include test mode orders
     ];
 
     if (allItems.length === 0) {
@@ -637,7 +639,8 @@ function OrderMonitor() {
             ...(order.typeList1 || []),
             ...(order.typeList2 || []),
             ...(order.typeList3 || []),
-            ...(order.typeList4 || [])
+            ...(order.typeList4 || []),
+            ...(order.typeList100 || []) // Include test mode orders
           ];
 
           const orderStatus = getOrderStatus(order);
@@ -798,7 +801,8 @@ function OrderMonitor() {
                   ...(order.typeList1 || []),
                   ...(order.typeList2 || []),
                   ...(order.typeList3 || []),
-                  ...(order.typeList4 || [])
+                  ...(order.typeList4 || []),
+                  ...(order.typeList100 || []) // Include test mode orders
                 ];
 
                 const orderStatus = getOrderStatus(order);
