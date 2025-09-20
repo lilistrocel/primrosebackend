@@ -215,6 +215,7 @@ router.put('/products/:id', async (req, res) => {
     const productId = parseInt(req.params.id);
     console.log(`📝 Update Product API called for ID: ${productId}`);
     console.log('📥 Request body:', req.body);
+    console.log('🎨 Latte Art field in request:', req.body.hasLatteArt);
 
     // Check if product exists
     const existingProduct = db.getProductById(productId);
@@ -274,9 +275,10 @@ router.put('/products/:id', async (req, res) => {
     }
 
     // Update product
-    db.updateProduct(productId, value);
+    const updateResult = db.updateProduct(productId, value);
     
-    console.log('✅ Product updated successfully');
+    console.log('✅ Product updated successfully:', updateResult);
+    console.log('🎨 Latte Art value sent to database:', value.hasLatteArt);
 
     // Return updated product
     const updatedProduct = db.getProductById(productId);
