@@ -589,17 +589,17 @@ function MobileKiosk() {
     // Debug logging for options
     console.log('📱 MOBILE: Adding product to cart:', {
       name: product.goodsNameEn,
-      hasBeanOptions: product.hasBeanOptions,
-      hasMilkOptions: product.hasMilkOptions,
-      hasIceOptions: product.hasIceOptions,
-      hasShotOptions: product.hasShotOptions,
-      hasLatteArt: product.hasLatteArt
+      has_bean_options: product.has_bean_options,
+      has_milk_options: product.has_milk_options,
+      has_ice_options: product.has_ice_options,
+      has_shot_options: product.has_shot_options,
+      has_latte_art: product.has_latte_art
     });
 
     // Check if product has options that need customization
-    const hasOptions = product.hasBeanOptions || product.hasMilkOptions || 
-                      product.hasIceOptions || product.hasShotOptions || 
-                      product.hasLatteArt;
+    const hasOptions = product.has_bean_options || product.has_milk_options || 
+                      product.has_ice_options || product.has_shot_options || 
+                      product.has_latte_art;
 
     console.log('📱 MOBILE: Has options?', hasOptions);
 
@@ -719,13 +719,6 @@ function MobileKiosk() {
       if (result.code === 0) {
         console.log('📱 MOBILE: Order submitted successfully');
         
-        // Print receipt if available
-        try {
-          await receiptPrinter.printReceipt(orderData, result.data);
-        } catch (printError) {
-          console.log('📱 MOBILE: Receipt printing not available');
-        }
-
         // Clear cart and close
         setCart([]);
         setCartExpanded(false);
