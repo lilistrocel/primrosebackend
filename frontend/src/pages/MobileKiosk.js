@@ -1010,62 +1010,49 @@ function MobileKiosk() {
     {customizationModal && (
       <>
         {console.log('📱 MOBILE: Rendering CustomizationModal for:', customizationModal.goodsNameEn)}
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '20px',
-            borderRadius: '10px',
-            maxWidth: '400px',
-            width: '90%'
-          }}>
-            <h2>Customize {customizationModal.goodsNameEn}</h2>
-            <p>This is a simple test modal to verify positioning works.</p>
-            <button 
-              onClick={() => setCustomizationModal(null)}
-              style={{ 
-                padding: '10px 20px', 
-                fontSize: '16px',
-                cursor: 'pointer',
-                marginRight: '10px'
-              }}
-            >
-              Close
-            </button>
-            <button 
-              onClick={() => {
-                console.log('📱 MOBILE: Adding basic product to cart');
-                setCart(prev => [...prev, { 
-                  product: customizationModal, 
-                  quantity: 1,
-                  id: Date.now()
-                }]);
-                setCustomizationModal(null);
-              }}
-              style={{ 
-                padding: '10px 20px', 
-                fontSize: '16px',
-                cursor: 'pointer',
-                backgroundColor: '#4f46e5',
+        {(() => {
+          try {
+            console.log('📱 MOBILE: About to render CustomizationModal...');
+            return (
+              <CustomizationModal
+                product={customizationModal}
+                onClose={() => {
+                  console.log('📱 MOBILE: Closing customization modal');
+                  setCustomizationModal(null);
+                }}
+                onAddToCart={addCustomizedToCart}
+              />
+            );
+          } catch (error) {
+            console.error('📱 MOBILE: Error rendering CustomizationModal:', error);
+            return (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(255, 0, 0, 0.8)',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'white',
-                border: 'none',
-                borderRadius: '5px'
-              }}
-            >
-              Add to Cart
-            </button>
-          </div>
-        </div>
+                fontSize: '18px',
+                textAlign: 'center',
+                padding: '20px'
+              }}>
+                <div>
+                  <h2>CustomizationModal Error!</h2>
+                  <p>{error.message}</p>
+                  <button onClick={() => setCustomizationModal(null)} style={{marginTop: '20px', padding: '10px'}}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            );
+          }
+        })()}
       </>
     )}
   </>
