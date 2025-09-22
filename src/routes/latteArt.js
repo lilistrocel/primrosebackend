@@ -190,8 +190,8 @@ router.post('/', upload.single('image'), (req, res) => {
       name: value.name,
       description: value.description || '',
       image_path: imagePath,
-      is_default: value.isDefault,
-      display_order: value.displayOrder
+      is_default: (value.isDefault === 'true' || value.isDefault === true) ? 1 : 0, // Convert to integer for SQLite
+      display_order: parseInt(value.displayOrder) || 0 // Convert to integer for SQLite
     };
     
     const result = db.insertLatteArtDesign(designData);
