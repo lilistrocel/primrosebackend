@@ -347,7 +347,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
   const [selectedOptions, setSelectedOptions] = useState({
     beanCode: product?.default_bean_code || 1,
     milkCode: product?.default_milk_code || 1,
-    ice: product?.defaultIce !== undefined ? product.defaultIce : true,
+    ice: product?.defaultIce || false, // Default to false (no ice) unless explicitly true
     shots: product?.default_shots || 1,
     latteArt: null, // Selected latte art design ID or 'custom' for uploaded image
     latteArtImage: null // Path to selected latte art image
@@ -357,6 +357,25 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
   const [latteArtDesigns, setLatteArtDesigns] = useState([]);
   const [customImage, setCustomImage] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Reset options when product changes or modal opens
+  useEffect(() => {
+    if (isOpen && product) {
+      console.log('🔧 Resetting customization options for product:', product.goodsNameEn);
+      console.log('🧊 Product defaultIce value:', product.defaultIce);
+      
+      setSelectedOptions({
+        beanCode: product.default_bean_code || 1,
+        milkCode: product.default_milk_code || 1,
+        ice: product.defaultIce || false, // Use product's defaultIce setting
+        shots: product.default_shots || 1,
+        latteArt: null,
+        latteArtImage: null
+      });
+      setQuantity(1);
+      setCustomImage(null);
+    }
+  }, [product, isOpen]);
 
   // Fetch latte art designs when product has latte art option
   useEffect(() => {
