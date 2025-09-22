@@ -152,7 +152,7 @@ router.get('/:id', (req, res) => {
  * POST /api/motong/latte-art
  * Create new latte art design
  */
-router.post('/', upload.single('image'), (req, res) => {
+router.post('/', upload.single('image'), async (req, res) => {
   console.log('🎨 LATTE ART POST ROUTE HIT!');
   console.log('📍 Route: POST /api/motong/latte-art');
   console.log('🌐 Request URL:', req.url);
@@ -183,8 +183,71 @@ router.post('/', upload.single('image'), (req, res) => {
       });
     }
     
-    // Create relative path for database storage
-    const imagePath = `/public/uploads/latte-art/${req.file.filename}`;
+    // Process the image to 1000x1000 with 20px border
+    const sharp = require('sharp');
+    const originalPath = req.file.path;
+    const processedFilename = req.file.filename.replace(/\.[^/.]+$/, '') + '_processed.jpg';
+    const processedPath = path.join(req.file.destination, processedFilename);
+    
+    console.log('🎨 Processing latte art image...');
+    console.log(`📷 Original: ${req.file.filename}`);
+    console.log(`🔄 Processing to: ${processedFilename}`);
+    
+    try {
+      // Get image metadata
+      const metadata = await sharp(originalPath).metadata();
+      console.log(`📏 Original size: ${metadata.width}x${metadata.height}`);
+      
+      // Calculate dimensions to fit within 960x960 (1000x1000 minus 20px border each side)
+      const maxSize = 960;
+      const { width, height } = metadata;
+      
+      let newWidth, newHeight;
+      if (width > height) {
+        // Landscape: fit to width
+        newWidth = Math.min(width, maxSize);
+        newHeight = Math.round((height * newWidth) / width);
+      } else {
+        // Portrait or square: fit to height
+        newHeight = Math.min(height, maxSize);
+        newWidth = Math.round((width * newHeight) / height);
+      }
+      
+      console.log(`🔄 Resizing to: ${newWidth}x${newHeight}`);
+      
+      // Process the image
+      await sharp(originalPath)
+        .resize(newWidth, newHeight, {
+          fit: 'inside',
+          withoutEnlargement: false // Allow upscaling for small images
+        })
+        .extend({
+          top: Math.round((1000 - newHeight) / 2),
+          bottom: Math.round((1000 - newHeight) / 2),
+          left: Math.round((1000 - newWidth) / 2),
+          right: Math.round((1000 - newWidth) / 2),
+          background: { r: 255, g: 255, b: 255, alpha: 1 } // White background
+        })
+        .jpeg({ 
+          quality: 90,
+          progressive: true 
+        })
+        .toFile(processedPath);
+      
+      // Delete original file to save space
+      fs.unlinkSync(originalPath);
+      console.log('🗑️ Deleted original file');
+      console.log('✅ Latte art image processed successfully');
+      
+    } catch (processError) {
+      console.error('❌ Error processing latte art image:', processError);
+      // If processing fails, keep original file
+      processedPath = originalPath;
+      processedFilename = req.file.filename;
+    }
+    
+    // Create relative path for database storage (use processed image)
+    const imagePath = `/public/uploads/latte-art/${processedFilename}`;
     
     const designData = {
       name: value.name,
