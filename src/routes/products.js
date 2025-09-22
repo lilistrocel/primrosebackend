@@ -29,7 +29,7 @@ const productSchema = Joi.object({
   hasShotOptions: Joi.boolean().default(false),
   defaultBeanCode: Joi.number().integer().min(1).max(2).default(1),
   defaultMilkCode: Joi.number().integer().min(1).max(2).default(1),
-  defaultIce: Joi.boolean().default(true),
+  defaultIce: Joi.boolean().default(false),
   defaultShots: Joi.number().integer().min(1).max(2).default(1),
   // Kiosk display fields
   displayOrder: Joi.number().integer().min(0).default(0),

@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS products (
     has_shot_options BOOLEAN DEFAULT 0, -- Enable single/double shot
     default_bean_code INTEGER DEFAULT 1, -- Default bean type (1 or 2)
     default_milk_code INTEGER DEFAULT 1, -- Default milk type (1 or 2)
-    default_ice BOOLEAN DEFAULT 1, -- Default ice setting (1=ice, 0=no ice)
+    default_ice BOOLEAN DEFAULT 0, -- Default ice setting (1=ice, 0=no ice)
     default_shots INTEGER DEFAULT 1, -- Default shot count (1 or 2)
     
     -- Variant system: Alternative classCodes for different options
