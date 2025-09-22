@@ -198,41 +198,23 @@ router.post('/', upload.single('image'), async (req, res) => {
       const metadata = await sharp(originalPath).metadata();
       console.log(`📏 Original size: ${metadata.width}x${metadata.height}`);
       
-      // Calculate dimensions to fit within 960x960 (1000x1000 minus 20px border each side)
-      const maxSize = 960;
-      const { width, height } = metadata;
+      // For latte art, we want to preserve the original aspect ratio
+      // and center it within 1000x1000 canvas without any stretching
+      console.log(`🎨 Processing latte art: maintaining original aspect ratio`);
       
-      let newWidth, newHeight;
-      if (width > height) {
-        // Landscape: fit to width
-        newWidth = Math.min(width, maxSize);
-        newHeight = Math.round((height * newWidth) / width);
-      } else {
-        // Portrait or square: fit to height
-        newHeight = Math.min(height, maxSize);
-        newWidth = Math.round((width * newHeight) / height);
-      }
-      
-      console.log(`🔄 Resizing to: ${newWidth}x${newHeight}`);
-      
-      // Process the image
+      // Process the image - fit within 1000x1000 while maintaining aspect ratio
       await sharp(originalPath)
-        .resize(newWidth, newHeight, {
-          fit: 'inside',
-          withoutEnlargement: false // Allow upscaling for small images
-        })
-        .extend({
-          top: Math.round((1000 - newHeight) / 2),
-          bottom: Math.round((1000 - newHeight) / 2),
-          left: Math.round((1000 - newWidth) / 2),
-          right: Math.round((1000 - newWidth) / 2),
-          background: { r: 255, g: 255, b: 255, alpha: 1 } // White background
+        .resize(1000, 1000, {
+          fit: 'contain', // Fit within 1000x1000 without cropping or stretching
+          background: { r: 255, g: 255, b: 255, alpha: 1 } // White background for padding
         })
         .jpeg({ 
-          quality: 90,
+          quality: 95, // Higher quality for latte art details
           progressive: true 
         })
         .toFile(processedPath);
+      
+      console.log(`✅ Latte art processed: centered within 1000x1000 with original proportions`);
       
       // Delete original file to save space
       fs.unlinkSync(originalPath);
