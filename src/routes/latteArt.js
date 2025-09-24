@@ -7,16 +7,24 @@ const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 
+// Set up upload directories
+const uploadDir = path.join(__dirname, '../../public/uploads/latte-art');
+const customerUploadDir = path.join(__dirname, '../../public/uploads/latte-art/customer');
+
+// Ensure directories exist
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log('📁 Created latte-art upload directory');
+}
+
+if (!fs.existsSync(customerUploadDir)) {
+  fs.mkdirSync(customerUploadDir, { recursive: true });
+  console.log('📁 Created customer latte-art upload directory');
+}
+
 // Configure multer for admin latte art image uploads
 const adminStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../../public/uploads/latte-art');
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
@@ -31,14 +39,6 @@ const adminStorage = multer.diskStorage({
 // Configure multer for customer latte art image uploads
 const customerStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const customerUploadDir = path.join(__dirname, '../../public/uploads/latte-art/customer');
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(customerUploadDir)) {
-      fs.mkdirSync(customerUploadDir, { recursive: true });
-      console.log('📁 Created customer latte-art upload directory');
-    }
-    
     cb(null, customerUploadDir);
   },
   filename: function (req, file, cb) {
