@@ -5,9 +5,10 @@ const Joi = require('joi');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 
-// Configure multer for latte art image uploads
-const storage = multer.diskStorage({
+// Configure multer for admin latte art image uploads
+const adminStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(__dirname, '../../public/uploads/latte-art');
     
@@ -27,19 +28,51 @@ const storage = multer.diskStorage({
   }
 });
 
+// Configure multer for customer latte art image uploads
+const customerStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const customerUploadDir = path.join(__dirname, '../../public/uploads/latte-art/customer');
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(customerUploadDir)) {
+      fs.mkdirSync(customerUploadDir, { recursive: true });
+      console.log('📁 Created customer latte-art upload directory');
+    }
+    
+    cb(null, customerUploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp and customer prefix
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    const name = file.originalname.replace(ext, '').replace(/[^a-zA-Z0-9]/g, '-');
+    cb(null, `customer-${name}-${timestamp}${ext}`);
+  }
+});
+
+const fileFilter = function (req, file, cb) {
+  // Check file type
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
+};
+
 const upload = multer({
-  storage: storage,
+  storage: adminStorage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
-  fileFilter: function (req, file, cb) {
-    // Check file type
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  }
+  fileFilter: fileFilter
+});
+
+const customerUpload = multer({
+  storage: customerStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: fileFilter
 });
 
 // Validation schemas
@@ -428,7 +461,7 @@ router.delete('/:id', (req, res) => {
  * POST /api/motong/latte-art/upload-temp
  * Upload temporary image from kiosk (for customer uploads)
  */
-router.post('/upload-temp', upload.single('image'), (req, res) => {
+router.post('/upload-temp', customerUpload.single('image'), async (req, res) => {
   try {
     console.log('🎨 Uploading temporary latte art image from kiosk...');
     console.log('📁 Uploaded file:', req.file);
@@ -441,17 +474,60 @@ router.post('/upload-temp', upload.single('image'), (req, res) => {
       });
     }
     
-    // Create relative path for temporary storage
-    const imagePath = `/public/uploads/latte-art/${req.file.filename}`;
+    // Process the image to standardize it (same as latte art management)
+    const originalPath = req.file.path;
+    const processedFilename = `processed-customer-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+    const processedPath = path.join(customerUploadDir, processedFilename);
     
-    console.log(`✅ Temporary latte art image uploaded: ${imagePath}`);
+    console.log('🎨 Processing kiosk latte art image...');
+    console.log(`📷 Original: ${req.file.filename}`);
+    console.log(`🔄 Processing to: ${processedFilename}`);
+    
+    try {
+      // Get image metadata
+      const metadata = await sharp(originalPath).metadata();
+      console.log(`📏 Original size: ${metadata.width}x${metadata.height}`);
+      
+      // For latte art, we want to preserve the original aspect ratio
+      // and center it within 1000x1000 canvas without any stretching
+      console.log(`🎨 Processing kiosk latte art: maintaining original aspect ratio`);
+      
+      // Process the image - fit within 1000x1000 while maintaining aspect ratio
+      await sharp(originalPath)
+        .resize(1000, 1000, {
+          fit: 'contain', // Fit within 1000x1000 without cropping or stretching
+          background: { r: 255, g: 255, b: 255, alpha: 1 } // White background for padding
+        })
+        .jpeg({ 
+          quality: 95, // Higher quality for latte art details
+          progressive: true 
+        })
+        .toFile(processedPath);
+      
+      console.log(`✅ Kiosk latte art processed: centered within 1000x1000 with original proportions`);
+      
+      // Delete original file to save space
+      fs.unlinkSync(originalPath);
+      console.log('🗑️ Deleted original file');
+      
+    } catch (processError) {
+      console.error('❌ Error processing kiosk latte art image:', processError);
+      // If processing fails, keep original file
+      processedPath = originalPath;
+      processedFilename = req.file.filename;
+    }
+    
+    // Create relative path for temporary storage (use processed image in customer folder)
+    const imagePath = `/public/uploads/latte-art/customer/${processedFilename}`;
+    
+    console.log(`✅ Customer latte art image uploaded and processed: ${imagePath}`);
     
     res.json({
       code: 0,
-      msg: 'Temporary image uploaded successfully',
+      msg: 'Temporary image uploaded and processed successfully',
       data: {
         imagePath: imagePath,
-        filename: req.file.filename,
+        filename: processedFilename,
         originalName: req.file.originalname,
         size: req.file.size
       }
