@@ -6,6 +6,7 @@ import CustomizationModal from '../components/Kiosk/CustomizationModal';
 import { getApiUrl, getApiBaseUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
 import currencyUtils from '../utils/currency';
 import webSocketClient from '../utils/websocket';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -29,6 +30,7 @@ const Container = styled.div`
   display: flex;
   font-family: 'Figtree', 'Inter', 'Segoe UI', sans-serif;
   position: relative;
+  direction: ${props => props.$isRTL ? 'rtl' : 'ltr'};
 `;
 
 const LeftPanel = styled.div`
@@ -1025,6 +1027,7 @@ const getImageClass = (goodsNameEn) => {
 };
 
 function KioskOrder() {
+  const { currentLanguage, isRTL, toggleLanguage, t, getProductName } = useLanguage();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
@@ -1123,7 +1126,7 @@ function KioskOrder() {
         if (result.code === 0 && result.data) {
           console.log('🏷️ KIOSK: Found', result.data.length, 'categories');
           const allCategories = [
-            { id: 'All', name: 'All Items', icon: '🍽️' },
+            { id: 'All', name: t('allItems'), icon: '🍽️' },
             ...result.data.map(cat => ({ id: cat.name, name: cat.name, icon: cat.icon }))
           ];
           setCategories(allCategories);
@@ -1530,7 +1533,7 @@ function KioskOrder() {
   };
 
   return (
-    <Container>
+    <Container $isRTL={isRTL}>
       <LeftPanel>
         <Header>
           <div className="logo">
@@ -1568,15 +1571,15 @@ function KioskOrder() {
               />
             </div>
             <div className="brand-info">
-              <div className="brand-name">K2 Coffee</div>
-              <div className="brand-tagline">Premium Coffee Experience</div>
+              <div className="brand-name">{t('brandName')}</div>
+              <div className="brand-tagline">{t('brandTagline')}</div>
             </div>
           </div>
           
           <div className="header-controls">
-            <div className="language-selector">
+            <div className="language-selector" onClick={toggleLanguage}>
               <div className="flag"></div>
-              <span>En</span>
+              <span>{t('language')}</span>
             </div>
             
             <div className="fullscreen-btn" onClick={toggleFullscreen}>
@@ -1589,7 +1592,7 @@ function KioskOrder() {
           </div>
         </Header>
 
-        <SectionTitle>Main menu</SectionTitle>
+        <SectionTitle>{t('mainMenu')}</SectionTitle>
         
         <CategoryTabs>
           {categories.map(category => (
@@ -1612,7 +1615,7 @@ function KioskOrder() {
                 <div className="product-image espresso">
                   <span>⏳</span>
                 </div>
-                <div className="product-name">Loading...</div>
+                <div className="product-name">{t('loading')}</div>
                 <div className="product-price">{currencyUtils.formatPrice(0)}</div>
                 <div className="quantity-controls">
                   <button className="quantity-btn minus" disabled>
@@ -1752,7 +1755,7 @@ function KioskOrder() {
                     </span>
                   </div>
                   
-                  <div className="product-name">{product.goodsNameEn}</div>
+                  <div className="product-name">{getProductName(product)}</div>
                   <div className="product-price">{currencyUtils.formatPrice(product.price)}</div>
                   
                   <div className="add-to-cart-section">
@@ -1772,12 +1775,12 @@ function KioskOrder() {
                       disabled={!isAvailable}
                     >
                       <ShoppingCart className="cart-icon" />
-                      {isAvailable ? 'Add to Cart' : 'Unavailable'}
+                      {isAvailable ? t('addToCart') : t('unavailable')}
                     </button>
                     
                     {!isAvailable && missingIngredients.length > 0 && (
                       <div className="unavailable-message">
-                        Missing: {missingIngredients.map(ing => ing.name || ing.code).join(', ')}
+                        {t('missing')}: {missingIngredients.map(ing => ing.name || ing.code).join(', ')}
                       </div>
                     )}
                   </div>
@@ -1792,17 +1795,17 @@ function KioskOrder() {
         <CartHeader>
           <div className="cart-title">
             <ShoppingCart className="cart-icon" />
-            <h3>My order</h3>
+            <h3>{t('myOrder')}</h3>
             {getCartItemCount() > 0 && (
               <span className="item-badge">{getCartItemCount()}</span>
             )}
           </div>
-          <div className="eat-in-toggle">Eat in</div>
+          <div className="eat-in-toggle">{t('eatIn')}</div>
         </CartHeader>
 
         <QueueSection>
           <div className="queue-title">
-            <h4>Order Queue</h4>
+            <h4>{t('orderQueue')}</h4>
             {orderQueue.length > 0 && (
               <span className="queue-count">{orderQueue.length}</span>
             )}
@@ -1823,13 +1826,13 @@ function KioskOrder() {
                     </div>
                   </div>
                   <div className={`order-status ${order.status === 3 ? 'queuing' : 'processing'}`}>
-                    {order.status === 3 ? 'Queuing' : 'Making'}
+                    {order.status === 3 ? t('queuing') : t('making')}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="empty-queue">No orders in queue</div>
+            <div className="empty-queue">{t('noOrders')}</div>
           )}
         </QueueSection>
 
@@ -1837,7 +1840,7 @@ function KioskOrder() {
           {cart.length === 0 ? (
             <div className="empty-cart">
               <ShoppingCart className="empty-icon" />
-              <p>Your order is empty</p>
+              <p>{t('emptyCart')}</p>
             </div>
           ) : (
             cart.map(item => {
@@ -1873,7 +1876,7 @@ function KioskOrder() {
                 </div>
                 <div className="item-details">
                   <div className="item-name">
-                    {item.product.goodsNameEn}
+                    {getProductName(item.product)}
                     {item.product.customization && (
                       <div style={{ fontSize: '12px', color: '#a0aec0', marginTop: '2px' }}>
                         {item.product.customization.beanCode === 2 && 'Premium Roast, '}
@@ -1917,7 +1920,7 @@ function KioskOrder() {
         {cart.length > 0 && (
           <CartFooter>
             <div className="total-section">
-              <div className="total-label">Total</div>
+              <div className="total-label">{t('total')}</div>
               <div className="total-amount">{currencyUtils.formatPrice(getCartTotal())}</div>
             </div>
             
@@ -1926,7 +1929,7 @@ function KioskOrder() {
               onClick={submitOrder}
               disabled={isSubmitting || cart.length === 0}
             >
-              {isSubmitting ? 'Processing...' : 'Order'}
+              {isSubmitting ? t('processing') : t('order')}
             </button>
           </CartFooter>
         )}
@@ -1937,9 +1940,9 @@ function KioskOrder() {
         <SuccessModal>
           <div className="modal-content">
             <Check className="success-icon" />
-            <h2 className="success-title">Order Placed Successfully!</h2>
+            <h2 className="success-title">{t('orderPlaced')}</h2>
             <p className="success-message">
-              Thank you for your order! Your delicious coffee will be ready soon.
+              {t('thankYou')}
             </p>
             <div className="order-number">Order #{orderNumber}</div>
             <div className="modal-actions">
@@ -1949,10 +1952,10 @@ function KioskOrder() {
                 disabled={isPrinting}
               >
                 <Printer size={18} />
-                {isPrinting ? 'Printing...' : 'Print Receipt'}
+                {isPrinting ? t('printing') : t('printReceipt')}
               </button>
               <button className="modal-btn primary" onClick={closeSuccessModal}>
-                Order More
+                {t('orderMore')}
               </button>
             </div>
           </div>
@@ -1992,7 +1995,7 @@ function KioskOrder() {
             marginBottom: '16px',
             color: '#F59E0B'
           }}>
-            Out of Order
+            {t('outOfOrder')}
           </h1>
           <p style={{ 
             fontSize: '1.5rem', 
@@ -2000,7 +2003,7 @@ function KioskOrder() {
             maxWidth: '600px',
             color: '#E5E7EB'
           }}>
-            {frontendStatus.message || 'Sorry, our coffee machine is temporarily out of order. Please try again later.'}
+            {frontendStatus.message || t('sorryMessage')}
           </p>
           <div style={{
             marginTop: '32px',
@@ -2011,7 +2014,7 @@ function KioskOrder() {
             fontSize: '0.9rem',
             color: '#FED7AA'
           }}>
-            System Status: Maintenance Mode
+            {t('maintenanceMode')}
           </div>
         </div>
       )}

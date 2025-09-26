@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
+import { LanguageProvider } from './contexts/LanguageContext';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import Dashboard from './pages/Dashboard';
@@ -43,34 +44,44 @@ function App() {
 
   // Full-screen kiosk modes
   if (isKioskMode) {
-    return <KioskOrder />;
+    return (
+      <LanguageProvider>
+        <KioskOrder />
+      </LanguageProvider>
+    );
   }
 
   if (isMobileKioskMode) {
-    return <MobileKiosk />;
+    return (
+      <LanguageProvider>
+        <MobileKiosk />
+      </LanguageProvider>
+    );
   }
 
   // Regular admin interface with sidebar
   return (
-    <AppContainer>
-      <Sidebar />
-      <MainContent>
-        <Header />
-        <ContentArea>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/items" element={<ItemManagement />} />
-            <Route path="/latte-art" element={<LatteArtManagement />} />
-            <Route path="/orders" element={<OrderMonitor />} />
-            <Route path="/order-monitor" element={<OrderMonitor />} />
-            <Route path="/create-order" element={<CreateOrder />} />
-            <Route path="/device" element={<DeviceStatus />} />
-            <Route path="/system-controls" element={<SystemControls />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </ContentArea>
-      </MainContent>
-    </AppContainer>
+    <LanguageProvider>
+      <AppContainer>
+        <Sidebar />
+        <MainContent>
+          <Header />
+          <ContentArea>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/items" element={<ItemManagement />} />
+              <Route path="/latte-art" element={<LatteArtManagement />} />
+              <Route path="/orders" element={<OrderMonitor />} />
+              <Route path="/order-monitor" element={<OrderMonitor />} />
+              <Route path="/create-order" element={<CreateOrder />} />
+              <Route path="/device" element={<DeviceStatus />} />
+              <Route path="/system-controls" element={<SystemControls />} />
+              <Route path="/settings" element={<Settings />} />
+            </Routes>
+          </ContentArea>
+        </MainContent>
+      </AppContainer>
+    </LanguageProvider>
   );
 }
 
