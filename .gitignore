@@ -153,4 +153,4 @@ public/uploads/*
 
 # Local development files
 *.local
-.env.development
+.env.development"coffee_machine.db" 
