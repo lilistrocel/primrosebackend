@@ -215,16 +215,25 @@ function OptionNamesManagement() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load option names from backend
+  // Load option names from backend with cache-busting
   useEffect(() => {
     const loadOptionNames = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names`);
+        const timestamp = Date.now();
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names?t=${timestamp}`, {
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
         
         if (response.ok) {
           const data = await response.json();
           if (data.code === 0 && data.data) {
+            console.log('🔄 OPTION NAMES: Fetched fresh option names:', data.data);
             setOptionNames(data.data);
           }
         } else {
@@ -268,10 +277,15 @@ function OptionNamesManagement() {
       // Save each option name to the backend
       const savePromises = Object.keys(optionNames).map(async (optionKey) => {
         const option = optionNames[optionKey];
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names/${optionKey}`, {
+        const timestamp = Date.now();
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names/${optionKey}?t=${timestamp}`, {
           method: 'PUT',
+          cache: 'no-cache',
           headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           },
           body: JSON.stringify({
             name_en: option.en,

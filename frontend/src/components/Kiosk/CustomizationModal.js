@@ -363,13 +363,22 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [optionNames, setOptionNames] = useState({});
 
-  // Fetch option names from backend
+  // Fetch option names from backend with cache-busting
   const fetchOptionNames = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names`);
+      const timestamp = Date.now();
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names?t=${timestamp}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.code === 0 && data.data) {
+          console.log('🔄 CUSTOMIZATION: Fetched fresh option names:', data.data);
           setOptionNames(data.data);
         }
       }

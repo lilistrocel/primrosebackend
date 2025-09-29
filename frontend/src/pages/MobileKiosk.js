@@ -837,12 +837,35 @@ function MobileKiosk() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
+  // Clear all caches and force fresh data load
+  const clearCachesAndReload = () => {
+    console.log('🧹 MOBILE: Clearing all caches and forcing fresh data load...');
+    
+    // Clear browser caches
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+    
+    // Clear localStorage and sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    console.log('🧹 MOBILE: Caches cleared, forcing fresh data load');
+  };
+
   // Initialize data
   useEffect(() => {
     // Debug API URL detection
     console.log('📱 MOBILE: Initializing mobile kiosk...');
     console.log('📱 MOBILE: Current location:', window.location.href);
     console.log('📱 MOBILE: Detected API base URL:', getApiBaseUrl());
+    
+    // Clear caches on mobile kiosk load to ensure fresh data
+    clearCachesAndReload();
     
     fetchProducts();
     fetchLatteArtDesigns();

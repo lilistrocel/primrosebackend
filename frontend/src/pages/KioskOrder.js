@@ -1297,8 +1297,31 @@ function KioskOrder() {
     }
   };
 
+  // Clear all caches and force fresh data load
+  const clearCachesAndReload = () => {
+    console.log('🧹 KIOSK: Clearing all caches and forcing fresh data load...');
+    
+    // Clear browser caches
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+    
+    // Clear localStorage and sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    console.log('🧹 KIOSK: Caches cleared, forcing fresh data load');
+  };
+
   // Initial fetch and periodic refresh for products
   useEffect(() => {
+    // Clear caches on kiosk load to ensure fresh data
+    clearCachesAndReload();
+    
     fetchProducts(); // Initial fetch
     
     // Auto-refresh products every 30 seconds to catch updates

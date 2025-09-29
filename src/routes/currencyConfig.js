@@ -5,6 +5,13 @@ const currencyConfig = require('../config/currency');
 // GET /api/motong/currency-config - Get currency configuration
 router.get('/', (req, res) => {
   try {
+    // Set cache-busting headers
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     res.json({
       code: 0,
       msg: 'Currency configuration retrieved successfully',

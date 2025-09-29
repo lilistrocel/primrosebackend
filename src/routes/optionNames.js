@@ -24,6 +24,13 @@ const updateOptionNameSchema = Joi.object({
 // GET /api/motong/option-names - Get all option names
 router.get('/', (req, res) => {
   try {
+    // Set cache-busting headers
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     const optionNames = db.getAllOptionNames();
     
     // Transform to the format expected by frontend

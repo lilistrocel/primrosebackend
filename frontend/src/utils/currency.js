@@ -3,13 +3,22 @@
 
 let currencyConfig = null;
 
-// Fetch currency configuration from backend
+// Fetch currency configuration from backend with cache-busting
 export const loadCurrencyConfig = async () => {
   try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/currency-config`);
+    const timestamp = Date.now();
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/currency-config?t=${timestamp}`, {
+      cache: 'no-cache',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     if (response.ok) {
       const data = await response.json();
       currencyConfig = data.data;
+      console.log('💰 CURRENCY: Fetched fresh currency config:', currencyConfig);
     }
   } catch (error) {
     console.warn('Failed to load currency config, using defaults:', error);
