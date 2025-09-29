@@ -3,7 +3,8 @@ import styled, { keyframes } from 'styled-components';
 import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera } from 'lucide-react';
 import { getApiUrl, getImageUrl } from '../../utils/config';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getOptionName, getOptionDescription } from '../../utils/optionNames';
+// import { getOptionName, getOptionDescription } from '../../utils/optionNames';
+import { formatPrice, initCurrency } from '../../utils/currency';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -360,12 +361,41 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
   const [latteArtDesigns, setLatteArtDesigns] = useState([]);
   const [customImage, setCustomImage] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [optionNames, setOptionNames] = useState({});
+
+  // Fetch option names from backend
+  const fetchOptionNames = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.code === 0 && data.data) {
+          setOptionNames(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching option names:', error);
+    }
+  };
+
+  // Helper functions to get option names and descriptions
+  const getOptionName = (key, language = currentLanguage) => {
+    return optionNames[key]?.[language] || optionNames[key]?.en || key;
+  };
+
+  const getOptionDescription = (key, language = currentLanguage) => {
+    return optionNames[key]?.description?.[language] || optionNames[key]?.description?.en || '';
+  };
 
   // Reset options when product changes or modal opens
   useEffect(() => {
     if (isOpen && product) {
       console.log('🔧 Resetting customization options for product:', product.goodsNameEn);
       console.log('🧊 Product defaultIce value:', product.defaultIce);
+      
+      // Initialize currency configuration and fetch option names
+      initCurrency();
+      fetchOptionNames();
       
       setSelectedOptions({
         beanCode: product.default_bean_code || 1,
@@ -465,7 +495,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     // Calculate final price based on options
     let finalPrice = product.price;
     if (selectedOptions.shots === 2) {
-      finalPrice += 0.5; // Add $0.50 for double shot
+      finalPrice += 0.5; // Add extra cost for double shot
     }
 
     // Determine the correct classCode based on variant options
@@ -659,7 +689,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         <ModalHeader>
           <div className="product-info">
             <div className="product-name">{getProductName(product)}</div>
-            <div className="product-price">${product.price.toFixed(2)}</div>
+            <div className="product-price">{formatPrice(product.price)}</div>
           </div>
           <button className="close-button" onClick={onClose}>
             <X size={20} />
@@ -886,7 +916,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
           </QuantitySection>
 
           <AddToCartButton onClick={handleAddToCart}>
-            {t('addToCart')} - ${((selectedOptions.shots === 2 ? product.price + 0.5 : product.price) * quantity).toFixed(2)}
+            {t('addToCart')} - {formatPrice((selectedOptions.shots === 2 ? product.price + 0.5 : product.price) * quantity)}
           </AddToCartButton>
         </ModalBody>
       </ModalContent>

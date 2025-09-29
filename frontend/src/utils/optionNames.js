@@ -69,8 +69,8 @@ export const defaultOptionNames = {
     en: 'Double Shot',
     ar: 'جرعتان',
     description: {
-      en: '+$0.50',
-      ar: '+$0.50'
+      en: 'Extra shot',
+      ar: 'جرعة إضافية'
     }
   }
 };
