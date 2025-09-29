@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import LatteArtManagement from './pages/LatteArtManagement';
 import SystemControls from './pages/SystemControls';
 import MobileKiosk from './pages/MobileKiosk';
+import OptionNamesManagement from './pages/OptionNamesManagement';
 
 const AppContainer = styled.div`
   display: flex;
@@ -71,6 +72,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/items" element={<ItemManagement />} />
               <Route path="/latte-art" element={<LatteArtManagement />} />
+              <Route path="/option-names" element={<OptionNamesManagement />} />
               <Route path="/orders" element={<OrderMonitor />} />
               <Route path="/order-monitor" element={<OrderMonitor />} />
               <Route path="/create-order" element={<CreateOrder />} />

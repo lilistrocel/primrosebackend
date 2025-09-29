@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera } from 'lucide-react';
 import { getApiUrl, getImageUrl } from '../../utils/config';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { getOptionName, getOptionDescription } from '../../utils/optionNames';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -344,6 +346,7 @@ const AddToCartButton = styled.button`
 `;
 
 function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
+  const { currentLanguage, isRTL, t, getProductName } = useLanguage();
   const [selectedOptions, setSelectedOptions] = useState({
     beanCode: product?.default_bean_code || 1,
     milkCode: product?.default_milk_code || 1,
@@ -655,7 +658,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <div className="product-info">
-            <div className="product-name">{product.goodsNameEn}</div>
+            <div className="product-name">{getProductName(product)}</div>
             <div className="product-price">${product.price.toFixed(2)}</div>
           </div>
           <button className="close-button" onClick={onClose}>
@@ -668,22 +671,22 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
             <OptionSection>
               <div className="section-header">
                 <Coffee className="icon" />
-                <div className="title">Bean Type</div>
+                <div className="title">{t('beanType')}</div>
               </div>
               <OptionGrid>
                 <OptionButton
                   className={selectedOptions.beanCode === 1 ? 'selected' : ''}
                   onClick={() => updateOption('beanCode', 1)}
                 >
-                  <div className="option-name">Bean Type 1</div>
-                  <div className="option-desc">House Blend</div>
+                  <div className="option-name">{getOptionName('beanType1', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('beanType1', currentLanguage)}</div>
                 </OptionButton>
                 <OptionButton
                   className={selectedOptions.beanCode === 2 ? 'selected' : ''}
                   onClick={() => updateOption('beanCode', 2)}
                 >
-                  <div className="option-name">Bean Type 2</div>
-                  <div className="option-desc">Premium Roast</div>
+                  <div className="option-name">{getOptionName('beanType2', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('beanType2', currentLanguage)}</div>
                 </OptionButton>
               </OptionGrid>
             </OptionSection>
@@ -693,22 +696,22 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
             <OptionSection>
               <div className="section-header">
                 <Milk className="icon" />
-                <div className="title">Milk Type</div>
+                <div className="title">{t('milkType')}</div>
               </div>
               <OptionGrid>
                 <OptionButton
                   className={selectedOptions.milkCode === 1 ? 'selected' : ''}
                   onClick={() => updateOption('milkCode', 1)}
                 >
-                  <div className="option-name">Regular Milk</div>
-                  <div className="option-desc">Whole milk</div>
+                  <div className="option-name">{getOptionName('milkType1', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('milkType1', currentLanguage)}</div>
                 </OptionButton>
                 <OptionButton
                   className={selectedOptions.milkCode === 2 ? 'selected' : ''}
                   onClick={() => updateOption('milkCode', 2)}
                 >
-                  <div className="option-name">Oat Milk</div>
-                  <div className="option-desc">Plant-based</div>
+                  <div className="option-name">{getOptionName('milkType2', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('milkType2', currentLanguage)}</div>
                 </OptionButton>
               </OptionGrid>
             </OptionSection>
@@ -718,22 +721,22 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
             <OptionSection>
               <div className="section-header">
                 <Snowflake className="icon" />
-                <div className="title">Ice Preference</div>
+                <div className="title">{t('icePreference')}</div>
               </div>
               <OptionGrid>
                 <OptionButton
                   className={selectedOptions.ice ? 'selected' : ''}
                   onClick={() => updateOption('ice', true)}
                 >
-                  <div className="option-name">With Ice</div>
-                  <div className="option-desc">Regular ice</div>
+                  <div className="option-name">{getOptionName('withIce', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('withIce', currentLanguage)}</div>
                 </OptionButton>
                 <OptionButton
                   className={!selectedOptions.ice ? 'selected' : ''}
                   onClick={() => updateOption('ice', false)}
                 >
-                  <div className="option-name">No Ice</div>
-                  <div className="option-desc">Hot beverage</div>
+                  <div className="option-name">{getOptionName('noIce', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('noIce', currentLanguage)}</div>
                 </OptionButton>
               </OptionGrid>
             </OptionSection>
@@ -743,22 +746,22 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
             <OptionSection>
               <div className="section-header">
                 <Zap className="icon" />
-                <div className="title">Coffee Shots</div>
+                <div className="title">{t('coffeeShots')}</div>
               </div>
               <OptionGrid>
                 <OptionButton
                   className={selectedOptions.shots === 1 ? 'selected' : ''}
                   onClick={() => updateOption('shots', 1)}
                 >
-                  <div className="option-name">Single Shot</div>
-                  <div className="option-desc">Regular strength</div>
+                  <div className="option-name">{getOptionName('singleShot', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('singleShot', currentLanguage)}</div>
                 </OptionButton>
                 <OptionButton
                   className={selectedOptions.shots === 2 ? 'selected' : ''}
                   onClick={() => updateOption('shots', 2)}
                 >
-                  <div className="option-name">Double Shot</div>
-                  <div className="option-desc">+$0.50</div>
+                  <div className="option-name">{getOptionName('doubleShot', currentLanguage)}</div>
+                  <div className="option-desc">{getOptionDescription('doubleShot', currentLanguage)}</div>
                 </OptionButton>
               </OptionGrid>
             </OptionSection>
@@ -768,7 +771,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
             <OptionSection>
               <div className="section-header">
                 <Palette className="icon" />
-                <div className="title">Latte Art Design</div>
+                <div className="title">{t('latteArtDesign')}</div>
               </div>
               
               <LatteArtGrid>
@@ -778,7 +781,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
                   onClick={() => handleLatteArtSelect('none')}
                 >
                   <X className="art-icon" />
-                  <div className="art-name">None</div>
+                  <div className="art-name">{t('none')}</div>
                 </LatteArtOption>
 
                 {/* Predefined designs */}
@@ -813,7 +816,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
                 >
                   <Upload className="upload-icon" />
                   <div className="upload-text">
-                    {uploadingImage ? 'Uploading...' : 'Upload Custom'}
+                    {uploadingImage ? t('uploading') : t('uploadCustom')}
                   </div>
                   <input
                     id="custom-image-upload"
@@ -835,7 +838,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
                   }}
                 >
                   <Camera className="upload-icon" />
-                  <div className="upload-text">Take Photo</div>
+                  <div className="upload-text">{t('takePhoto')}</div>
                 </UploadButton>
               </UploadSection>
 
@@ -843,7 +846,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
               {customImage && selectedOptions.latteArt === 'custom' && (
                 <div style={{ marginTop: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
-                    Custom Image Preview:
+                    {t('customImagePreview')}
                   </div>
                   <img 
                     src={getImageUrl(customImage.imagePath)} 
@@ -862,7 +865,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
           )}
 
           <QuantitySection>
-            <div className="quantity-label">Quantity</div>
+            <div className="quantity-label">{t('quantity')}</div>
             <div className="quantity-controls">
               <button 
                 className="qty-btn"
@@ -883,7 +886,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
           </QuantitySection>
 
           <AddToCartButton onClick={handleAddToCart}>
-            Add to Cart - ${((selectedOptions.shots === 2 ? product.price + 0.5 : product.price) * quantity).toFixed(2)}
+            {t('addToCart')} - ${((selectedOptions.shots === 2 ? product.price + 0.5 : product.price) * quantity).toFixed(2)}
           </AddToCartButton>
         </ModalBody>
       </ModalContent>

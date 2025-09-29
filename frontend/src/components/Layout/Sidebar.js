@@ -11,7 +11,8 @@ import {
   ShoppingCart,
   Monitor,
   Palette,
-  Smartphone
+  Smartphone,
+  Languages
 } from 'lucide-react';
 
 const SidebarContainer = styled.div`
@@ -132,6 +133,11 @@ function Sidebar() {
         <NavItem to="/latte-art">
           <Palette />
           Latte Art Designs
+        </NavItem>
+        
+        <NavItem to="/option-names">
+          <Languages />
+          Option Names
         </NavItem>
         
         <NavItem to="/create-order">
