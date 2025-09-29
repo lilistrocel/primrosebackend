@@ -60,7 +60,10 @@ class CoffeeMachineBackend {
         'Accept',
         'Origin',
         'Access-Control-Request-Method',
-        'Access-Control-Request-Headers'
+        'Access-Control-Request-Headers',
+        'Cache-Control',
+        'Pragma',
+        'Expires'
       ],
       credentials: true,
       preflightContinue: false,
