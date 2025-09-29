@@ -122,3 +122,14 @@ export const getCurrencyName = (language = 'en') => {
 export const initCurrency = async () => {
   await loadCurrencyConfig();
 };
+
+// Default export for backward compatibility
+const currencyUtils = {
+  formatPrice,
+  getCurrencySymbol,
+  getCurrencyName,
+  initCurrency,
+  loadCurrencyConfig
+};
+
+export default currencyUtils;
