@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer, AlertTriangle, RefreshCw } from 'lucide-react';
 import { receiptPrinter } from '../utils/receiptPrinter';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
 import { getApiUrl, getApiBaseUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
@@ -163,6 +163,33 @@ const Header = styled.div`
     }
     
     .fullscreen-icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .mobile-refresh-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    border: 1px solid #ff6b35;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    
+    &:hover {
+      background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+    }
+    
+    .refresh-icon {
       width: 20px;
       height: 20px;
     }
@@ -1317,6 +1344,15 @@ function KioskOrder() {
     console.log('🧹 KIOSK: Caches cleared, forcing fresh data load');
   };
 
+  // Force refresh for mobile devices
+  const forceMobileRefresh = () => {
+    console.log('📱 MOBILE: Force refreshing for mobile device');
+    clearCachesAndReload();
+    fetchProducts();
+    fetchOrderQueue();
+    checkFrontendStatus();
+  };
+
   // Initial fetch and periodic refresh for products
   useEffect(() => {
     // Clear caches on kiosk load to ensure fresh data
@@ -1627,6 +1663,13 @@ function KioskOrder() {
                 <Maximize className="fullscreen-icon" />
               )}
             </div>
+            
+            {/* Mobile refresh button - only show on mobile devices */}
+            {navigator.userAgent.includes('Mobile') && (
+              <div className="mobile-refresh-btn" onClick={forceMobileRefresh} title="Refresh Data">
+                <RefreshCw className="refresh-icon" />
+              </div>
+            )}
           </div>
         </Header>
 

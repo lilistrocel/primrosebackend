@@ -363,24 +363,35 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [optionNames, setOptionNames] = useState({});
 
-  // Fetch option names from backend with cache-busting
+  // Fetch option names from backend with aggressive cache-busting for mobile
   const fetchOptionNames = async () => {
     try {
       const timestamp = Date.now();
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names?t=${timestamp}`, {
-        cache: 'no-cache',
+      const randomId = Math.random().toString(36).substring(7);
+      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names?t=${timestamp}&r=${randomId}&mobile=${navigator.userAgent.includes('Mobile') ? '1' : '0'}`;
+      
+      console.log('🔄 CUSTOMIZATION: Fetching option names with aggressive cache-busting:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Expires': '0',
+          'If-Modified-Since': '0',
+          'If-None-Match': '*'
         }
       });
+      
       if (response.ok) {
         const data = await response.json();
         if (data.code === 0 && data.data) {
           console.log('🔄 CUSTOMIZATION: Fetched fresh option names:', data.data);
           setOptionNames(data.data);
         }
+      } else {
+        console.error('Failed to fetch option names:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching option names:', error);
@@ -401,6 +412,20 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     if (isOpen && product) {
       console.log('🔧 Resetting customization options for product:', product.goodsNameEn);
       console.log('🧊 Product defaultIce value:', product.defaultIce);
+      
+      // Clear all caches on mobile devices for fresh data
+      if (navigator.userAgent.includes('Mobile')) {
+        console.log('📱 MOBILE: Clearing all caches for mobile device');
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => {
+              caches.delete(name);
+            });
+          });
+        }
+        localStorage.clear();
+        sessionStorage.clear();
+      }
       
       // Initialize currency configuration and fetch option names
       initCurrency();
