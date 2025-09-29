@@ -63,7 +63,9 @@ class CoffeeMachineBackend {
         'Access-Control-Request-Headers',
         'Cache-Control',
         'Pragma',
-        'Expires'
+        'Expires',
+        'If-None-Match',
+        'If-Modified-Since'
       ],
       credentials: true,
       preflightContinue: false,
