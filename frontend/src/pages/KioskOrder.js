@@ -1664,12 +1664,10 @@ function KioskOrder() {
               )}
             </div>
             
-            {/* Mobile refresh button - only show on mobile devices */}
-            {navigator.userAgent.includes('Mobile') && (
-              <div className="mobile-refresh-btn" onClick={forceMobileRefresh} title="Refresh Data">
-                <RefreshCw className="refresh-icon" />
-              </div>
-            )}
+            {/* Refresh button - show on all devices for testing */}
+            <div className="mobile-refresh-btn" onClick={forceMobileRefresh} title="Refresh Data">
+              <RefreshCw className="refresh-icon" />
+            </div>
           </div>
         </Header>
 
