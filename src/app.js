@@ -23,6 +23,7 @@ const uploadRoute = require('./routes/upload');
 const categoriesRoute = require('./routes/categories');
 const latteArtRoute = require('./routes/latteArt');
 const systemSettingsRoute = require('./routes/systemSettings');
+const optionNamesRoute = require('./routes/optionNames');
 const webSocketManager = require('./websocket/WebSocketManager');
 
 class CoffeeMachineBackend {
@@ -166,6 +167,7 @@ class CoffeeMachineBackend {
     this.app.use('/api/motong/categories', categoriesRoute); // Categories management endpoints
     this.app.use('/api/motong/latte-art', latteArtRoute); // Latte art designs management endpoints
     this.app.use('/api/motong/system-settings', systemSettingsRoute); // System settings management endpoints
+    this.app.use('/api/motong/option-names', optionNamesRoute); // Option names management endpoints
 
     // Alternative route paths (in case machine uses different paths)
     this.app.use('/swoft/api/motong', deviceOrderQueueListRoute);
@@ -179,6 +181,7 @@ class CoffeeMachineBackend {
     this.app.use('/swoft/api/motong/categories', categoriesRoute); // Categories management endpoints
     this.app.use('/swoft/api/motong/latte-art', latteArtRoute); // Latte art designs management endpoints
     this.app.use('/swoft/api/motong/system-settings', systemSettingsRoute); // System settings management endpoints
+    this.app.use('/swoft/api/motong/option-names', optionNamesRoute); // Option names management endpoints
 
     // Root redirect
     this.app.get('/', (req, res) => {

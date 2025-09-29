@@ -118,6 +118,19 @@ CREATE TABLE IF NOT EXISTS categories (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Option names for customization modal - configurable names in multiple languages
+CREATE TABLE IF NOT EXISTS option_names (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    option_key VARCHAR(50) NOT NULL UNIQUE, -- e.g., 'beanType1', 'milkType1', 'withIce'
+    name_en VARCHAR(100) NOT NULL, -- English name
+    name_ar VARCHAR(100) NOT NULL, -- Arabic name
+    description_en VARCHAR(200), -- English description
+    description_ar VARCHAR(200), -- Arabic description
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_orders_device_id ON orders(device_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
@@ -132,3 +145,5 @@ CREATE INDEX IF NOT EXISTS idx_device_status_device_id ON device_status(device_i
 CREATE INDEX IF NOT EXISTS idx_categories_display_order ON categories(display_order);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_display_order ON products(display_order);
+CREATE INDEX IF NOT EXISTS idx_option_names_key ON option_names(option_key);
+CREATE INDEX IF NOT EXISTS idx_option_names_active ON option_names(is_active);

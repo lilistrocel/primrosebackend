@@ -892,6 +892,109 @@ class DatabaseManager {
       return 'Sorry, our coffee machine is temporarily out of order. Please try again later.';
     }
   }
+
+  // Option Names Management
+  getAllOptionNames() {
+    try {
+      const query = `SELECT * FROM option_names WHERE is_active = 1 ORDER BY option_key`;
+      return this.db.prepare(query).all();
+    } catch (error) {
+      console.error('Error fetching option names:', error);
+      throw error;
+    }
+  }
+
+  getOptionName(key) {
+    try {
+      const query = `SELECT * FROM option_names WHERE option_key = ? AND is_active = 1`;
+      return this.db.prepare(query).get(key);
+    } catch (error) {
+      console.error('Error fetching option name:', error);
+      throw error;
+    }
+  }
+
+  createOptionName(optionData) {
+    try {
+      const query = `
+        INSERT INTO option_names (option_key, name_en, name_ar, description_en, description_ar, is_active)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      
+      const result = this.db.prepare(query).run(
+        optionData.option_key,
+        optionData.name_en,
+        optionData.name_ar,
+        optionData.description_en || '',
+        optionData.description_ar || '',
+        optionData.is_active !== undefined ? optionData.is_active : 1
+      );
+      
+      return this.getOptionName(optionData.option_key);
+    } catch (error) {
+      console.error('Error creating option name:', error);
+      throw error;
+    }
+  }
+
+  updateOptionName(key, updateData) {
+    try {
+      // Build dynamic update query
+      const updateFields = [];
+      const values = [];
+      
+      if (updateData.name_en !== undefined) {
+        updateFields.push('name_en = ?');
+        values.push(updateData.name_en);
+      }
+      if (updateData.name_ar !== undefined) {
+        updateFields.push('name_ar = ?');
+        values.push(updateData.name_ar);
+      }
+      if (updateData.description_en !== undefined) {
+        updateFields.push('description_en = ?');
+        values.push(updateData.description_en);
+      }
+      if (updateData.description_ar !== undefined) {
+        updateFields.push('description_ar = ?');
+        values.push(updateData.description_ar);
+      }
+      if (updateData.is_active !== undefined) {
+        updateFields.push('is_active = ?');
+        values.push(updateData.is_active ? 1 : 0);
+      }
+      
+      if (updateFields.length === 0) {
+        return this.getOptionName(key);
+      }
+      
+      updateFields.push('updated_at = CURRENT_TIMESTAMP');
+      values.push(key);
+      
+      const query = `UPDATE option_names SET ${updateFields.join(', ')} WHERE option_key = ?`;
+      const result = this.db.prepare(query).run(...values);
+      
+      if (result.changes === 0) {
+        return null;
+      }
+      
+      return this.getOptionName(key);
+    } catch (error) {
+      console.error('Error updating option name:', error);
+      throw error;
+    }
+  }
+
+  deleteOptionName(key) {
+    try {
+      const query = `UPDATE option_names SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE option_key = ?`;
+      const result = this.db.prepare(query).run(key);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error deleting option name:', error);
+      throw error;
+    }
+  }
 }
 
 // Create singleton instance

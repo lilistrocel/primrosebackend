@@ -69,7 +69,32 @@ const translations = {
     
     // Missing ingredients
     missing: 'Missing',
-    ingredients: 'ingredients'
+    ingredients: 'ingredients',
+    
+    // Customization Modal
+    beanType: 'Bean Type',
+    milkType: 'Milk Type',
+    icePreference: 'Ice Preference',
+    coffeeShots: 'Coffee Shots',
+    latteArtDesign: 'Latte Art Design',
+    quantity: 'Quantity',
+    addToCart: 'Add to Cart',
+    uploading: 'Uploading...',
+    uploadCustom: 'Upload Custom',
+    takePhoto: 'Take Photo',
+    none: 'None',
+    withIce: 'With Ice',
+    noIce: 'No Ice',
+    singleShot: 'Single Shot',
+    doubleShot: 'Double Shot',
+    regularIce: 'Regular ice',
+    hotBeverage: 'Hot beverage',
+    regularStrength: 'Regular strength',
+    houseBlend: 'House Blend',
+    premiumRoast: 'Premium Roast',
+    wholeMilk: 'Whole milk',
+    plantBased: 'Plant-based',
+    customImagePreview: 'Custom Image Preview:'
   },
   ar: {
     // Header
@@ -128,7 +153,32 @@ const translations = {
     
     // Missing ingredients
     missing: 'مفقود',
-    ingredients: 'مكونات'
+    ingredients: 'مكونات',
+    
+    // Customization Modal
+    beanType: 'نوع الحبوب',
+    milkType: 'نوع الحليب',
+    icePreference: 'تفضيل الثلج',
+    coffeeShots: 'جرعات القهوة',
+    latteArtDesign: 'تصميم فن اللاتيه',
+    quantity: 'الكمية',
+    addToCart: 'أضف للسلة',
+    uploading: 'جاري الرفع...',
+    uploadCustom: 'رفع مخصص',
+    takePhoto: 'التقاط صورة',
+    none: 'بدون',
+    withIce: 'مع ثلج',
+    noIce: 'بدون ثلج',
+    singleShot: 'جرعة واحدة',
+    doubleShot: 'جرعتان',
+    regularIce: 'ثلج عادي',
+    hotBeverage: 'مشروب ساخن',
+    regularStrength: 'قوة عادية',
+    houseBlend: 'مزيج البيت',
+    premiumRoast: 'تحميص مميز',
+    wholeMilk: 'حليب كامل',
+    plantBased: 'نباتي',
+    customImagePreview: 'معاينة الصورة المخصصة:'
   }
 };
 
