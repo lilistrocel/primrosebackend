@@ -1125,9 +1125,21 @@ function KioskOrder() {
         
         if (result.code === 0 && result.data) {
           console.log('🏷️ KIOSK: Found', result.data.length, 'categories');
+          
+          // Filter categories to only include those with products
+          const categoriesWithProducts = result.data.filter(category => {
+            const categoryProducts = products.filter(product => 
+              product.category === category.name || 
+              (product.category === null && category.name === 'Classics')
+            );
+            return categoryProducts.length > 0;
+          });
+          
+          console.log('🏷️ KIOSK: Categories with products:', categoriesWithProducts.length);
+          
           const allCategories = [
             { id: 'All', name: t('allItems'), icon: '🍽️' },
-            ...result.data.map(cat => ({ id: cat.name, name: cat.name, icon: cat.icon }))
+            ...categoriesWithProducts.map(cat => ({ id: cat.name, name: cat.name, icon: cat.icon }))
           ];
           setCategories(allCategories);
         } else {
@@ -1138,8 +1150,11 @@ function KioskOrder() {
       }
     };
 
-    fetchCategories();
-  }, []);
+    // Only fetch categories after products are loaded
+    if (products.length > 0) {
+      fetchCategories();
+    }
+  }, [products, t]);
 
   // Check frontend status
   const checkFrontendStatus = async () => {

@@ -553,7 +553,18 @@ function MobileKiosk() {
       
       if (result.code === 0) {
         console.log('📱 MOBILE: Found categories:', result.data.length);
-        setCategories(result.data);
+        
+        // Filter categories to only include those with products
+        const categoriesWithProducts = result.data.filter(category => {
+          const categoryProducts = products.filter(product => 
+            product.category === category.name || 
+            (product.category === null && category.name === 'Classics')
+          );
+          return categoryProducts.length > 0;
+        });
+        
+        console.log('📱 MOBILE: Categories with products:', categoriesWithProducts.length);
+        setCategories(categoriesWithProducts);
         // Default to "All" category is already set in state
       } else {
         console.error('📱 MOBILE: Categories API error:', result);
@@ -833,11 +844,17 @@ function MobileKiosk() {
     console.log('📱 MOBILE: Current location:', window.location.href);
     console.log('📱 MOBILE: Detected API base URL:', getApiBaseUrl());
     
-    fetchCategories();
     fetchProducts();
     fetchLatteArtDesigns();
     checkFrontendStatus();
   }, []);
+
+  // Fetch categories after products are loaded
+  useEffect(() => {
+    if (products.length > 0) {
+      fetchCategories();
+    }
+  }, [products]);
 
   // WebSocket connection
   useEffect(() => {
