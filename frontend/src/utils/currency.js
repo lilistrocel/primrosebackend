@@ -1,134 +1,124 @@
-// Frontend Currency Configuration Utility
-// Centralizes currency formatting and display for React components
+// Currency utility for frontend
+// Fetches currency configuration from backend and provides formatting functions
 
-class CurrencyUtils {
-  constructor() {
-    // Get currency settings from environment variables
-    this.CURRENCY_CODE = process.env.REACT_APP_CURRENCY_CODE || 'AED';
-    this.CURRENCY_SYMBOL = process.env.REACT_APP_CURRENCY_SYMBOL || 'د.إ';
-    this.CURRENCY_NAME = process.env.REACT_APP_CURRENCY_NAME || 'UAE Dirham';
-    this.CURRENCY_POSITION = process.env.REACT_APP_CURRENCY_POSITION || 'before';
-    this.DECIMAL_PLACES = parseInt(process.env.REACT_APP_DECIMAL_PLACES) || 2;
-  }
-  
-  // Format price for display
-  formatPrice(amount, options = {}) {
-    const {
-      symbol = this.CURRENCY_SYMBOL,
-      position = this.CURRENCY_POSITION,
-      decimals = this.DECIMAL_PLACES,
-      showSymbol = true
-    } = options;
-    
-    // Handle null/undefined amounts
-    if (amount === null || amount === undefined || isNaN(amount)) {
-      return showSymbol ? `${symbol}0.${'0'.repeat(decimals)}` : `0.${'0'.repeat(decimals)}`;
+let currencyConfig = null;
+
+// Fetch currency configuration from backend
+export const loadCurrencyConfig = async () => {
+  try {
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/currency-config`);
+    if (response.ok) {
+      const data = await response.json();
+      currencyConfig = data.data;
     }
-    
-    // Convert to number and fix decimals
-    const numAmount = parseFloat(amount);
-    const formattedNumber = numAmount.toFixed(decimals);
-    
-    if (!showSymbol) {
-      return formattedNumber;
-    }
-    
-    // Return formatted currency based on position
-    if (position === 'before') {
-      return `${symbol}${formattedNumber}`;
-    } else {
-      return `${formattedNumber} ${symbol}`;
-    }
-  }
-  
-  // Format price with localized symbol
-  formatPriceLocalized(amount, language = 'en') {
-    const symbols = {
-      'AED': {
-        'en': 'AED',
-        'ar': 'د.إ',
-        'zh': '迪拉姆'
-      },
-      'USD': {
-        'en': '$',
-        'ar': '$', 
-        'zh': '$'
-      },
-      'EUR': {
-        'en': '€',
-        'ar': '€',
-        'zh': '€'
-      },
-      'SAR': {
-        'en': 'SAR',
-        'ar': 'ر.س',
-        'zh': '里亚尔'
-      }
-    };
-    
-    const localizedSymbol = symbols[this.CURRENCY_CODE]?.[language] || this.CURRENCY_SYMBOL;
-    return this.formatPrice(amount, { symbol: localizedSymbol });
-  }
-  
-  // Get currency symbol for current configuration
-  getSymbol() {
-    return this.CURRENCY_SYMBOL;
-  }
-  
-  // Get currency code for current configuration
-  getCode() {
-    return this.CURRENCY_CODE;
-  }
-  
-  // Get currency name for current configuration
-  getName() {
-    return this.CURRENCY_NAME;
-  }
-  
-  // Parse string price to number (removes currency symbols)
-  parsePrice(priceString) {
-    if (typeof priceString === 'number') {
-      return priceString;
-    }
-    
-    // Remove currency symbols and parse as float
-    const cleanString = priceString
-      .replace(/[^\d.-]/g, '') // Remove all non-digit, non-decimal, non-minus characters
-      .trim();
-    
-    return parseFloat(cleanString) || 0;
-  }
-  
-  // Calculate totals with proper decimal handling
-  calculateTotal(items) {
-    return items.reduce((total, item) => {
-      const price = this.parsePrice(item.price || 0);
-      const quantity = parseInt(item.quantity || 1);
-      return total + (price * quantity);
-    }, 0);
-  }
-  
-  // Format for API submission (usually just the number)
-  formatForAPI(amount) {
-    return parseFloat(amount).toFixed(this.DECIMAL_PLACES);
-  }
-  
-  // Currency configuration info
-  getConfig() {
-    return {
-      code: this.CURRENCY_CODE,
-      symbol: this.CURRENCY_SYMBOL,
-      name: this.CURRENCY_NAME,
-      position: this.CURRENCY_POSITION,
-      decimals: this.DECIMAL_PLACES
+  } catch (error) {
+    console.warn('Failed to load currency config, using defaults:', error);
+    // Use default currency configuration
+    currencyConfig = {
+      CURRENCY_CODE: 'AED',
+      CURRENCY_SYMBOL: 'د.إ',
+      CURRENCY_NAME: 'UAE Dirham',
+      CURRENCY_POSITION: 'before',
+      DECIMAL_PLACES: 2
     };
   }
-}
+};
 
-// Create singleton instance
-const currencyUtils = new CurrencyUtils();
+// Format price with current currency settings
+export const formatPrice = (amount, options = {}) => {
+  if (!currencyConfig) {
+    // Fallback to default formatting
+    return `$${parseFloat(amount).toFixed(2)}`;
+  }
 
-// Export both the class and instance for flexibility
-export { CurrencyUtils };
-export default currencyUtils;
+  const {
+    symbol = currencyConfig.CURRENCY_SYMBOL,
+    position = currencyConfig.CURRENCY_POSITION,
+    decimals = currencyConfig.DECIMAL_PLACES,
+    showSymbol = true
+  } = options;
+  
+  // Convert to number and fix decimals
+  const numAmount = parseFloat(amount);
+  const formattedNumber = numAmount.toFixed(decimals);
+  
+  if (!showSymbol) {
+    return formattedNumber;
+  }
+  
+  // Return formatted currency based on position
+  if (position === 'before') {
+    return `${symbol}${formattedNumber}`;
+  } else {
+    return `${formattedNumber} ${symbol}`;
+  }
+};
 
+// Get localized currency symbol for current language
+export const getCurrencySymbol = (language = 'en') => {
+  if (!currencyConfig) {
+    return language === 'ar' ? 'د.إ' : '$';
+  }
+
+  const symbols = {
+    'AED': {
+      'en': 'AED',
+      'ar': 'د.إ',
+      'zh': '迪拉姆'
+    },
+    'USD': {
+      'en': '$',
+      'ar': '$',
+      'zh': '$'
+    },
+    'EUR': {
+      'en': '€',
+      'ar': '€',
+      'zh': '€'
+    },
+    'SAR': {
+      'en': 'SAR',
+      'ar': 'ر.س',
+      'zh': '里亚尔'
+    }
+  };
+  
+  return symbols[currencyConfig.CURRENCY_CODE]?.[language] || currencyConfig.CURRENCY_SYMBOL;
+};
+
+// Get currency name in different languages
+export const getCurrencyName = (language = 'en') => {
+  if (!currencyConfig) {
+    return language === 'ar' ? 'درهم إماراتي' : 'UAE Dirham';
+  }
+
+  const names = {
+    'AED': {
+      'en': 'UAE Dirham',
+      'ar': 'درهم إماراتي',
+      'zh': '阿联酋迪拉姆'
+    },
+    'USD': {
+      'en': 'US Dollar',
+      'ar': 'دولار أمريكي',
+      'zh': '美元'
+    },
+    'EUR': {
+      'en': 'Euro',
+      'ar': 'يورو',
+      'zh': '欧元'
+    },
+    'SAR': {
+      'en': 'Saudi Riyal',
+      'ar': 'ريال سعودي',
+      'zh': '沙特里亚尔'
+    }
+  };
+  
+  return names[currencyConfig.CURRENCY_CODE]?.[language] || currencyConfig.CURRENCY_NAME;
+};
+
+// Initialize currency configuration
+export const initCurrency = async () => {
+  await loadCurrencyConfig();
+};
