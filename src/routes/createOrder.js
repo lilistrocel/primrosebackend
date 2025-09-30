@@ -158,6 +158,29 @@ router.post('/createOrder', async (req, res) => {
       console.log('✅ Order item created with ID:', goodsResult.lastInsertRowid);
     }
 
+    // Process inventory consumption immediately when order is created
+    try {
+      if (db.inventory) {
+        console.log(`🔄 Processing inventory consumption for new order ${orderId}...`);
+        const transactions = db.inventory.processOrderConsumption(orderId);
+        
+        if (transactions && transactions.length > 0) {
+          console.log(`✅ Processed ${transactions.length} inventory consumption transactions`);
+          transactions.forEach((transaction, index) => {
+            const item = db.inventory.getInventoryItemById(transaction.item_id);
+            console.log(`   ${index + 1}. ${item ? item.display_name : 'Unknown Item'}: -${transaction.quantity}${item ? item.unit : 'units'}`);
+          });
+        } else {
+          console.log(`ℹ️ No inventory consumption recorded for order ${orderId} (no product ingredients configured)`);
+        }
+      } else {
+        console.log('⚠️ Inventory system not available, skipping consumption tracking');
+      }
+    } catch (error) {
+      console.error('❌ Error processing inventory consumption:', error);
+      // Don't fail the order creation if inventory consumption fails
+    }
+
     // Log successful order creation
     console.log(`🎉 Order ${orderNum} created successfully!`);
     console.log(`📊 Order Summary:`);

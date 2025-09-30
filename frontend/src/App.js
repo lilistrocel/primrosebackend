@@ -15,6 +15,9 @@ import LatteArtManagement from './pages/LatteArtManagement';
 import SystemControls from './pages/SystemControls';
 import MobileKiosk from './pages/MobileKiosk';
 import OptionNamesManagement from './pages/OptionNamesManagement';
+import InventoryDashboard from './pages/InventoryDashboard';
+import InventoryManagement from './pages/InventoryManagement';
+import ProductConsumptionConfig from './pages/ProductConsumptionConfig';
 
 const AppContainer = styled.div`
   display: flex;
@@ -78,6 +81,9 @@ function App() {
               <Route path="/create-order" element={<CreateOrder />} />
               <Route path="/device" element={<DeviceStatus />} />
               <Route path="/system-controls" element={<SystemControls />} />
+            <Route path="/inventory" element={<InventoryDashboard />} />
+            <Route path="/inventory/management" element={<InventoryManagement />} />
+            <Route path="/inventory/consumption-config" element={<ProductConsumptionConfig />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </ContentArea>

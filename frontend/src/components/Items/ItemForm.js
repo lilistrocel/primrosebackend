@@ -254,7 +254,7 @@ function ItemForm({ item, onClose, onSave }) {
     { name: 'Classics', icon: '☕' }
   ]);
   
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm({
     defaultValues: item || {
       goodsId: '',
       goodsName: '',
@@ -275,7 +275,12 @@ function ItemForm({ item, onClose, onSave }) {
       defaultBeanCode: 1,
       defaultMilkCode: 1,
       defaultIce: true,
-      defaultShots: 1
+      defaultShots: 1,
+      // Consumption configuration
+      milkConsumption: 0,
+      coffeeBeansConsumption: 0,
+      cupsConsumption: 1,
+      waterConsumption: 0
     }
   });
 
@@ -293,11 +298,39 @@ function ItemForm({ item, onClose, onSave }) {
         defaultBeanCode: item.default_bean_code || 1,
         defaultMilkCode: item.default_milk_code || 1,
         defaultIce: Boolean(item.default_ice),
-        defaultShots: item.default_shots || 1
+        defaultShots: item.default_shots || 1,
+        // Consumption configuration defaults
+        milkConsumption: 0,
+        coffeeBeansConsumption: 0,
+        cupsConsumption: 1,
+        waterConsumption: 0
       };
       reset(formData);
+      
+      // Load consumption configuration if editing existing item
+      if (item.id) {
+        loadConsumptionConfig(item.id);
+      }
     }
   }, [item, reset]);
+
+  const loadConsumptionConfig = async (productId) => {
+    try {
+      const response = await fetch(getApiUrl(`api/motong/inventory/products/${productId}/consumption-config`));
+      if (response.ok) {
+        const result = await response.json();
+        if (result.code === 200 && result.data) {
+          const config = result.data;
+          setValue('milkConsumption', config.milk_consumption || 0);
+          setValue('coffeeBeansConsumption', config.coffee_beans_consumption || 0);
+          setValue('cupsConsumption', config.cups_consumption || 1);
+          setValue('waterConsumption', config.water_consumption || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load consumption configuration:', error);
+    }
+  };
 
   // Fetch categories from backend
   useEffect(() => {
@@ -760,6 +793,59 @@ function ItemForm({ item, onClose, onSave }) {
                   </label>
                   <div className="helper-text">Allows customers to select latte art designs or upload custom images</div>
                 </FormGroup>
+              </FormSection>
+
+              <FormSection>
+                <h3 className="section-title">🥤 Ingredient Consumption</h3>
+                <div className="helper-text" style={{ marginBottom: '16px' }}>
+                  Define how much of each ingredient this product consumes per serving
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <FormGroup>
+                    <label>Milk Consumption (ml)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      {...register('milkConsumption')}
+                      placeholder="200"
+                    />
+                    <div className="helper-text">Amount of milk consumed per serving</div>
+                  </FormGroup>
+                  
+                  <FormGroup>
+                    <label>Coffee Beans (g)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      {...register('coffeeBeansConsumption')}
+                      placeholder="18"
+                    />
+                    <div className="helper-text">Amount of coffee beans consumed per serving</div>
+                  </FormGroup>
+                  
+                  <FormGroup>
+                    <label>Cups (quantity)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      {...register('cupsConsumption')}
+                      placeholder="1"
+                    />
+                    <div className="helper-text">Number of cups consumed per serving</div>
+                  </FormGroup>
+                  
+                  <FormGroup>
+                    <label>Water (ml)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      {...register('waterConsumption')}
+                      placeholder="50"
+                    />
+                    <div className="helper-text">Amount of water consumed per serving</div>
+                  </FormGroup>
+                </div>
               </FormSection>
             </div>
           </FormGrid>

@@ -1075,13 +1075,14 @@ class MachineUI {
         const orders = ordersResponse.data.data || [];
         this.machineData.orders = [];
 
-        // Process orders to extract items
+        // Process orders to extract items (including typeList100 for test mode)
         for (const order of orders) {
           const allItems = [
             ...(order.typeList1 || []),
             ...(order.typeList2 || []),
             ...(order.typeList3 || []),
-            ...(order.typeList4 || [])
+            ...(order.typeList4 || []),
+            ...(order.typeList100 || []) // Test mode orders
           ];
 
           for (const item of allItems) {

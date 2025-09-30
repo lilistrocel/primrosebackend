@@ -67,6 +67,11 @@ router.post('/editDeviceOrderStatus', async (req, res) => {
       // Also update the main order status if needed
       updateMainOrderStatus(orderId, status);
       
+      // Process inventory consumption when order is completed
+      if (status === 5) { // Order completed
+        processInventoryConsumption(orderId);
+      }
+      
       // Log the status change for machine tracking
       logStatusChange(orderId, orderGoodsId, existingGoods.status, status);
       
@@ -180,6 +185,34 @@ function getStatusName(status) {
   };
   
   return statusNames[status] || "Unknown";
+}
+
+/**
+ * Process inventory consumption when an order is completed
+ */
+function processInventoryConsumption(orderId) {
+  try {
+    console.log(`🔄 Processing inventory consumption for order ${orderId}`);
+    
+    // Check if inventory system is available
+    if (!db.inventory) {
+      console.log('⚠️ Inventory system not available, skipping consumption tracking');
+      return;
+    }
+    
+    // Process the order consumption
+    const transactions = db.inventory.processOrderConsumption(orderId);
+    
+    if (transactions && transactions.length > 0) {
+      console.log(`✅ Processed ${transactions.length} inventory transactions for order ${orderId}`);
+    } else {
+      console.log(`ℹ️ No inventory consumption recorded for order ${orderId} (no product ingredients configured)`);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error processing inventory consumption:', error);
+    // Don't throw error - inventory consumption failure shouldn't break order processing
+  }
 }
 
 module.exports = router;

@@ -39,7 +39,12 @@ const productSchema = Joi.object({
   doubleShotClassCode: Joi.string().max(10).allow('', null).optional(),
   icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional(),
   // Latte art printing option
-  hasLatteArt: Joi.boolean().default(false)
+  hasLatteArt: Joi.boolean().default(false),
+  // Consumption configuration
+  milkConsumption: Joi.number().min(0).default(0),
+  coffeeBeansConsumption: Joi.number().min(0).default(0),
+  cupsConsumption: Joi.number().min(0).default(1),
+  waterConsumption: Joi.number().min(0).default(0)
 });
 
 /**
@@ -169,6 +174,28 @@ router.post('/products', async (req, res) => {
     
     console.log('✅ Product created with ID:', productId);
 
+    // Create consumption configuration if provided
+    if (value.milkConsumption !== undefined || value.coffeeBeansConsumption !== undefined || 
+        value.cupsConsumption !== undefined || value.waterConsumption !== undefined) {
+      
+      try {
+        if (db.inventory) {
+          const consumptionConfig = {
+            milk_consumption: value.milkConsumption || 0,
+            coffee_beans_consumption: value.coffeeBeansConsumption || 0,
+            cups_consumption: value.cupsConsumption || 1,
+            water_consumption: value.waterConsumption || 0
+          };
+          
+          db.inventory.saveProductConsumptionConfig(productId, consumptionConfig);
+          console.log('✅ Consumption configuration created for product:', productId);
+        }
+      } catch (error) {
+        console.error('⚠️ Failed to create consumption configuration:', error);
+        // Don't fail product creation if consumption config fails
+      }
+    }
+
     // Return created product
     const createdProduct = db.getProductById(productId);
     
@@ -258,6 +285,11 @@ router.put('/products/:id', async (req, res) => {
       icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional(),
       // Latte art printing option  
       hasLatteArt: Joi.boolean().optional(),
+      // Consumption configuration
+      milkConsumption: Joi.number().min(0).optional(),
+      coffeeBeansConsumption: Joi.number().min(0).optional(),
+      cupsConsumption: Joi.number().min(0).optional(),
+      waterConsumption: Joi.number().min(0).optional(),
       // Allow additional fields that might come from frontend (like id, createdAt, updatedAt)
       id: Joi.number().integer().optional(),
       createdAt: Joi.alternatives().try(Joi.date(), Joi.string()).optional(),
@@ -279,6 +311,28 @@ router.put('/products/:id', async (req, res) => {
     
     console.log('✅ Product updated successfully:', updateResult);
     console.log('🎨 Latte Art value sent to database:', value.hasLatteArt);
+
+    // Update consumption configuration if provided
+    if (value.milkConsumption !== undefined || value.coffeeBeansConsumption !== undefined || 
+        value.cupsConsumption !== undefined || value.waterConsumption !== undefined) {
+      
+      try {
+        if (db.inventory) {
+          const consumptionConfig = {
+            milk_consumption: value.milkConsumption || 0,
+            coffee_beans_consumption: value.coffeeBeansConsumption || 0,
+            cups_consumption: value.cupsConsumption || 1,
+            water_consumption: value.waterConsumption || 0
+          };
+          
+          db.inventory.saveProductConsumptionConfig(productId, consumptionConfig);
+          console.log('✅ Consumption configuration updated for product:', productId);
+        }
+      } catch (error) {
+        console.error('⚠️ Failed to update consumption configuration:', error);
+        // Don't fail product update if consumption config fails
+      }
+    }
 
     // Return updated product
     const updatedProduct = db.getProductById(productId);

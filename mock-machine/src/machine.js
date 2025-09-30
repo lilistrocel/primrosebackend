@@ -205,12 +205,13 @@ class CoffeeMachineSimulator {
    */
   async processOrderQueue(orders) {
     for (const order of orders) {
-      // Process each type list
+      // Process each type list (including typeList100 for test mode)
       const allItems = [
         ...(order.typeList1 || []),
         ...(order.typeList2 || []),
         ...(order.typeList3 || []),
-        ...(order.typeList4 || [])
+        ...(order.typeList4 || []),
+        ...(order.typeList100 || []) // Test mode orders
       ];
 
       for (const item of allItems) {

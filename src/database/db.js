@@ -19,6 +19,9 @@ class DatabaseManager {
       // Run migrations first (safely adds new columns to existing tables)
       this.runMigrations();
       
+      // Run inventory migrations
+      this.runInventoryMigrations();
+      
       // Initialize database schema only if tables don't exist
       this.initializeSchemaIfNeeded();
       
@@ -253,6 +256,26 @@ class DatabaseManager {
 
     } catch (error) {
       console.error('❌ Migration failed:', error);
+      throw error;
+    }
+  }
+
+  runInventoryMigrations() {
+    console.log('🔄 Running inventory system migrations...');
+    
+    try {
+      const InventoryMigration = require('./inventory-migration');
+      const inventoryMigration = new InventoryMigration(this.db);
+      inventoryMigration.run();
+      
+      // Initialize inventory database methods
+      const InventoryDatabase = require('./inventory-db');
+      this.inventory = new InventoryDatabase(this.db);
+      
+      console.log('✅ Inventory system migrations completed successfully!');
+      return true;
+    } catch (error) {
+      console.error('❌ Inventory migration failed:', error);
       throw error;
     }
   }
