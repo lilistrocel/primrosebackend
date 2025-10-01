@@ -7,6 +7,7 @@ import Header from './components/Layout/Header';
 import Dashboard from './pages/Dashboard';
 import ItemManagement from './pages/ItemManagement';
 import OrderMonitor from './pages/OrderMonitor';
+import OrderHistory from './pages/OrderHistory';
 import CreateOrder from './pages/CreateOrder';
 import KioskOrder from './pages/KioskOrder';
 import DeviceStatus from './pages/DeviceStatus';
@@ -18,6 +19,7 @@ import OptionNamesManagement from './pages/OptionNamesManagement';
 import InventoryDashboard from './pages/InventoryDashboard';
 import InventoryManagement from './pages/InventoryManagement';
 import ProductConsumptionConfig from './pages/ProductConsumptionConfig';
+import AlertDashboard from './pages/AlertDashboard';
 
 const AppContainer = styled.div`
   display: flex;
@@ -78,12 +80,14 @@ function App() {
               <Route path="/option-names" element={<OptionNamesManagement />} />
               <Route path="/orders" element={<OrderMonitor />} />
               <Route path="/order-monitor" element={<OrderMonitor />} />
+              <Route path="/order-history" element={<OrderHistory />} />
               <Route path="/create-order" element={<CreateOrder />} />
               <Route path="/device" element={<DeviceStatus />} />
               <Route path="/system-controls" element={<SystemControls />} />
             <Route path="/inventory" element={<InventoryDashboard />} />
             <Route path="/inventory/management" element={<InventoryManagement />} />
             <Route path="/inventory/consumption-config" element={<ProductConsumptionConfig />} />
+            <Route path="/alerts" element={<AlertDashboard />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </ContentArea>

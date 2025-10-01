@@ -290,12 +290,12 @@ class InventoryDatabase {
         });
       }
 
-      // Check for overstock alert (if current stock > 90% of max stock)
-      if (item.max_stock > 0 && item.current_stock > (item.max_stock * 0.9)) {
+      // Check for overstock alert (if current stock > 101% of max stock)
+      if (item.max_stock > 0 && item.current_stock > (item.max_stock * 1.01)) {
         this.createAlert({
           item_id: itemId,
           alert_type: 'overstock',
-          threshold_value: item.max_stock * 0.9,
+          threshold_value: item.max_stock * 1.01,
           current_value: item.current_stock,
           message: `${item.display_name} is overstocked (${item.current_stock} ${item.unit} in stock)`
         });
@@ -381,7 +381,7 @@ class InventoryDatabase {
   // Order Processing Integration
   processOrderConsumption(orderId) {
     try {
-      // Get order goods with their ingredient codes
+      // Get order goods with their jsonCodeVal
       const orderGoods = this.db.prepare(`
         SELECT og.*, p.goods_name_en
         FROM order_goods og
@@ -393,10 +393,10 @@ class InventoryDatabase {
 
       for (const orderItem of orderGoods) {
         console.log(`🔄 Processing consumption for ${orderItem.goods_name_en}`);
-        console.log(`📦 Order item matter_codes: ${orderItem.matter_codes}`);
+        console.log(`📦 Order item jsonCodeVal: ${orderItem.json_code_val}`);
         
-        // Parse matter codes to get ingredient codes
-        const ingredientCodes = this.parseMatterCodes(orderItem.matter_codes);
+        // Parse jsonCodeVal to get ingredient codes
+        const ingredientCodes = this.parseJsonCodeVal(orderItem.json_code_val);
         console.log(`🔍 Parsed ingredient codes:`, ingredientCodes);
         
         // Process consumption based on ingredient codes
@@ -416,7 +416,42 @@ class InventoryDatabase {
     }
   }
 
-  // Parse matter codes to extract ingredient codes
+  // Parse jsonCodeVal to extract ingredient codes
+  parseJsonCodeVal(jsonCodeVal) {
+    if (!jsonCodeVal) return {};
+    
+    try {
+      const codes = {};
+      const jsonArray = JSON.parse(jsonCodeVal);
+      
+      jsonArray.forEach(item => {
+        // Handle BeanCode
+        if (item.BeanCode) {
+          codes.beanCode = parseInt(item.BeanCode);
+        }
+        
+        // Handle MilkCode
+        if (item.MilkCode) {
+          codes.milkCode = parseInt(item.MilkCode);
+        }
+        
+        // Handle CupCode
+        if (item.CupCode) {
+          codes.cupCode = parseInt(item.CupCode);
+        }
+      });
+      
+      // Water is always consumed (80ml default)
+      codes.hasWater = true;
+      
+      return codes;
+    } catch (error) {
+      console.error('Error parsing jsonCodeVal:', error);
+      return {};
+    }
+  }
+
+  // Parse matter codes to extract ingredient codes (legacy method)
   parseMatterCodes(matterCodes) {
     if (!matterCodes) return {};
     
@@ -427,9 +462,23 @@ class InventoryDatabase {
       // Handle CoffeeMatter format (CoffeeMatter1, CoffeeMatter2, etc.)
       if (code.includes('CoffeeMatter')) {
         const matterNumber = parseInt(code.replace('CoffeeMatter', ''));
-        // Map CoffeeMatter numbers to bean codes
-        if (matterNumber === 1 || matterNumber === 2) {
-          codes.beanCode = matterNumber;
+        
+        // Map CoffeeMatter numbers to appropriate codes based on ingredient mapping
+        if (matterNumber === 1) {
+          codes.cupCode = 1; // 8oz Paper Cups
+        } else if (matterNumber === 2) {
+          codes.beanCode = 1; // Coffee Beans Type 1
+        } else if (matterNumber === 3) {
+          codes.milkCode = 1; // Milk Type 1 (Regular)
+        } else if (matterNumber === 5) {
+          // Coffee Machine Water - handled separately as default
+          codes.hasWater = true;
+        } else if (matterNumber === 10) {
+          codes.cupCode = 3; // 12oz Paper Cups
+        } else if (matterNumber === 13) {
+          codes.beanCode = 2; // Coffee Beans Type 2
+        } else if (matterNumber === 14) {
+          codes.milkCode = 2; // Milk Type 2 (Alternative)
         }
       }
       // Handle BeanCode format (BeanCode1, BeanCode2)
@@ -555,20 +604,20 @@ class InventoryDatabase {
       }
     }
     
-    // Process water consumption (if configured)
-    if (consumptionConfig && consumptionConfig.water_consumption > 0) {
+    // Process water consumption (always 80ml for all drinks)
+    if (ingredientCodes.hasWater) {
       const waterItem = inventoryItems.find(item => item.name === 'water');
       if (waterItem) {
         const transaction = this.createTransaction({
           item_id: waterItem.id,
           transaction_type: 'order_consumption',
-          quantity: consumptionConfig.water_consumption * orderItem.num,
+          quantity: 80 * orderItem.num, // Always 80ml per drink
           reference_type: 'order',
           reference_id: orderId,
-          notes: `Consumed for ${orderItem.goods_name_en} (water)`
+          notes: `Consumed for ${orderItem.goods_name_en} (water - 80ml default)`
         });
         transactions.push(transaction);
-        console.log(`✅ Water consumption: ${consumptionConfig.water_consumption * orderItem.num}ml of ${waterItem.display_name}`);
+        console.log(`✅ Water consumption: ${80 * orderItem.num}ml of ${waterItem.display_name} (80ml default)`);
       }
     }
     

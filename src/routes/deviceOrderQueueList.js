@@ -153,4 +153,81 @@ function getStatusName(status) {
   return statusNames[status] || "Unknown";
 }
 
+/**
+ * GET ALL ORDERS SIMPLE - Quick endpoint to get all orders including completed ones
+ * Added to existing route to avoid server restart
+ */
+router.post('/getAllOrdersSimple', async (req, res) => {
+  try {
+    console.log('📋 getAllOrdersSimple called');
+    
+    // Get ALL orders for device (including completed ones)
+    const orders = db.db.prepare(`
+      SELECT * FROM orders 
+      WHERE device_id = ? 
+      ORDER BY created_at DESC 
+      LIMIT 50
+    `).all(1);
+    
+    console.log(`📋 Found ${orders.length} total orders for device 1`);
+
+    // Transform orders to match the expected format
+    const responseData = orders.map(order => {
+      // Get all goods for this order
+      const allGoods = db.getOrderGoodsForOrder(order.id);
+      
+      // Group goods by type
+      const typeList1 = allGoods.filter(goods => goods.type === 1).map(goods => transformGoods(goods));
+      const typeList2 = allGoods.filter(goods => goods.type === 2).map(goods => transformGoods(goods));
+      const typeList3 = allGoods.filter(goods => goods.type === 3).map(goods => transformGoods(goods));
+      const typeList4 = allGoods.filter(goods => goods.type === 4).map(goods => transformGoods(goods));
+
+      // Calculate debug information
+      const debugInfo = {
+        orderId: order.id,
+        deviceId: order.device_id,
+        totalItems: allGoods.length,
+        hasCancelledItems: allGoods.some(goods => goods.status === -1 || goods.status === 0),
+        hasCompletedItems: allGoods.some(goods => goods.status === 5),
+        hasProcessingItems: allGoods.some(goods => goods.status === 4),
+        hasQueuingItems: allGoods.some(goods => goods.status === 3),
+        createdAt: order.created_time,
+        updatedAt: order.updated_time || order.created_time
+      };
+
+      return {
+        id: order.id,
+        num: order.num || 1,
+        realPrice: order.real_price?.toString() || "0.00",
+        status: order.status,
+        orderNum: order.order_num,
+        created_at: order.created_at,
+        createdAt: order.created_time,
+        statusName: getStatusName(order.status),
+        typeList1,
+        typeList2,
+        typeList3,
+        typeList4,
+        debugInfo
+      };
+    });
+
+    console.log(`✅ Returning ${responseData.length} orders with debug info`);
+    
+    res.json({
+      code: 0,
+      msg: "All orders retrieved successfully",
+      data: responseData
+    });
+
+  } catch (error) {
+    console.error('❌ Error in getAllOrdersSimple:', error);
+    res.status(500).json({
+      code: 500,
+      msg: "Internal server error",
+      data: []
+    });
+  }
+});
+
 module.exports = router;

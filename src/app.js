@@ -26,6 +26,8 @@ const systemSettingsRoute = require('./routes/systemSettings');
 const optionNamesRoute = require('./routes/optionNames');
 const currencyConfigRoute = require('./routes/currencyConfig');
 const inventoryRoute = require('./routes/inventory');
+const orderHistoryRoute = require('./routes/orderHistory');
+const alertDashboardRoute = require('./routes/alertDashboard');
 const webSocketManager = require('./websocket/WebSocketManager');
 
 class CoffeeMachineBackend {
@@ -177,6 +179,8 @@ class CoffeeMachineBackend {
     this.app.use('/api/motong/option-names', optionNamesRoute); // Option names management endpoints
     this.app.use('/api/motong/currency-config', currencyConfigRoute); // Currency configuration endpoints
     this.app.use('/api/motong/inventory', inventoryRoute); // Inventory management endpoints
+    this.app.use('/api/motong/order-history', orderHistoryRoute); // Order history and debugging endpoints
+    this.app.use('/api/motong/alert-dashboard', alertDashboardRoute); // Alert dashboard endpoints
 
     // Alternative route paths (in case machine uses different paths)
     this.app.use('/swoft/api/motong', deviceOrderQueueListRoute);
@@ -193,6 +197,8 @@ class CoffeeMachineBackend {
     this.app.use('/swoft/api/motong/option-names', optionNamesRoute); // Option names management endpoints
     this.app.use('/swoft/api/motong/currency-config', currencyConfigRoute); // Currency configuration endpoints
     this.app.use('/swoft/api/motong/inventory', inventoryRoute); // Inventory management endpoints
+    this.app.use('/swoft/api/motong/order-history', orderHistoryRoute); // Order history and debugging endpoints
+    this.app.use('/swoft/api/motong/alert-dashboard', alertDashboardRoute); // Alert dashboard endpoints
 
     // Root redirect
     this.app.get('/', (req, res) => {
