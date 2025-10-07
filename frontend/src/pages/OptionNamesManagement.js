@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Save, Edit3, Globe, Languages } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { defaultOptionNames, getOptionName, getOptionDescription } from '../utils/optionNames';
+import { getApiBaseUrl } from '../utils/config';
 
 const Container = styled.div`
   padding: 20px;
@@ -221,7 +222,7 @@ function OptionNamesManagement() {
       try {
         setLoading(true);
         const timestamp = Date.now();
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names?t=${timestamp}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/motong/option-names?t=${timestamp}`, {
           cache: 'no-cache',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -278,7 +279,7 @@ function OptionNamesManagement() {
       const savePromises = Object.keys(optionNames).map(async (optionKey) => {
         const option = optionNames[optionKey];
         const timestamp = Date.now();
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names/${optionKey}?t=${timestamp}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/motong/option-names/${optionKey}?t=${timestamp}`, {
           method: 'PUT',
           cache: 'no-cache',
           headers: {

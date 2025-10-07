@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera } from 'lucide-react';
-import { getApiUrl, getImageUrl } from '../../utils/config';
+import { getApiUrl, getImageUrl, getApiBaseUrl } from '../../utils/config';
 import { useLanguage } from '../../contexts/LanguageContext';
 // import { getOptionName, getOptionDescription } from '../../utils/optionNames';
 import { formatPrice, initCurrency } from '../../utils/currency';
@@ -368,9 +368,10 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     try {
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(7);
-      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/option-names?t=${timestamp}&r=${randomId}&mobile=${navigator.userAgent.includes('Mobile') ? '1' : '0'}`;
+      const apiBaseUrl = getApiBaseUrl();
+      const url = `${apiBaseUrl}/api/motong/option-names?t=${timestamp}&r=${randomId}&mobile=${navigator.userAgent.includes('Mobile') ? '1' : '0'}`;
       
-      console.log('🔄 CUSTOMIZATION: Fetching option names with aggressive cache-busting:', url);
+      console.log('🔄 CUSTOMIZATION: Fetching option names with aggressive cache-busting (UPDATED):', url);
       
       const response = await fetch(url, {
         method: 'GET',

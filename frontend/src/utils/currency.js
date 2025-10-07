@@ -1,13 +1,17 @@
 // Currency utility for frontend
 // Fetches currency configuration from backend and provides formatting functions
 
+import { getApiBaseUrl } from './config';
+
 let currencyConfig = null;
 
 // Fetch currency configuration from backend with cache-busting
 export const loadCurrencyConfig = async () => {
   try {
     const timestamp = Date.now();
-    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/motong/currency-config?t=${timestamp}`, {
+    const apiUrl = getApiBaseUrl();
+    console.log('💰 CURRENCY: Using API URL (UPDATED):', apiUrl);
+    const response = await fetch(`${apiUrl}/api/motong/currency-config?t=${timestamp}`, {
       cache: 'no-cache',
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
