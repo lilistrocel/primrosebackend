@@ -84,6 +84,17 @@ class DatabaseManager {
         });
       }
 
+      // Add performance index for order_goods JOIN (if not exists)
+      try {
+        this.db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_order_goods_order_id 
+          ON order_goods(order_id)
+        `);
+        console.log('✅ Performance index on order_goods.order_id ensured');
+      } catch (error) {
+        console.log('⚠️ Index might already exist:', error.message);
+      }
+
       // Check if products table has new columns
       const columnsResult = this.db.prepare(`PRAGMA table_info(products)`).all();
       const hasCategory = columnsResult.some(col => col.name === 'category');
@@ -336,6 +347,99 @@ class DatabaseManager {
       ORDER BY created_at ASC
     `);
     return stmt.all(deviceId);
+  }
+
+  // OPTIMIZED: Get orders with goods in single query (prevents N+1)
+  getAllOrdersWithGoods(deviceId = 1) {
+    const stmt = this.db.prepare(`
+      SELECT 
+        o.id as order_id,
+        o.num as order_num_count,
+        o.real_price,
+        o.status as order_status,
+        o.order_num,
+        o.created_at as order_created_at,
+        o.language as order_language,
+        o.created_time,
+        og.id as goods_id,
+        og.device_goods_id,
+        og.type,
+        og.goods_id as product_id,
+        og.goods_name,
+        og.goods_name_en,
+        og.goods_name_ot,
+        og.goods_img,
+        og.goods_option_name,
+        og.goods_option_name_en,
+        og.goods_option_name_ot,
+        og.language as goods_language,
+        og.status as goods_status,
+        og.price,
+        og.re_price,
+        og.matter_codes,
+        og.num,
+        og.total_price,
+        og.lh_img_path,
+        og.json_code_val,
+        og.path,
+        og.goods_path
+      FROM orders o
+      LEFT JOIN order_goods og ON o.id = og.order_id
+      WHERE o.device_id = ? AND o.status IN (3, 4)
+      ORDER BY o.created_at ASC, og.id ASC
+    `);
+    
+    const rows = stmt.all(deviceId);
+    
+    // Group rows by order
+    const ordersMap = new Map();
+    
+    rows.forEach(row => {
+      if (!ordersMap.has(row.order_id)) {
+        ordersMap.set(row.order_id, {
+          id: row.order_id,
+          num: row.order_num_count,
+          real_price: row.real_price,
+          status: row.order_status,
+          order_num: row.order_num,
+          created_at: row.order_created_at,
+          language: row.order_language,
+          created_time: row.created_time,
+          goods: []
+        });
+      }
+      
+      // Add goods if exists (LEFT JOIN might have null goods)
+      if (row.goods_id) {
+        ordersMap.get(row.order_id).goods.push({
+          id: row.goods_id,
+          device_goods_id: row.device_goods_id,
+          type: row.type,
+          order_id: row.order_id,
+          goods_id: row.product_id,
+          goods_name: row.goods_name,
+          goods_name_en: row.goods_name_en,
+          goods_name_ot: row.goods_name_ot,
+          goods_img: row.goods_img,
+          goods_option_name: row.goods_option_name,
+          goods_option_name_en: row.goods_option_name_en,
+          goods_option_name_ot: row.goods_option_name_ot,
+          language: row.goods_language,
+          status: row.goods_status,
+          price: row.price,
+          re_price: row.re_price,
+          matter_codes: row.matter_codes,
+          num: row.num,
+          total_price: row.total_price,
+          lh_img_path: row.lh_img_path,
+          json_code_val: row.json_code_val,
+          path: row.path,
+          goods_path: row.goods_path
+        });
+      }
+    });
+    
+    return Array.from(ordersMap.values());
   }
 
   getOrderGoodsForOrder(orderId) {

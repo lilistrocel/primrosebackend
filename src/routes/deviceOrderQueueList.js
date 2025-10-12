@@ -31,8 +31,8 @@ router.post('/deviceOrderQueueList', async (req, res) => {
 
     const { deviceId } = value;
     
-    // Get active orders for device (status 3=Queuing, 4=Processing)
-    const orders = db.getAllOrdersForDevice(parseInt(deviceId));
+    // Get active orders with goods in single query (OPTIMIZED - prevents N+1)
+    const orders = db.getAllOrdersWithGoods(parseInt(deviceId));
     console.log(`📋 Found ${orders.length} active orders for device ${deviceId}`);
 
     // Check if test mode is enabled
@@ -41,8 +41,8 @@ router.post('/deviceOrderQueueList', async (req, res) => {
 
     // Transform orders to exact API response format
     const responseData = orders.map(order => {
-      // Get all goods for this order
-      const allGoods = db.getOrderGoodsForOrder(order.id);
+      // Goods already loaded from single query
+      const allGoods = order.goods;
       
       // Group goods by type (1=奶茶, 2=咖啡, 3=冰淇淋, 4=其他)
       const typeList1 = allGoods.filter(goods => goods.type === 1).map(goods => transformGoods(goods));

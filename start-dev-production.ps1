@@ -31,7 +31,8 @@ function Write-Header {
 function Test-Port {
     param($Port)
     try {
-        $connection = Test-NetConnection -ComputerName "localhost" -Port $Port -ErrorAction SilentlyContinue
+        # Use 127.0.0.1 instead of localhost to avoid IPv6 warnings
+        $connection = Test-NetConnection -ComputerName "127.0.0.1" -Port $Port -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
         return $connection.TcpTestSucceeded
     } catch {
         return $false
