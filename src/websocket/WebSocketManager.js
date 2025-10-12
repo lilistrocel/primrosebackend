@@ -21,14 +21,25 @@ class WebSocketManager {
       // Send initial status on connection
       this.sendInitialStatus(ws);
 
+      // Store interval reference on the WebSocket instance
+      let pingInterval = null;
+
+      const cleanup = () => {
+        if (pingInterval) {
+          clearInterval(pingInterval);
+          pingInterval = null;
+        }
+        this.clients.delete(ws);
+      };
+
       ws.on('close', () => {
         console.log('🔌 WebSocket client disconnected');
-        this.clients.delete(ws);
+        cleanup();
       });
 
       ws.on('error', (error) => {
         console.error('🔌 WebSocket error:', error);
-        this.clients.delete(ws);
+        cleanup();
       });
 
       ws.on('message', (message) => {
@@ -46,11 +57,11 @@ class WebSocketManager {
       });
 
       // Send keepalive ping every 30 seconds
-      const pingInterval = setInterval(() => {
+      pingInterval = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
         } else {
-          clearInterval(pingInterval);
+          cleanup();
         }
       }, 30000);
     });
