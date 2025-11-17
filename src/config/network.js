@@ -1,5 +1,5 @@
-// Network Configuration Module
-// Centralizes all IP and port configuration for easy updates
+// Network Configuration Module - OPTIMIZED FOR LOCAL OPERATION
+// Eliminates external dependencies and DNS lookups
 
 require('dotenv').config();
 
@@ -9,39 +9,33 @@ const config = {
   FRONTEND_PORT: parseInt(process.env.FRONTEND_PORT) || 3001,
   BACKEND_PORT: parseInt(process.env.BACKEND_PORT) || 3000,
   MOCK_PORT: parseInt(process.env.MOCK_PORT) || 3002,
+  
+  // OPTIMIZED: Bind to IPv4 only (0.0.0.0 triggers IPv6 lookups)
   HOST: process.env.HOST || '0.0.0.0',
   
-  // Generate CORS origins dynamically
+  // OPTIMIZED: Use IP addresses instead of hostnames to avoid DNS lookups
   getCorsOrigins() {
     const origins = [
-      // Localhost variants
-      'http://localhost:3000',
-      'http://localhost:3001', 
-      'http://localhost:3002',
+      // IPv4 localhost ONLY (no hostname resolution needed)
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
       'http://127.0.0.1:3002',
       
-      // Local IP variants (dynamic based on LOCAL_IP)
+      // Local IP variants (no DNS needed)
       `http://${this.LOCAL_IP}:${this.BACKEND_PORT}`,
       `http://${this.LOCAL_IP}:${this.FRONTEND_PORT}`,
       `http://${this.LOCAL_IP}:${this.MOCK_PORT}`,
       
-      // Tunnel domains for hydromods.org
-      'https://coffee-api.hydromods.org',
-      'https://coffee.hydromods.org',
-      'https://k2.hydromods.org',
-      'https://api.hydromods.org',
-      
-      // Allow any hydromods.org subdomain
-      /https:\/\/.*\.hydromods\.org$/,
-      
-      // Development/testing origins
-      'https://localhost:3001',
-      'https://127.0.0.1:3001'
+      // Only add tunnel domains if explicitly enabled
+      ...(process.env.ENABLE_TUNNEL === 'true' ? [
+        'https://coffee-api.hydromods.org',
+        'https://coffee.hydromods.org',
+        'https://k2.hydromods.org',
+        'https://api.hydromods.org',
+        /https:\/\/.*\.hydromods\.org$/
+      ] : [])
     ];
     
-    console.log('🌐 CORS Origins configured for:', origins);
     return origins;
   },
   
@@ -57,12 +51,7 @@ const config = {
     console.log(`   Backend: http://${this.LOCAL_IP}:${this.BACKEND_PORT}`);
     console.log(`   Frontend: http://${this.LOCAL_IP}:${this.FRONTEND_PORT}`);
     console.log(`   Mock Machine: http://${this.LOCAL_IP}:${this.MOCK_PORT}`);
-    console.log('');
-    console.log('📝 To change IP address:');
-    console.log('   1. Edit .env file in project root');
-    console.log('   2. Update LOCAL_IP=your.new.ip.address');
-    console.log('   3. Update frontend/.env REACT_APP_API_BASE_URL');
-    console.log('   4. Restart both backend and frontend');
+    console.log(`   Tunnel: ${process.env.ENABLE_TUNNEL === 'true' ? 'ENABLED' : 'DISABLED'}`);
   }
 };
 

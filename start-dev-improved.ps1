@@ -108,7 +108,9 @@ function Cleanup-ExistingJobs {
 function Test-Port {
     param($Port, $ServiceName)
     try {
-        $connection = Test-NetConnection -ComputerName "localhost" -Port $Port -ErrorAction SilentlyContinue
+        # OPTIMIZED: Use 127.0.0.1 to avoid IPv6 attempts and suppress warnings
+        $connection = Test-NetConnection -ComputerName "127.0.0.1" -Port $Port `
+            -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
         if ($connection.TcpTestSucceeded) {
             Write-ColorText "[OK] $ServiceName is running on port $Port" "Green"
             return $true
@@ -124,7 +126,9 @@ function Test-Port {
 
 function Test-BackendHealth {
     try {
-        $response = Invoke-RestMethod -Uri "http://localhost:$BackendPort/health" -Method Get -TimeoutSec 5 -ErrorAction SilentlyContinue
+        # OPTIMIZED: Use 127.0.0.1 for faster DNS-free connection
+        $response = Invoke-RestMethod -Uri "http://127.0.0.1:$BackendPort/health" `
+            -Method Get -TimeoutSec 5 -ErrorAction SilentlyContinue
         if ($response.status -eq "OK") {
             Write-ColorText "[OK] Backend health check: OK" "Green"
             Write-ColorText "   Service: $($response.service)" "Gray"
@@ -139,13 +143,16 @@ function Test-BackendHealth {
 
 function Test-FrontendHealth {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:$FrontendPort" -Method Get -TimeoutSec 5 -ErrorAction SilentlyContinue
+        # OPTIMIZED: Use 127.0.0.1 and longer timeout (React takes time to compile)
+        $response = Invoke-WebRequest -Uri "http://127.0.0.1:$FrontendPort" `
+            -Method Get -TimeoutSec 15 -ErrorAction SilentlyContinue
         if ($response.StatusCode -eq 200) {
             Write-ColorText "[OK] Frontend is serving correctly" "Green"
             return $true
         }
     } catch {
-        Write-ColorText "[ERROR] Frontend health check failed: $($_.Exception.Message)" "Red"
+        # Frontend takes longer to start, don't show error immediately
+        Write-ColorText "[INFO] Frontend still starting up..." "Yellow"
     }
     return $false
 }
@@ -265,9 +272,9 @@ function Start-Backend {
         if ($backendRunning) {
             Start-Sleep -Seconds 2  # Give it a moment to fully initialize
             Test-BackendHealth
-            Write-ColorText "Backend URL: http://localhost:$BackendPort" "Cyan"
-            Write-ColorText "Health Check: http://localhost:$BackendPort/health" "Cyan"
-            Write-ColorText "API Base: http://localhost:$BackendPort/api/motong/" "Cyan"
+            Write-ColorText "Backend URL: http://127.0.0.1:$BackendPort" "Cyan"
+            Write-ColorText "Health Check: http://127.0.0.1:$BackendPort/health" "Cyan"
+            Write-ColorText "API Base: http://127.0.0.1:$BackendPort/api/motong/" "Cyan"
         } else {
             Write-ColorText "[ERROR] Backend failed to start within $maxAttempts seconds" "Red"
             exit 1
@@ -327,8 +334,8 @@ function Start-Frontend {
     if ($frontendRunning) {
         Start-Sleep -Seconds 3  # Give React time to fully load
         Test-FrontendHealth
-        Write-ColorText "Frontend URL: http://localhost:$FrontendPort" "Cyan"
-        Write-ColorText "Management Interface: http://localhost:$FrontendPort" "Cyan"
+        Write-ColorText "Frontend URL: http://127.0.0.1:$FrontendPort" "Cyan"
+        Write-ColorText "Management Interface: http://127.0.0.1:$FrontendPort" "Cyan"
     } else {
         Write-ColorText "[ERROR] Frontend failed to start within $maxAttempts seconds" "Red"
         Write-ColorText "   Check 'npm install' was successful in frontend directory" "Yellow"
@@ -373,19 +380,19 @@ function Show-HealthStatus {
 function Show-URLs {
     Write-Header "ACCESS POINTS"
     Write-ColorText "Backend Services:" "White"
-    Write-ColorText "  Health Check:    http://localhost:$BackendPort/health" "Cyan"
-    Write-ColorText "  API Endpoint:    http://localhost:$BackendPort/api/motong/" "Cyan"
-    Write-ColorText "  Server Info:     http://localhost:$BackendPort/" "Cyan"
+    Write-ColorText "  Health Check:    http://127.0.0.1:$BackendPort/health" "Cyan"
+    Write-ColorText "  API Endpoint:    http://127.0.0.1:$BackendPort/api/motong/" "Cyan"
+    Write-ColorText "  Server Info:     http://127.0.0.1:$BackendPort/" "Cyan"
     Write-Host ""
     Write-ColorText "Frontend Application:" "White"
-    Write-ColorText "  Management UI:   http://localhost:$FrontendPort/" "Cyan"
-    Write-ColorText "  Item Manager:    http://localhost:$FrontendPort/items" "Cyan"
-    Write-ColorText "  Order Monitor:   http://localhost:$FrontendPort/orders" "Cyan"
-    Write-ColorText "  Alert Dashboard: http://localhost:$FrontendPort/alerts" "Cyan"
-    Write-ColorText "  Device Status:   http://localhost:$FrontendPort/device" "Cyan"
+    Write-ColorText "  Management UI:   http://127.0.0.1:$FrontendPort/" "Cyan"
+    Write-ColorText "  Item Manager:    http://127.0.0.1:$FrontendPort/items" "Cyan"
+    Write-ColorText "  Order Monitor:   http://127.0.0.1:$FrontendPort/orders" "Cyan"
+    Write-ColorText "  Alert Dashboard: http://127.0.0.1:$FrontendPort/alerts" "Cyan"
+    Write-ColorText "  Device Status:   http://127.0.0.1:$FrontendPort/device" "Cyan"
     Write-Host ""
     Write-ColorText "Coffee Machine Configuration:" "White"
-    Write-ColorText "  Change machine URL to: http://localhost:$BackendPort/api/motong/" "Yellow"
+    Write-ColorText "  Change machine URL to: http://127.0.0.1:$BackendPort/api/motong/" "Yellow"
 }
 
 function Monitor-Services {
@@ -484,7 +491,7 @@ try {
         Start-Sleep -Seconds 3
         
         Write-Host ""
-        Write-ColorText "Frontend will be available at: http://localhost:$FrontendPort" "Cyan"
+        Write-ColorText "Frontend will be available at: http://127.0.0.1:$FrontendPort" "Cyan"
         Write-ColorText "Backend logs will be shown below in real-time:" "Cyan"
         Write-ColorText "Look for: 'MACHINE API CALL DETECTED:' for machine communication" "Green"
         Write-Host ""

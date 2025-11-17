@@ -33,7 +33,10 @@ class CoffeeMachineBackend {
   constructor() {
     this.app = express();
     this.port = networkConfig.BACKEND_PORT;
-    this.host = networkConfig.HOST;
+    
+    // OPTIMIZED: Bind to 127.0.0.1 for faster local-only operation
+    // Use '0.0.0.0' if you need network access from other devices
+    this.host = process.env.BIND_LOCAL_ONLY === 'true' ? '127.0.0.1' : networkConfig.HOST;
     
     // Minimal startup info
     console.log('🚀 Coffee Machine Backend - Production Mode');
