@@ -26,6 +26,13 @@ const AppContainer = styled.div`
   height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: 'Figtree', 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  position: relative;
+  overflow: hidden;
+  
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 const MainContent = styled.div`
@@ -33,6 +40,11 @@ const MainContent = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0; /* Prevent flex item from overflowing */
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const ContentArea = styled.div`
@@ -41,6 +53,19 @@ const ContentArea = styled.div`
   overflow-y: auto;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  
+  /* Responsive padding */
+  @media (max-width: 1024px) {
+    padding: 15px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px;
+  }
 `;
 
 function App() {

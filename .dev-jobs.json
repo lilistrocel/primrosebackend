@@ -1,7 +1,11 @@
 ﻿{
     "FrontendPort":  3001,
     "BackendPort":  3000,
+<<<<<<< HEAD
     "StartTime":  "2025-11-17 08:58:12",
+=======
+    "StartTime":  "2025-11-17 14:07:57",
+>>>>>>> e5ae41caa6e75ba5030f787a8023e39e9893c9e8
     "BackendJobId":  4,
     "FrontendJobId":  12
 }

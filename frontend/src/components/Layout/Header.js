@@ -11,6 +11,29 @@ const HeaderContainer = styled.header`
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  gap: 20px;
+`;
+
+const LogoSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  
+  .header-logo {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 5px;
+  }
+  
+  @media (max-width: 768px) {
+    .header-logo {
+      width: 35px;
+      height: 35px;
+    }
+  }
 `;
 
 const PageTitle = styled.div`
@@ -110,7 +133,7 @@ function Header() {
   const getPageInfo = () => {
     switch (currentPath) {
       case '/':
-        return { title: 'Dashboard', subtitle: 'Overview of coffee machine operations' };
+        return { title: 'Dashboard', subtitle: 'Overview of K2 machine operations' };
       case '/items':
         return { title: 'Item Management', subtitle: 'Manage products and production variables' };
       case '/orders':
@@ -120,7 +143,7 @@ function Header() {
       case '/settings':
         return { title: 'Settings', subtitle: 'System configuration and preferences' };
       default:
-        return { title: 'Coffee Manager', subtitle: 'Machine control center' };
+        return { title: 'K2 Machine Manager', subtitle: 'Machine control center' };
     }
   };
   
@@ -128,10 +151,13 @@ function Header() {
   
   return (
     <HeaderContainer>
-      <PageTitle>
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-      </PageTitle>
+      <LogoSection>
+        <img src="/K2-logo.jpg" alt="K2" className="header-logo" />
+        <PageTitle>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+        </PageTitle>
+      </LogoSection>
       
       <HeaderActions>
         <ConnectionStatus>
