@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tunnel API Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #10b981;
+        }
+        .status.error {
+            background: #ef4444;
+        }
+        .status.loading {
+            background: #f59e0b;
+        }
+        .info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .product {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .product img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #10b981;
+            padding-left: 10px;
+        }
+        .log-entry.error {
+            border-left-color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            🌐 Tunnel API Connection Test
+        </h1>
+        
+        <div class="info">
+            <strong>Current Location:</strong> <span id="currentUrl"></span><br>
+            <strong>Detected Hostname:</strong> <span id="hostname"></span><br>
+            <strong>Detected API URL:</strong> <span id="apiUrl"></span>
+        </div>
+
+        <div>
+            <button onclick="testConnection()">🔄 Test API Connection</button>
+            <button onclick="fetchProducts()">📦 Fetch Products</button>
+            <button onclick="testHealthCheck()">❤️ Health Check</button>
+            <button onclick="clearLogs()">🧹 Clear Logs</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="products" class="products"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        // Auto-detect API URL based on current location
+        function getApiBaseUrl() {
+            const currentHost = window.location.hostname;
+            const currentProtocol = window.location.protocol;
+            
+            console.log('Detecting API URL...');
+            console.log('Current host:', currentHost);
+            console.log('Current protocol:', currentProtocol);
+            
+            // If accessing through hydromods.org tunnel
+            if (currentHost.includes('hydromods.org')) {
+                return 'https://coffee-api.hydromods.org';
+            }
+            
+            // If accessing through local network IP
+            if (currentHost.match(/^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./)) {
+                return `http://${currentHost}:3000`;
+            }
+            
+            // If localhost
+            if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+                return 'http://localhost:3000';
+            }
+            
+            // Default to tunnel
+            return 'https://coffee-api.hydromods.org';
+        }
+
+        const API_BASE = getApiBaseUrl();
+        const logs = [];
+
+        function addLog(message, isError = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push({ timestamp, message, isError });
+            updateLogDisplay();
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function updateLogDisplay() {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = logs.map(log => 
+                `<div class="log-entry ${log.isError ? 'error' : ''}">[${log.timestamp}] ${log.message}</div>`
+            ).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            logs.length = 0;
+            updateLogDisplay();
+        }
+
+        function setStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function testConnection() {
+            setStatus('🔄 Testing connection...', 'loading');
+            addLog('Starting connection test to: ' + API_BASE);
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                addLog(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog('Health check response: ' + JSON.stringify(data));
+                    setStatus('✅ API Connection Successful!', 'success');
+                } else {
+                    addLog('Response not OK: ' + response.statusText, true);
+                    setStatus(`❌ Connection Failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLog('Connection error: ' + error.message, true);
+                setStatus('❌ Connection Error: ' + error.message, 'error');
+            }
+        }
+
+        async function testHealthCheck() {
+            setStatus('🔄 Checking health endpoint...', 'loading');
+            addLog('Testing health endpoint: ' + API_BASE + '/health');
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                addLog('Health check data: ' + JSON.stringify(data, null, 2));
+                
+                if (data.status === 'ok' || data.status === 'healthy') {
+                    setStatus('✅ Health Check Passed!', 'success');
+                } else {
+                    setStatus('⚠️ Health Check: ' + JSON.stringify(data), 'error');
+                }
+            } catch (error) {
+                addLog('Health check failed: ' + error.message, true);
+                setStatus('❌ Health Check Failed: ' + error.message, 'error');
+            }
+        }
+
+        async function fetchProducts() {
+            setStatus('🔄 Fetching products...', 'loading');
+            addLog('Fetching products from: ' + API_BASE + '/api/motong/products');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/motong/products`);
+                const data = await response.json();
+                
+                addLog(`Products API response code: ${data.code}`);
+                addLog(`Products count: ${data.data ? data.data.length : 0}`);
+                
+                if (data.code === 0 && data.data) {
+                    setStatus(`✅ Fetched ${data.data.length} products successfully!`, 'success');
+                    displayProducts(data.data);
+                } else {
+                    addLog('Products API error: ' + data.msg, true);
+                    setStatus('❌ Failed to fetch products: ' + data.msg, 'error');
+                }
+            } catch (error) {
+                addLog('Fetch products error: ' + error.message, true);
+                setStatus('❌ Error fetching products: ' + error.message, 'error');
+            }
+        }
+
+        function displayProducts(products) {
+            const productsDiv = document.getElementById('products');
+            productsDiv.innerHTML = products.slice(0, 12).map(product => `
+                <div class="product">
+                    ${product.goodsPath ? `<img src="${API_BASE}${product.goodsPath}" alt="${product.goodsNameEn}" onerror="this.style.display='none'">` : ''}
+                    <strong>${product.goodsNameEn}</strong><br>
+                    ${product.price ? `₱${parseFloat(product.price).toFixed(2)}` : ''}<br>
+                    <small>${product.available ? '✅ Available' : '❌ Out of Stock'}</small>
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        window.onload = function() {
+            document.getElementById('currentUrl').textContent = window.location.href;
+            document.getElementById('hostname').textContent = window.location.hostname;
+            document.getElementById('apiUrl').textContent = API_BASE;
+            addLog('Page loaded successfully');
+            addLog('Auto-detected API URL: ' + API_BASE);
+            
+            // Auto-test connection on load
+            setTimeout(() => {
+                addLog('Running automatic connection test...');
+                testConnection();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
+

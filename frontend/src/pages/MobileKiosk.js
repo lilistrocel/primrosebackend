@@ -521,6 +521,28 @@ function MobileKiosk() {
   // Refs
   const categoryTabsRef = useRef(null);
 
+  // Auto-enter fullscreen on page load
+  useEffect(() => {
+    const enterFullscreen = async () => {
+      try {
+        // Check if already in fullscreen
+        if (!document.fullscreenElement) {
+          console.log('📱 MOBILE KIOSK: Auto-entering fullscreen mode...');
+          await document.documentElement.requestFullscreen();
+          console.log('📱 MOBILE KIOSK: Fullscreen mode activated');
+        }
+      } catch (error) {
+        // Fullscreen might be blocked by browser policy (e.g., must be triggered by user interaction)
+        console.warn('📱 MOBILE KIOSK: Auto-fullscreen blocked (user interaction may be required):', error.message);
+        // This is expected behavior in some browsers
+      }
+    };
+
+    // Delay slightly to ensure page is fully loaded
+    const timer = setTimeout(enterFullscreen, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Fetch data functions
   const fetchLatteArtDesigns = async () => {
     try {

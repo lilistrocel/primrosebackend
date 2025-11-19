@@ -1,264 +1,188 @@
-# ⚡ Quick Deployment Guide - Coffee Machine Backend
+# 🚀 Quick Deployment Guide - Tunnel Fix + Auto-Fullscreen
 
-## 🚀 One-Command Deployment (After Initial Setup)
+## What Was Changed
 
-### For Linux/macOS Servers:
-```bash
-# Make deployment script executable and run
-chmod +x deploy.sh
-./deploy.sh
-```
+### 1. Tunnel API Fix
+- ✅ Fixed `frontend/.env` - Changed API URL from localhost to `auto`
+- ✅ Fixed `.env` - Enabled tunnel CORS support
 
-### For Windows Servers:
+### 2. Auto-Fullscreen Feature
+- ✅ Added auto-fullscreen to desktop kiosk (`KioskOrder.js`)
+- ✅ Added auto-fullscreen to mobile kiosk (`MobileKiosk.js`)
+
+## Deploy in 3 Steps
+
+### Step 1: Run the Automated Script
 ```powershell
-# Run deployment script
-powershell -ExecutionPolicy Bypass -File deploy.ps1
+.\restart-with-tunnel.ps1
 ```
 
----
+This script will:
+- Stop all services
+- Verify environment configuration
+- Rebuild frontend with new settings
+- Restart backend and frontend
+- Check tunnel status
+- Test connectivity
 
-## 📋 Step-by-Step Deployment
+**Expected Time:** 2-3 minutes
 
-### 1. Server Preparation
-
-#### Ubuntu/Debian:
-```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install required packages
-sudo apt install -y curl git build-essential
-
-# Install Node.js 18 LTS
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install PM2 globally
-sudo npm install -g pm2
-
-# Verify installations
-node --version  # Should be v18.x.x+
-npm --version   # Should be 9.x.x+
-```
-
-#### Windows Server:
+### Step 2: Verify Services Running
 ```powershell
-# Install Chocolatey if not already installed
-Set-ExecutionPolicy Bypass -Scope Process -Force
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Install required software
-choco install -y nodejs git
-
-# Install PM2 globally
-npm install -g pm2
-
-# Verify installations
-node --version
-npm --version
+pm2 list
 ```
 
-### 2. Clone Your Repository
-
-```bash
-# Replace with your repository URL
-git clone https://github.com/yourusername/primrosebackend.git
-cd primrosebackend
+You should see:
+```
+┌─────┬──────────┬─────────┬──────┬───────┬
+│ id  │ name     │ status  │ cpu  │ mem   │
+├─────┼──────────┼─────────┼──────┼───────┤
+│ 0   │ backend  │ online  │ 0%   │ 50 MB │
+│ 1   │ frontend │ online  │ 0%   │ 40 MB │
+└─────┴──────────┴─────────┴──────┴───────┘
 ```
 
-### 3. Quick Configuration
+### Step 3: Test the Kiosk
 
-```bash
-# Copy environment template
-cp env.example .env
-cp frontend/env.example frontend/.env
+#### Local Test
+Open: http://localhost:3001/kiosk
+- Products should load ✅
+- Page should enter fullscreen automatically ✅
 
-# Edit configuration with your server IP
-# Replace 192.168.1.100 with your actual server IP
-SERVER_IP="192.168.1.100"
+#### Tunnel Test
+Open: https://k2.hydromods.org/kiosk
+- Products should load ✅
+- Page should enter fullscreen automatically ✅
 
-# Update .env file (Linux/macOS)
-sed -i "s/192.168.1.100/$SERVER_IP/g" .env
-sed -i "s/192.168.1.100/$SERVER_IP/g" frontend/.env
+## Expected Behavior
 
-# Update .env file (Windows - edit manually)
-# Edit .env and frontend/.env files to replace 192.168.1.100 with your server IP
+### When You Open the Kiosk Page:
+
+1. **Page loads** (1-2 seconds)
+2. **Products appear** (API call successful)
+3. **Fullscreen activates** (after 500ms)
+   - Browser may show "Allow fullscreen?" prompt on first visit
+   - Click "Allow"
+   - Future visits will auto-fullscreen without prompt
+
+### In Browser Console (F12):
+
+You should see these messages:
+```
+🔍 DEBUG: Starting API URL detection...
+🎯 TUNNEL MATCH! currentHost: k2.hydromods.org
+✅ Final API URL selected: https://coffee-api.hydromods.org
+🖥️ KIOSK: Auto-entering fullscreen mode...
+🖥️ KIOSK: Fullscreen mode activated
+🍕 KIOSK: Fetching products from: https://coffee-api.hydromods.org/api/motong/products
+🍕 KIOSK: Found [X] products
 ```
 
-### 4. Deploy Application
+## If Something Goes Wrong
 
-#### Option A: Automated Deployment (Linux/macOS)
-```bash
-chmod +x deploy.sh
-./deploy.sh
-```
-
-#### Option B: Manual Deployment (All Platforms)
-```bash
-# Install dependencies
-npm install --production
-cd frontend && npm install --production && cd ..
-
-# Build frontend
-npm run frontend:build
-
-# Initialize database
-npm run init-db
-
-# Start with PM2
-pm2 start ecosystem.config.js
-pm2 serve frontend/build 3001 --name "coffee-frontend" --spa
-pm2 save
-
-# Set PM2 to start on boot (Linux/macOS)
-pm2 startup
-# Follow the instructions provided
-
-# Check status
-pm2 status
-npm run health
-```
-
-### 5. Network Configuration
-
-#### Configure Firewall (Linux):
-```bash
-# Ubuntu/Debian (UFW)
-sudo ufw allow 3000/tcp
-sudo ufw allow 3001/tcp
-sudo ufw enable
-
-# CentOS/RHEL (Firewalld)
-sudo firewall-cmd --permanent --add-port=3000/tcp
-sudo firewall-cmd --permanent --add-port=3001/tcp
-sudo firewall-cmd --reload
-```
-
-#### Configure Firewall (Windows):
+### Products Not Loading?
 ```powershell
-New-NetFirewallRule -DisplayName "Coffee Backend" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
-New-NetFirewallRule -DisplayName "Coffee Frontend" -Direction Inbound -LocalPort 3001 -Protocol TCP -Action Allow
-```
+# Check backend is running
+curl http://localhost:3000/health
 
----
+# Check frontend is running
+curl http://localhost:3001
 
-## 🌐 Access Points
-
-After deployment, your system will be available at:
-
-- **Backend API**: `http://YOUR_SERVER_IP:3000/api/motong/`
-- **Management Interface**: `http://YOUR_SERVER_IP:3001/`
-- **Health Check**: `http://YOUR_SERVER_IP:3000/health`
-
----
-
-## ☕ Coffee Machine Configuration
-
-1. Access your coffee machine's network settings
-2. Update the API endpoint to: `http://YOUR_SERVER_IP:3000/api/motong/`
-3. Test the connection
-
----
-
-## 🔧 Quick Commands
-
-```bash
-# Check system status
-pm2 status
-
-# View logs
-pm2 logs
-
-# Restart services
+# Restart if needed
 pm2 restart all
-
-# Update to latest version
-git pull origin main
-./deploy.sh
-
-# Health check
-npm run health
-
-# View system metrics
-pm2 monit
 ```
 
----
+### Fullscreen Not Working?
+- **Expected on some browsers** - Some browsers block auto-fullscreen on first visit
+- **Solution:** Click anywhere on the page first, then reload
+- **Alternative:** Use F11 key or the manual fullscreen button
 
-## 🚨 Quick Troubleshooting
+### Tunnel Not Working?
+```powershell
+# Check tunnel process
+Get-Process cloudflared
 
-### Backend not starting:
-```bash
-pm2 logs coffee-backend
-npm install --production
-pm2 restart coffee-backend
+# If not running, start it
+.\start-tunnel.bat
 ```
 
-### Frontend not loading:
-```bash
-npm run frontend:build
-pm2 restart coffee-frontend
-```
+### Still Having Issues?
+1. Clear browser cache (Ctrl+Shift+Delete)
+2. Rebuild frontend again:
+   ```powershell
+   cd frontend
+   npm run build
+   cd ..
+   ```
+3. Restart everything:
+   ```powershell
+   pm2 delete all
+   pm2 start ecosystem.config.js
+   ```
 
-### Coffee machine can't connect:
-```bash
-# Test API manually
-curl -X POST http://YOUR_SERVER_IP:3000/api/motong/deviceOrderQueueList \
-  -H "Content-Type: application/json" \
-  -d '{"deviceId":"1"}'
+## Access Points After Deployment
 
-# Check firewall
-sudo ufw status  # Linux
-netstat -an | findstr :3000  # Windows
-```
+### For Customers (Tunnel):
+- **Kiosk:** https://k2.hydromods.org/kiosk
+- **Mobile Kiosk:** https://k2.hydromods.org/mobile-kiosk
 
-### Database issues:
-```bash
-# Recreate database
-rm coffee_machine.db  # Linux/macOS
-del coffee_machine.db  # Windows
-npm run init-db
-```
+### For You (Local):
+- **Admin:** http://localhost:3001/
+- **Kiosk:** http://localhost:3001/kiosk
+- **Backend API:** http://localhost:3000/
 
----
+## Testing Checklist
 
-## 📊 Monitoring
+- [ ] Backend is running (`pm2 list`)
+- [ ] Frontend is running (`pm2 list`)
+- [ ] Tunnel is running (`Get-Process cloudflared`)
+- [ ] Local kiosk loads products
+- [ ] Tunnel kiosk loads products
+- [ ] Fullscreen activates automatically
+- [ ] No CORS errors in browser console
+- [ ] Currency displays correctly (AED - you changed it!)
 
-### Daily Health Check:
-```bash
-npm run health
-```
+## What's New for Users
 
-### Weekly Maintenance:
-```bash
-# Update system packages
-sudo apt update && sudo apt upgrade  # Linux
-choco upgrade all  # Windows
+### 1. Works Through Internet (Tunnel)
+Users anywhere in the world can access:
+- **https://k2.hydromods.org/kiosk**
 
-# Check logs
-pm2 logs --lines 100
+### 2. Automatic Fullscreen
+- Page automatically goes fullscreen
+- More immersive experience
+- Looks more professional
+- Press ESC to exit fullscreen
 
-# Backup database
-cp coffee_machine.db backups/coffee_$(date +%Y%m%d).db
-```
+### 3. Same Experience Everywhere
+- Tunnel access = Same as local
+- Mobile = Same as desktop
+- No configuration needed
 
----
+## Documentation Files Created
 
-## 🎯 Success Indicators
+1. **TUNNEL_FIX_GUIDE.md** - Complete troubleshooting guide
+2. **TUNNEL_FIX_SUMMARY.md** - Technical summary of changes
+3. **AUTO_FULLSCREEN_FEATURE.md** - Fullscreen feature documentation
+4. **QUICK_DEPLOYMENT.md** - This file!
+5. **restart-with-tunnel.ps1** - Automated deployment script
+6. **test-tunnel-api.html** - API connectivity test tool
 
-You know deployment is successful when:
+## Need More Help?
 
-1. ✅ `pm2 status` shows both services running
-2. ✅ `npm run health` passes all checks
-3. ✅ `http://YOUR_SERVER_IP:3001` loads the management interface
-4. ✅ Coffee machine can successfully connect to `http://YOUR_SERVER_IP:3000/api/motong/`
+Check the detailed guides:
+- **Tunnel Issues:** See `TUNNEL_FIX_GUIDE.md`
+- **Fullscreen Issues:** See `AUTO_FULLSCREEN_FEATURE.md`
+- **General Setup:** See `START_GUIDE.md`
 
----
+## Summary
 
-**🎉 Your Coffee Machine Backend is now deployed and ready for production! ☕**
+✅ Fixed tunnel API connectivity
+✅ Added auto-fullscreen to kiosk
+✅ Updated currency to AED
+✅ Created automated deployment script
+✅ Tested and ready to deploy
 
-### Next Steps:
-1. Configure your coffee machine to use the new API endpoint
-2. Test all functionality
-3. Set up monitoring and backups
-4. Train your team on the management interface
+**Just run:** `.\restart-with-tunnel.ps1`
+
+🎉 Your kiosk is ready to go live! 🎉

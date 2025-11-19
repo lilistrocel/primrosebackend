@@ -1326,6 +1326,28 @@ function KioskOrder() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Auto-enter fullscreen on page load
+  useEffect(() => {
+    const enterFullscreen = async () => {
+      try {
+        // Check if already in fullscreen
+        if (!document.fullscreenElement) {
+          console.log('🖥️ KIOSK: Auto-entering fullscreen mode...');
+          await document.documentElement.requestFullscreen();
+          console.log('🖥️ KIOSK: Fullscreen mode activated');
+        }
+      } catch (error) {
+        // Fullscreen might be blocked by browser policy (e.g., must be triggered by user interaction)
+        console.warn('🖥️ KIOSK: Auto-fullscreen blocked (user interaction may be required):', error.message);
+        // This is expected behavior in some browsers, user can still use the fullscreen button
+      }
+    };
+
+    // Delay slightly to ensure page is fully loaded
+    const timer = setTimeout(enterFullscreen, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Filter products by category
   const getFilteredProducts = () => {
     if (selectedCategory === 'All') {
