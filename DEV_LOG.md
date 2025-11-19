@@ -1620,3 +1620,212 @@ process.on('SIGTERM', gracefulShutdown);
 **Documentation:** `BRANDING_UPDATE.md` created
 
 ---
+
+## Phase 21: Mobile Footer Layout for Kiosk 📱
+
+**Date:** November 19, 2025  
+**Objective:** Optimize kiosk order screen for mobile by moving order/queue section to bottom footer
+
+### Problem Identified:
+On mobile devices, the right panel (order cart and queue) was consuming valuable vertical space, making product browsing difficult on small screens.
+
+### Solution Implemented:
+Transformed the right panel into a **fixed bottom footer** on mobile devices (< 768px), similar to modern mobile app patterns.
+
+### Changes Applied:
+
+#### 1. RightPanel Mobile Positioning
+```css
+@media (max-width: 768px) {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 40vh;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+```
+
+#### 2. LeftPanel Content Protection
+```css
+@media (max-width: 768px) {
+  padding: 20px;
+  padding-bottom: 45vh; /* Prevents content from hiding behind footer */
+}
+```
+
+#### 3. Compact Mobile Components
+
+**QueueSection:**
+- Padding: 20px → 12px
+- Max height: 15vh (scrollable)
+- Smaller fonts and badges
+- Compact spacing
+
+**CartHeader:**
+- Icon: 24px → 20px
+- Title: 20px → 16px
+- Reduced padding: 24px → 12px
+
+**CartItems:**
+- Max height: 25vh
+- Scrollable overflow
+- Compact empty states
+
+### Layout Comparison:
+
+**Desktop (> 768px):**
+```
+┌───────────────┬──────────┐
+│   Products    │  Cart &  │
+│   (Grid)      │  Queue   │
+└───────────────┴──────────┘
+```
+
+**Mobile (≤ 768px):**
+```
+┌─────────────────────────┐
+│   Products (Full Width) │
+│   Better Browsing       │
+└─────────────────────────┘
+┌─────────────────────────┐
+│ Cart & Queue (Footer)   │
+│ Fixed at bottom         │
+└─────────────────────────┘
+```
+
+### Benefits Achieved:
+- ✅ **More Product Space**: Full-width grid for better browsing
+- ✅ **Modern UX**: Bottom drawer pattern (familiar to mobile users)
+- ✅ **Touch-Friendly**: Larger targets, easy scrolling
+- ✅ **Professional Design**: Rounded corners, elevation shadows
+- ✅ **Space Efficient**: Cart/queue accessible but not intrusive
+
+### Files Modified:
+```
+✅ frontend/src/pages/KioskOrder.js
+   - LeftPanel: Mobile padding-bottom
+   - RightPanel: Fixed bottom positioning
+   - QueueSection: Compact mobile layout
+   - CartHeader: Smaller mobile sizing
+   - CartItems: Scrollable sections
+```
+
+**Documentation:** `MOBILE_FOOTER_LAYOUT.md` created
+
+---
+
+## Phase 22: 2-Column Mobile Product Grid 📱
+
+**Date:** November 19, 2025  
+**Objective:** Optimize product browsing on mobile with a fixed 2-column grid layout
+
+### Problem Identified:
+Product cards were either displaying as single column (inefficient) or using auto-fit layout (inconsistent), making mobile browsing less optimal.
+
+### Solution Implemented:
+Implemented a **fixed 2-column grid** for mobile devices with optimized card sizing and touch-friendly controls.
+
+### Changes Applied:
+
+#### 1. ProductGrid - Fixed 2-Column Layout
+```css
+/* Mobile (≤ 768px) */
+grid-template-columns: repeat(2, 1fr);
+gap: 12px;
+
+/* Small Mobile (≤ 480px) */
+grid-template-columns: repeat(2, 1fr);
+gap: 10px;
+
+/* Tiny Screens (≤ 360px) */
+grid-template-columns: 1fr;
+gap: 12px;
+```
+
+#### 2. ProductCard - Compact Mobile Design
+**Dimensions:**
+- Height: 320px → auto (min 240px)
+- Padding: 16px → 12px → 10px
+- Border radius: 20px → 16px → 14px
+
+**Images:**
+- Height: 160px → 120px → 100px
+- Margin: 16px → 10px → 8px
+
+**Typography:**
+- Product name: 20px → 16px → 14px
+- Price: 18px → 16px → 14px
+- Button: 16px → 14px → 13px
+
+**Buttons:**
+- Height: 44px → 40px → 36px
+- Border radius: 12px → 10px → 8px
+
+#### 3. Touch Optimization
+**Reduced Animation Effects:**
+```css
+/* Desktop hover */
+transform: translateY(-6px);
+
+/* Mobile hover */
+transform: translateY(-2px);
+
+/* Desktop scale */
+transform: scale(1.05);
+
+/* Mobile scale */
+transform: scale(1.02);
+```
+
+### Layout Comparison:
+
+**Desktop:**
+```
+┌────┐ ┌────┐ ┌────┐ ┌────┐
+│ P1 │ │ P2 │ │ P3 │ │ P4 │  (Auto-fit)
+└────┘ └────┘ └────┘ └────┘
+```
+
+**Mobile:**
+```
+┌────┐ ┌────┐
+│ P1 │ │ P2 │  (Fixed 2 columns)
+└────┘ └────┘
+┌────┐ ┌────┐
+│ P3 │ │ P4 │
+└────┘ └────┘
+```
+
+### Benefits Achieved:
+- ✅ **Efficient Browsing**: 2 products visible side-by-side
+- ✅ **Consistent Layout**: Fixed columns prevent layout shifts
+- ✅ **Touch-Optimized**: Larger tap targets, reduced animations
+- ✅ **Space Efficient**: Compact design maximizes visible products
+- ✅ **Professional UX**: Familiar e-commerce pattern
+
+### Responsive Breakpoints:
+
+| Screen Width | Columns | Gap | Card Height |
+|--------------|---------|-----|-------------|
+| > 768px | auto-fit (3-4+) | 24px | 320px fixed |
+| 481-768px | 2 fixed | 12px | auto (min 240px) |
+| 360-480px | 2 fixed | 10px | auto (min 240px) |
+| < 360px | 1 | 12px | auto (min 240px) |
+
+### Files Modified:
+```
+✅ frontend/src/pages/KioskOrder.js
+   - ProductGrid: 2-column mobile layout
+   - ProductCard: Compact mobile sizing
+   - Product images: Responsive heights
+   - Typography: Scaled for readability
+   - Buttons: Touch-optimized dimensions
+   - Animations: Reduced for mobile performance
+```
+
+**Documentation:** `MOBILE_2_COLUMN_GRID.md` created
+
+---
