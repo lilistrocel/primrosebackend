@@ -25,24 +25,29 @@ const pulse = keyframes`
 `;
 
 const Container = styled.div`
-  min-height: 100vh;
+  height: 100vh;
   background: #f8f9fb;
   display: flex;
   font-family: 'Figtree', 'Inter', 'Segoe UI', sans-serif;
   position: relative;
+  overflow: hidden;
   direction: ${props => props.$isRTL ? 'rtl' : 'ltr'};
 `;
 
 const LeftPanel = styled.div`
-  flex: 2;
+  flex: 1;
   padding: 40px;
+  padding-right: 420px; /* Space for fixed right panel (380px + 40px padding) */
   background: white;
   overflow-y: auto;
-  
+  height: 100vh;
+
   /* Mobile: Add padding at bottom for footer */
   @media (max-width: 768px) {
     padding: 20px;
+    padding-right: 20px;
     padding-bottom: 45vh; /* Space for fixed footer */
+    height: auto;
   }
 `;
 
@@ -337,23 +342,29 @@ const CategoryTabs = styled.div`
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
   margin-bottom: 40px;
-  
-  /* Mobile: Force 2-column grid */
+
+  /* Large screens: 3 columns */
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  /* Mobile: 2 columns with smaller gap */
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     margin-bottom: 20px;
   }
-  
+
   /* Very small screens: Keep 2 columns but smaller gap */
   @media (max-width: 480px) {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-  
+
   /* Tiny screens: Fall back to 1 column */
   @media (max-width: 360px) {
     grid-template-columns: 1fr;
@@ -704,20 +715,27 @@ const AvailabilityBadge = styled.div`
 `;
 
 const RightPanel = styled.div`
-  flex: 1;
+  width: 380px;
+  min-width: 380px;
   background: #2d3748;
   color: white;
   display: flex;
   flex-direction: column;
-  position: relative;
-  
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  z-index: 50;
+
   /* Mobile: Move to bottom as footer */
   @media (max-width: 768px) {
     position: fixed;
     bottom: 0;
+    top: auto;
     left: 0;
     right: 0;
-    flex: none;
+    width: 100%;
+    min-width: unset;
     height: auto;
     max-height: 40vh;
     z-index: 100;
@@ -956,11 +974,13 @@ const CartHeader = styled.div`
 const CartItems = styled.div`
   flex: 1;
   padding: 0 24px;
+  padding-bottom: 16px;
   overflow-y: auto;
-  
+
   /* Mobile: Scrollable with limited height */
   @media (max-width: 768px) {
     padding: 0 16px;
+    padding-bottom: 12px;
     max-height: 25vh;
   }
   
@@ -1097,26 +1117,43 @@ const CartItems = styled.div`
 `;
 
 const CartFooter = styled.div`
-  padding: 24px;
+  padding: 20px 24px;
   border-top: 1px solid #4a5568;
-  
+  background: #2d3748;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+
+  /* Mobile: Compact footer */
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+  }
+
   .total-section {
-    margin-bottom: 24px;
-    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
     .total-label {
       font-size: 14px;
       color: #a0aec0;
-      margin-bottom: 4px;
     }
-    
+
     .total-amount {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 700;
       color: white;
       letter-spacing: -0.5px;
+
+      /* Mobile: Smaller text */
+      @media (max-width: 768px) {
+        font-size: 22px;
+      }
     }
   }
-  
+
   .order-button {
     width: 100%;
     background: #ff6b35;
@@ -1129,17 +1166,23 @@ const CartFooter = styled.div`
     cursor: pointer;
     transition: all 0.3s ease;
     letter-spacing: -0.2px;
-    
+
+    /* Mobile: Slightly smaller */
+    @media (max-width: 768px) {
+      padding: 14px 20px;
+      font-size: 16px;
+    }
+
     &:hover {
       background: #e55a2b;
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
     }
-    
+
     &:active {
       transform: translateY(0);
     }
-    
+
     &:disabled {
       background: #4a5568;
       cursor: not-allowed;
@@ -1455,20 +1498,56 @@ function KioskOrder() {
     }
   };
 
-  // Fetch order queue
+  // Fetch order queue from both coffee (device 1) and ice cream (device 4) machines
   const fetchOrderQueue = async () => {
     try {
       const apiUrl = getApiUrl('api/motong/deviceOrderQueueList');
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId: '1' })
-      });
-      const result = await response.json();
-      
-      if (result.code === 0 && result.data) {
-        setOrderQueue(result.data);
+
+      // Fetch from both devices in parallel
+      const [coffeeResponse, iceCreamResponse] = await Promise.all([
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: '1' })
+        }),
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: '4' })
+        })
+      ]);
+
+      const [coffeeResult, iceCreamResult] = await Promise.all([
+        coffeeResponse.json(),
+        iceCreamResponse.json()
+      ]);
+
+      // Merge orders from both devices and dedupe by order ID
+      const allOrders = [];
+      const seenIds = new Set();
+
+      if (coffeeResult.code === 0 && coffeeResult.data) {
+        coffeeResult.data.forEach(order => {
+          if (!seenIds.has(order.id)) {
+            seenIds.add(order.id);
+            allOrders.push(order);
+          }
+        });
       }
+
+      if (iceCreamResult.code === 0 && iceCreamResult.data) {
+        iceCreamResult.data.forEach(order => {
+          if (!seenIds.has(order.id)) {
+            seenIds.add(order.id);
+            allOrders.push(order);
+          }
+        });
+      }
+
+      // Sort by creation time (newest first)
+      allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setOrderQueue(allOrders);
     } catch (error) {
       console.error('Error fetching order queue:', error);
     }
@@ -1664,25 +1743,26 @@ function KioskOrder() {
     }
     
     // For simple products (no customization), apply default cup code logic
-    if (!hasOptions && !product.customization) {
+    // ONLY for coffee products (type 2) - ice cream (type 3) doesn't use CupCode
+    if (!hasOptions && !product.customization && product.type === 2) {
       const modifiedProduct = { ...product };
-      
+
       try {
         // Parse and update jsonCodeVal with default cup code
         const jsonArray = JSON.parse(product.jsonCodeVal);
         const updatedJson = [...jsonArray];
-        
-        // Set default CupCode to 2 (regular cup) for simple products
+
+        // Set default CupCode to 2 (regular cup) for simple coffee products
         const cupIndex = updatedJson.findIndex(item => item.CupCode !== undefined);
         if (cupIndex >= 0) {
           updatedJson[cupIndex].CupCode = "2";
         } else {
           updatedJson.push({ CupCode: "2" });
         }
-        
+
         modifiedProduct.jsonCodeVal = JSON.stringify(updatedJson);
-        console.log(`🧊 Simple Product CupCode: ${product.goodsNameEn} → CupCode: 2 (No Ice Options)`);
-        
+        console.log(`☕ Simple Coffee CupCode: ${product.goodsNameEn} → CupCode: 2 (No Ice Options)`);
+
         product = modifiedProduct;
       } catch (error) {
         console.error('Error updating simple product jsonCodeVal:', error);
@@ -1766,8 +1846,35 @@ function KioskOrder() {
           console.log(`   Has customization:`, !!item.product.customization);
           console.log(`   jsonCodeVal:`, item.product.jsonCodeVal);
           
+          // Build option name based on customization
+          let optionName = '无';
+          let optionNameEn = 'NONE';
+
+          if (item.product.customization) {
+            // For ice cream with toppings
+            if (item.product.type === 3 && item.product.customization.toppingType !== undefined) {
+              const toppingNames = {
+                0: { cn: '无', en: 'NONE' },
+                1: { cn: '奥利奥', en: 'Oreo Crumbs' },
+                2: { cn: '碎坚果', en: 'Crushed Nuts' }
+              };
+              const topping = toppingNames[item.product.customization.toppingType] || toppingNames[0];
+              optionName = topping.cn;
+              optionNameEn = topping.en;
+            } else {
+              // For coffee with customizations
+              const options = [];
+              if (item.product.customization.beanCode) options.push(`Bean${item.product.customization.beanCode}`);
+              if (item.product.customization.milkCode) options.push(`Milk${item.product.customization.milkCode}`);
+              if (item.product.customization.ice) options.push('Iced');
+              if (item.product.customization.shots === 2) options.push('Double Shot');
+              optionNameEn = options.length > 0 ? options.join(', ') : 'NONE';
+              optionName = optionNameEn;
+            }
+          }
+
           return {
-            goodsId: item.product.id,
+            goodsId: item.product.goodsId, // Use product's goods_id, not database id
             deviceGoodsId: item.product.deviceGoodsId,
             goodsName: item.product.goodsName,
             goodsNameEn: item.product.goodsNameEn,
@@ -1779,8 +1886,11 @@ function KioskOrder() {
             totalPrice: item.product.price * item.quantity,
             matterCodes: item.product.matterCodes,
             jsonCodeVal: item.product.jsonCodeVal, // Use the customized jsonCodeVal (includes variant classCodes)
-            goodsOptionName: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
-            goodsOptionNameEn: `${item.product.goodsNameEn}${item.product.customization ? ' (Customized)' : ''} - Kiosk Order`,
+            goodsOptionName: optionName,
+            goodsOptionNameEn: optionNameEn,
+            goodsImg: item.product.goodsImg || 1,
+            path: item.product.path || '',
+            goodsPath: item.product.goodsPath || '',
             lhImgPath: item.product.lhImgPath ? `${getApiBaseUrl()}${item.product.lhImgPath}` : '' // Full web-accessible URL for external machine
           };
         })

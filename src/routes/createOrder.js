@@ -39,6 +39,9 @@ const createOrderSchema = Joi.object({
       jsonCodeVal: Joi.string().required(),
       goodsOptionName: Joi.string().allow(''),
       goodsOptionNameEn: Joi.string().allow(''),
+      goodsImg: Joi.number().integer().allow(null).optional(),
+      path: Joi.string().allow('').optional(),
+      goodsPath: Joi.string().allow('').optional(),
       lhImgPath: Joi.string().allow('').optional()
     })
   ).min(1).required()
@@ -148,28 +151,31 @@ router.post('/createOrder', async (req, res) => {
     // Create order goods records
     const createdItems = [];
     for (const item of items) {
+      // Fetch product from database to get correct goodsImg, path, goodsPath if not provided
+      const product = db.getProductByGoodsId(item.goodsId);
+
       const goodsData = {
         orderId: orderId,
         deviceGoodsId: item.deviceGoodsId,
         goodsId: item.goodsId,
         goodsName: item.goodsName,
         goodsNameEn: item.goodsNameEn,
-        goodsNameOt: item.goodsNameOt || '',
-        goodsImg: 1, // Default image ID
-        goodsOptionName: item.goodsOptionName || '',
-        goodsOptionNameEn: item.goodsOptionNameEn || '',
-        goodsOptionNameOt: item.goodsOptionNameEn || '',
+        goodsNameOt: item.goodsNameOt || product?.goods_name_ot || '',
+        goodsImg: item.goodsImg || product?.goods_img || 1,
+        goodsOptionName: item.goodsOptionName || '无',
+        goodsOptionNameEn: item.goodsOptionNameEn || 'NONE',
+        goodsOptionNameOt: item.goodsOptionNameEn || 'NONE',
         type: item.type,
         status: 3, // Queuing
         price: item.price,
         rePrice: item.rePrice,
-        matterCodes: item.matterCodes || '',
+        matterCodes: item.matterCodes || product?.matter_codes || '',
         num: item.quantity,
         totalPrice: item.totalPrice,
         lhImgPath: item.lhImgPath || '',
         jsonCodeVal: item.jsonCodeVal,
-        path: `public/uploads/product_${item.goodsId}.png`,
-        goodsPath: `/public/uploads/product_${item.goodsId}.png`, // Relative path
+        path: item.path || product?.path || `public/uploads/product_${item.goodsId}.png`,
+        goodsPath: item.goodsPath || product?.goods_path || `/public/uploads/product_${item.goodsId}.png`,
         language: 'en'
       };
 

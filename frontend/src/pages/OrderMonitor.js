@@ -322,26 +322,51 @@ function OrderMonitor() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl(API_ENDPOINTS.ORDER_QUEUE), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ deviceId: "1" })
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.code === 0 && data.data) {
-          setOrders(data.data);
-          setLastUpdate(new Date());
-          console.log('✅ Orders fetched successfully:', data.data.length, 'orders');
-        } else {
-          console.error('❌ Backend returned error:', data.msg);
+      // Fetch orders from both coffee machine (device 1) and ice cream machine (device 4)
+      const [coffeeResponse, iceCreamResponse] = await Promise.all([
+        fetch(getApiUrl(API_ENDPOINTS.ORDER_QUEUE), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: "1" })
+        }),
+        fetch(getApiUrl(API_ENDPOINTS.ORDER_QUEUE), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: "4" })
+        })
+      ]);
+
+      let allOrders = [];
+
+      // Process coffee machine orders
+      if (coffeeResponse.ok) {
+        const coffeeData = await coffeeResponse.json();
+        if (coffeeData.code === 0 && coffeeData.data) {
+          allOrders = [...allOrders, ...coffeeData.data];
+          console.log('☕ Coffee orders fetched:', coffeeData.data.length);
         }
-      } else {
-        console.error('❌ Failed to fetch orders:', response.status);
       }
+
+      // Process ice cream machine orders
+      if (iceCreamResponse.ok) {
+        const iceCreamData = await iceCreamResponse.json();
+        if (iceCreamData.code === 0 && iceCreamData.data) {
+          // Avoid duplicates by filtering out orders already in list
+          const existingIds = new Set(allOrders.map(o => o.id));
+          const newIceCreamOrders = iceCreamData.data.filter(o => !existingIds.has(o.id));
+          allOrders = [...allOrders, ...newIceCreamOrders];
+          console.log('🍦 Ice cream orders fetched:', newIceCreamOrders.length);
+        }
+      }
+
+      // Sort by created_at descending (newest first)
+      allOrders.sort((a, b) => b.created_at - a.created_at);
+
+      setOrders(allOrders);
+      setLastUpdate(new Date());
+      console.log('✅ All orders fetched successfully:', allOrders.length, 'total orders');
+
     } catch (error) {
       console.error('❌ Error fetching orders:', error);
     } finally {

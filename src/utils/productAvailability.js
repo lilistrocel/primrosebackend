@@ -93,21 +93,41 @@ function checkMultipleProductsAvailability(products, currentIngredientLevels) {
 
 /**
  * Get current ingredient levels from latest device status
+ * Fetches from both coffee machine (deviceId=1) and ice cream machine (deviceId=4)
  * @param {object} db - Database instance
  * @returns {object} - Current ingredient levels or empty object if no data
  */
 function getCurrentIngredientLevels(db) {
   try {
-    const deviceStatus = db.getLatestDeviceStatus(1); // Device ID 1
-    
-    if (!deviceStatus || !deviceStatus.matter_status_json) {
-      console.log('⚠️ No device status found, assuming all ingredients available');
+    const ingredientLevels = {};
+
+    // Get coffee machine status (deviceId=1) - CoffeeMatter ingredients
+    const coffeeStatus = db.getLatestDeviceStatus(1);
+    if (coffeeStatus && coffeeStatus.matter_status_json) {
+      const coffeeLevels = JSON.parse(coffeeStatus.matter_status_json);
+      Object.assign(ingredientLevels, coffeeLevels);
+      console.log('☕ Coffee machine ingredients loaded:', Object.keys(coffeeLevels).length);
+    } else {
+      console.log('⚠️ No coffee machine status found');
+    }
+
+    // Get ice cream machine status (deviceId=4) - IceMatter ingredients
+    const iceCreamStatus = db.getLatestDeviceStatus(4);
+    if (iceCreamStatus && iceCreamStatus.matter_status_json) {
+      const iceCreamLevels = JSON.parse(iceCreamStatus.matter_status_json);
+      Object.assign(ingredientLevels, iceCreamLevels);
+      console.log('🍦 Ice cream machine ingredients loaded:', Object.keys(iceCreamLevels).length);
+    } else {
+      console.log('⚠️ No ice cream machine status found');
+    }
+
+    if (Object.keys(ingredientLevels).length === 0) {
+      console.log('⚠️ No device status found for any machine, assuming all ingredients available');
       return {};
     }
-    
-    const ingredientLevels = JSON.parse(deviceStatus.matter_status_json);
-    console.log('📊 Current ingredient levels:', ingredientLevels);
-    
+
+    console.log('📊 Total ingredient levels loaded:', Object.keys(ingredientLevels).length);
+
     return ingredientLevels;
   } catch (error) {
     console.error('❌ Error getting ingredient levels:', error);

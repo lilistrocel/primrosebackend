@@ -143,10 +143,10 @@ const INGREDIENT_MAPPING = {
   },
 
   // Ice Cream Machine Ingredients (type=3, device=4)
-  // Placeholder names - configurable via frontend
+  // IceMatter codes match ice cream machine reporting
   IceMatter6: {
-    name_cn: "冰淇淋代码6",
-    name_en: "Ice Code 6",
+    name_cn: "冰淇淋基料",
+    name_en: "Ice Cream Base",
     type: "IceCream",
     status: "common.normal",
     normalLevel: 100,
@@ -154,8 +154,8 @@ const INGREDIENT_MAPPING = {
     criticalLevel: 5
   },
   IceMatter7: {
-    name_cn: "冰淇淋代码7",
-    name_en: "Ice Code 7",
+    name_cn: "香草风味",
+    name_en: "Vanilla Flavor",
     type: "IceCream",
     status: "common.normal",
     normalLevel: 100,
@@ -163,8 +163,8 @@ const INGREDIENT_MAPPING = {
     criticalLevel: 5
   },
   IceMatter8: {
-    name_cn: "冰淇淋代码8",
-    name_en: "Ice Code 8",
+    name_cn: "巧克力风味",
+    name_en: "Chocolate Flavor",
     type: "IceCream",
     status: "common.normal",
     normalLevel: 100,
@@ -172,8 +172,8 @@ const INGREDIENT_MAPPING = {
     criticalLevel: 5
   },
   IceMatter9: {
-    name_cn: "冰淇淋代码9",
-    name_en: "Ice Code 9",
+    name_cn: "冰淇淋杯",
+    name_en: "Ice Cream Cups",
     type: "IceCream",
     status: "common.normal",
     normalLevel: 100,
@@ -181,8 +181,8 @@ const INGREDIENT_MAPPING = {
     criticalLevel: 5
   },
   IceMatter10: {
-    name_cn: "冰淇淋代码10",
-    name_en: "Ice Code 10",
+    name_cn: "配料容器",
+    name_en: "Toppings Container",
     type: "IceCream",
     status: "common.normal",
     normalLevel: 100,

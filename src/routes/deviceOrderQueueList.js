@@ -72,7 +72,7 @@ router.post('/deviceOrderQueueList', async (req, res) => {
       const orderResponse = {
         id: order.id,
         num: order.num,
-        realPrice: order.real_price.toString(),
+        realPrice: parseFloat(order.real_price).toFixed(2),
         status: order.status,
         orderNum: order.order_num,
         created_at: order.created_at,
@@ -147,11 +147,11 @@ function transformGoods(goods) {
     goodsOptionNameOt: goods.goods_option_name_ot || goods.goods_option_name || "",
     language: goods.language || "en",
     status: goods.status,
-    price: goods.price.toString(),
-    rePrice: goods.re_price.toString(),
+    price: parseFloat(goods.price).toFixed(2),
+    rePrice: parseFloat(goods.re_price).toFixed(2),
     matterCodes: goods.matter_codes || "",
     num: goods.num,
-    totalPrice: goods.total_price.toString(),
+    totalPrice: parseFloat(goods.total_price).toFixed(2),
     lhImgPath: goods.lh_img_path || "",
     jsonCodeVal: goods.json_code_val, // CRITICAL: Production instructions
     path: goods.path || "",

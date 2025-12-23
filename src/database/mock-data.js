@@ -295,14 +295,14 @@ class MockDataGenerator {
 
   static insertMockDeviceStatus() {
     // Real coffee machine ingredients based on the provided image
-    const matterStatus = {
+    const coffeeMatterStatus = {
       "CoffeeMatter1": 85,  // 8oz纸杯 (8oz Paper Cups)
-      "CoffeeMatter2": 75,  // 咖啡豆 (Coffee Beans) 
+      "CoffeeMatter2": 75,  // 咖啡豆 (Coffee Beans)
       "CoffeeMatter3": 65,  // 牛奶 (Milk)
       "CoffeeMatter4": 90,  // 冰块 (Ice)
       "CoffeeMatter5": 80,  // 咖啡机水 (Coffee Machine Water)
       "CoffeeMatter6": 45,  // 1号杯 (Cup #1) - abnormal status
-      "CoffeeMatter7": 40,  // 2杯糖 (2 Cup Sugar) - abnormal status  
+      "CoffeeMatter7": 40,  // 2杯糖 (2 Cup Sugar) - abnormal status
       "CoffeeMatter8": 35,  // 3杯子 (3 Cups) - abnormal status
       "CoffeeMatter9": 95,  // 打印纸张 (Printer Paper)
       "CoffeeMatter10": 30, // 12oz纸杯 (12oz Paper Cups) - abnormal status
@@ -313,7 +313,7 @@ class MockDataGenerator {
       "CoffeeMatter15": 55  // 制冰机水 (Ice Machine Water) - abnormal status
     };
 
-    const deviceStatus = {
+    const coffeeDeviceStatus = {
       "deviceStatus1": 1, // Main system OK
       "deviceStatus2": 1, // Heating system OK
       "deviceStatus3": 1, // Pump system OK
@@ -321,13 +321,37 @@ class MockDataGenerator {
       "lhStatus": 1       // Printer OK
     };
 
-    const result = getDb().saveDeviceStatus(
-      1, // device_id
-      JSON.stringify(matterStatus),
-      JSON.stringify(deviceStatus)
+    // Insert coffee machine status (deviceId=1)
+    const coffeeResult = getDb().saveDeviceStatus(
+      1, // device_id for coffee machine
+      JSON.stringify(coffeeMatterStatus),
+      JSON.stringify(coffeeDeviceStatus)
     );
+    console.log(`☕ Inserted coffee machine status with ID: ${coffeeResult.lastInsertRowid}`);
 
-    console.log(`✅ Inserted device status with ID: ${result.lastInsertRowid}`);
+    // Ice cream machine ingredients (deviceId=4)
+    const iceCreamMatterStatus = {
+      "IceMatter6": 1,   // Ice Cream Base - available (1 = in stock)
+      "IceMatter7": 1,   // Vanilla Flavor - available
+      "IceMatter8": 1,   // Chocolate Flavor - available
+      "IceMatter9": 1,   // Ice Cream Cups - available
+      "IceMatter10": 1   // Toppings Container - available
+    };
+
+    const iceCreamDeviceStatus = {
+      "deviceStatus1": 1, // Main system OK
+      "deviceStatus2": 1, // Freezer system OK
+      "deviceStatus3": 1, // Dispenser OK
+      "lhStatus": 1       // Printer OK
+    };
+
+    // Insert ice cream machine status (deviceId=4)
+    const iceCreamResult = getDb().saveDeviceStatus(
+      4, // device_id for ice cream machine
+      JSON.stringify(iceCreamMatterStatus),
+      JSON.stringify(iceCreamDeviceStatus)
+    );
+    console.log(`🍦 Inserted ice cream machine status with ID: ${iceCreamResult.lastInsertRowid}`);
   }
 
   // Helper method to add new orders dynamically

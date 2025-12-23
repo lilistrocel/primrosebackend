@@ -169,42 +169,54 @@ function logDeviceHealth(deviceStatus, deviceId) {
  */
 function checkAlerts(matterStatus, deviceStatus, deviceId) {
   const alerts = [];
-  
+
   // Check ingredient levels
   const outOfStock = Object.entries(matterStatus)
     .filter(([key, value]) => value === 0)
     .map(([key]) => key);
-    
+
   if (outOfStock.length > 0) {
     alerts.push(`Ingredients out of stock: ${outOfStock.join(', ')}`);
   }
-  
+
   // Check device health
   const deviceIssues = Object.entries(deviceStatus)
     .filter(([key, value]) => value === 0)
     .map(([key]) => key);
-    
+
   if (deviceIssues.length > 0) {
     alerts.push(`Device issues detected: ${deviceIssues.join(', ')}`);
   }
-  
-  // Critical ingredient check (coffee beans, water, etc.)
-  const criticalIngredients = ['CoffeeMatter1', 'CoffeeMatter2', 'CoffeeMatter5'];
-  const criticalOutOfStock = criticalIngredients.filter(ingredient => 
+
+  // Critical ingredient check based on device type
+  let criticalIngredients = [];
+  let deviceType = '';
+
+  if (deviceId === 1) {
+    // Coffee machine critical ingredients
+    criticalIngredients = ['CoffeeMatter1', 'CoffeeMatter2', 'CoffeeMatter5'];
+    deviceType = 'coffee';
+  } else if (deviceId === 4) {
+    // Ice cream machine critical ingredients
+    criticalIngredients = ['IceMatter6', 'IceMatter7', 'IceMatter9'];
+    deviceType = 'ice cream';
+  }
+
+  const criticalOutOfStock = criticalIngredients.filter(ingredient =>
     matterStatus[ingredient] === 0
   );
-  
+
   if (criticalOutOfStock.length > 0) {
-    alerts.push(`CRITICAL: Essential ingredients out of stock: ${criticalOutOfStock.join(', ')}`);
-    console.log('🚨 CRITICAL ALERT: Essential coffee ingredients are out of stock!');
+    alerts.push(`CRITICAL: Essential ${deviceType} ingredients out of stock: ${criticalOutOfStock.join(', ')}`);
+    console.log(`🚨 CRITICAL ALERT: Essential ${deviceType} ingredients are out of stock!`);
   }
-  
+
   // Printer status check
   if (deviceStatus.lhStatus === 0) {
     alerts.push('Printer system offline');
     console.log('🖨️ WARNING: Printer system is offline - receipts cannot be printed');
   }
-  
+
   // Log all alerts
   if (alerts.length > 0) {
     console.log('⚠️ ALERTS TRIGGERED:');
@@ -212,7 +224,7 @@ function checkAlerts(matterStatus, deviceStatus, deviceId) {
   } else {
     console.log('✅ All systems operational - no alerts');
   }
-  
+
   return alerts;
 }
 
