@@ -40,6 +40,9 @@ const productSchema = Joi.object({
   icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional(),
   // Latte art printing option
   hasLatteArt: Joi.boolean().default(false),
+  // Ice cream topping options
+  hasToppingOptions: Joi.boolean().default(false),
+  defaultToppingType: Joi.number().integer().min(0).max(2).default(0),
   // Consumption configuration
   milkConsumption: Joi.number().min(0).default(0),
   coffeeBeansConsumption: Joi.number().min(0).default(0),
@@ -95,7 +98,10 @@ router.get('/products', async (req, res) => {
       doubleShotClassCode: product.double_shot_class_code,
       icedAndDoubleClassCode: product.iced_and_double_class_code,
       // Latte art printing option
-      hasLatteArt: Boolean(product.has_latte_art)
+      hasLatteArt: Boolean(product.has_latte_art),
+      // Ice cream topping options
+      hasToppingOptions: Boolean(product.has_topping_options),
+      defaultToppingType: product.default_topping_type || 0
     }));
 
     // Get current ingredient levels for availability checking

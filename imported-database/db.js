@@ -15,15 +15,15 @@ class DatabaseManager {
       // Enable foreign keys
       this.db.pragma('foreign_keys = ON');
       console.log(`✅ Foreign keys enabled`);
-
-      // Initialize database schema first (create tables if they don't exist)
-      this.initializeSchemaIfNeeded();
-
-      // Run migrations (safely adds new columns to existing tables)
+      
+      // Run migrations first (safely adds new columns to existing tables)
       this.runMigrations();
-
+      
       // Run inventory migrations
       this.runInventoryMigrations();
+      
+      // Initialize database schema only if tables don't exist
+      this.initializeSchemaIfNeeded();
       
       console.log(`✅ Database connected: ${dbPath}`);
     } catch (error) {
@@ -62,8 +62,7 @@ class DatabaseManager {
           { name: 'Latte Art', icon: '🎨', display_order: 1 },
           { name: 'Specialty', icon: '⭐', display_order: 2 },
           { name: 'Cold Brew', icon: '🧊', display_order: 3 },
-          { name: 'Seasonal', icon: '🍂', display_order: 4 },
-          { name: 'Ice Cream', icon: '🍦', display_order: 5 }
+          { name: 'Seasonal', icon: '🍂', display_order: 4 }
         ];
 
         defaultCategories.forEach(category => {
@@ -85,21 +84,10 @@ class DatabaseManager {
         });
       }
 
-      // Add Ice Cream category if it doesn't exist (for existing databases)
-      try {
-        const iceCreamCategory = this.db.prepare(`SELECT id FROM categories WHERE name = 'Ice Cream'`).get();
-        if (!iceCreamCategory) {
-          this.db.prepare(`INSERT INTO categories (name, icon, display_order, is_active) VALUES (?, ?, ?, ?)`).run('Ice Cream', '🍦', 5, 1);
-          console.log('🍦 Added Ice Cream category');
-        }
-      } catch (error) {
-        console.log('⚠️ Ice Cream category migration:', error.message);
-      }
-
       // Add performance index for order_goods JOIN (if not exists)
       try {
         this.db.exec(`
-          CREATE INDEX IF NOT EXISTS idx_order_goods_order_id
+          CREATE INDEX IF NOT EXISTS idx_order_goods_order_id 
           ON order_goods(order_id)
         `);
         console.log('✅ Performance index on order_goods.order_id ensured');
@@ -138,19 +126,6 @@ class DatabaseManager {
       if (!hasLatteArt) {
         console.log('🎨 Adding has_latte_art column to products table...');
         this.db.exec(`ALTER TABLE products ADD COLUMN has_latte_art BOOLEAN DEFAULT 0`);
-      }
-
-      // Add ice cream topping options columns
-      const hasToppingOptions = columnsResult.some(col => col.name === 'has_topping_options');
-      if (!hasToppingOptions) {
-        console.log('🍦 Adding has_topping_options column to products table...');
-        this.db.exec(`ALTER TABLE products ADD COLUMN has_topping_options BOOLEAN DEFAULT 0`);
-      }
-
-      const hasDefaultToppingType = columnsResult.some(col => col.name === 'default_topping_type');
-      if (!hasDefaultToppingType) {
-        console.log('🍦 Adding default_topping_type column to products table...');
-        this.db.exec(`ALTER TABLE products ADD COLUMN default_topping_type INTEGER DEFAULT 0`);
       }
 
       // Create latte art designs table
@@ -327,7 +302,11 @@ class DatabaseManager {
       if (tablesExist.count < 4) {
         console.log('📋 Tables missing, initializing database schema...');
         this.initializeSchema();
-        // Note: Mock data is inserted via init.js, not here (to avoid circular dependency)
+        
+        // Insert mock data only for new databases
+        console.log('📦 Inserting initial mock data...');
+        const MockDataGenerator = require('./mock-data');
+        MockDataGenerator.insertMockData();
       } else {
         console.log('✅ Database tables already exist, skipping initialization');
       }
@@ -660,10 +639,7 @@ class DatabaseManager {
         doubleShotClassCode: 'double_shot_class_code',
         icedAndDoubleClassCode: 'iced_and_double_class_code',
         // Latte art printing option
-        hasLatteArt: 'has_latte_art',
-        // Ice cream topping options
-        hasToppingOptions: 'has_topping_options',
-        defaultToppingType: 'default_topping_type'
+        hasLatteArt: 'has_latte_art'
       };
       
       // Handle ID change specially (dangerous operation)

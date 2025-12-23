@@ -1,11 +1,12 @@
 version: '3.8'
 
 services:
-  coffee-backend:
-    build: 
+  # Backend API (Coffee & Ice Cream machines)
+  backend:
+    build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: coffee-backend
+    container_name: k2-backend
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -14,52 +15,54 @@ services:
       - LOCAL_IP=${LOCAL_IP:-192.168.1.100}
       - FRONTEND_PORT=3001
       - BACKEND_PORT=3000
-      - MOCK_PORT=3002
       - HOST=0.0.0.0
+      - ENABLE_TUNNEL=true
     volumes:
       - ./coffee_machine.db:/app/coffee_machine.db
       - ./logs:/app/logs
       - ./public/uploads:/app/public/uploads
     networks:
-      - coffee-network
+      - k2-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-  coffee-frontend:
+  # Frontend (Admin + Kiosk)
+  frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_BASE_URL=http://${LOCAL_IP:-192.168.1.100}:3000
-    container_name: coffee-frontend
+        - REACT_APP_API_BASE_URL=${API_URL:-http://localhost:3000}
+    container_name: k2-frontend
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "3001:80"
     depends_on:
-      - coffee-backend
+      backend:
+        condition: service_healthy
     networks:
-      - coffee-network
+      - k2-network
 
-  nginx:
-    image: nginx:alpine
-    container_name: coffee-nginx
+  # Cloudflare Tunnel (exposes services to internet)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: k2-tunnel
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+    command: tunnel --config /etc/cloudflared/config.yml run
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+      - ./cloudflared:/etc/cloudflared:ro
     depends_on:
-      - coffee-backend
-      - coffee-frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
     networks:
-      - coffee-network
+      - k2-network
 
 networks:
-  coffee-network:
+  k2-network:
     driver: bridge

@@ -1,11 +1,4 @@
-// Lazy require to avoid circular dependency with db.js
-let db = null;
-function getDb() {
-  if (!db) {
-    db = require('./db');
-  }
-  return db;
-}
+const db = require('./db');
 const networkConfig = require('../config/network');
 
 class MockDataGenerator {
@@ -31,7 +24,7 @@ class MockDataGenerator {
 
     try {
       // Clear existing data first
-      getDb().clearAllData();
+      db.clearAllData();
 
       // Insert default categories first
       this.insertDefaultCategories();
@@ -46,7 +39,7 @@ class MockDataGenerator {
       // Insert orders and collect their IDs
       const orderIds = [];
       orders.forEach(order => {
-        const result = getDb().insertOrder(order);
+        const result = db.insertOrder(order);
         orderIds.push(result.lastInsertRowid);
         console.log(`✅ Inserted order ${order.orderNum} with ID: ${result.lastInsertRowid}`);
       });
@@ -55,7 +48,7 @@ class MockDataGenerator {
       orderGoods.forEach((goods, index) => {
         // Map each item to its own order ID (1:1 mapping)
         goods.orderId = orderIds[index] || orderIds[0]; // Each item gets its own order
-        const result = getDb().insertOrderGoods(goods);
+        const result = db.insertOrderGoods(goods);
         console.log(`✅ Inserted goods ${goods.goodsName} with ID: ${result.lastInsertRowid}`);
       });
 
@@ -184,13 +177,12 @@ class MockDataGenerator {
       { name: 'Latte Art', icon: '🎨', display_order: 1 },
       { name: 'Specialty', icon: '⭐', display_order: 2 },
       { name: 'Cold Brew', icon: '🧊', display_order: 3 },
-      { name: 'Seasonal', icon: '🍂', display_order: 4 },
-      { name: 'Ice Cream', icon: '🍦', display_order: 5 }
+      { name: 'Seasonal', icon: '🍂', display_order: 4 }
     ];
 
     defaultCategories.forEach(category => {
       try {
-        const result = getDb().insertCategory(category);
+        const result = db.insertCategory(category);
         console.log(`✅ Inserted category: ${category.name} with ID: ${result.lastInsertRowid}`);
       } catch (error) {
         console.error(`❌ Failed to insert category ${category.name}:`, error.message);
@@ -261,31 +253,12 @@ class MockDataGenerator {
         goodsImg: 24,
         path: 'public/uploads/20240803/americano.png',
         goodsPath: networkConfig.getFrontendApiUrl() + '/public/uploads/20240803/americano.png'
-      },
-      // Ice Cream Product (type=3, device=4)
-      {
-        goodsId: 28,
-        deviceGoodsId: 32,
-        goodsName: '原味冰激淋',
-        goodsNameEn: 'Vanilla Ice Cream',
-        goodsNameOt: 'آيس كريم فانيلا',
-        type: 3,
-        price: 3.00,
-        rePrice: 3.00,
-        matterCodes: 'IceMatter10,IceMatter9,IceMatter7,IceMatter6',
-        jsonCodeVal: '[{"classCode":"00430001"},{"fruitpiecesType":"0"}]',
-        goodsImg: 125,
-        path: 'public/uploads/icecream/vanilla.png',
-        goodsPath: networkConfig.getFrontendApiUrl() + '/public/uploads/icecream/vanilla.png',
-        category: 'Ice Cream',
-        hasToppingOptions: true,
-        defaultToppingType: 0
       }
     ];
 
     for (const productData of mockProducts) {
       try {
-        const result = getDb().insertProduct(productData);
+        const result = db.insertProduct(productData);
         console.log(`✅ Product ${productData.goodsNameEn} inserted with ID: ${result.lastInsertRowid}`);
       } catch (error) {
         console.error(`❌ Error inserting product ${productData.goodsNameEn}:`, error);
@@ -321,7 +294,7 @@ class MockDataGenerator {
       "lhStatus": 1       // Printer OK
     };
 
-    const result = getDb().saveDeviceStatus(
+    const result = db.saveDeviceStatus(
       1, // device_id
       JSON.stringify(matterStatus),
       JSON.stringify(deviceStatus)
@@ -355,7 +328,7 @@ class MockDataGenerator {
       language: "en"
     };
 
-    const orderResult = getDb().insertOrder(orderData);
+    const orderResult = db.insertOrder(orderData);
     const orderId = orderResult.lastInsertRowid;
 
     // Add corresponding goods
@@ -392,7 +365,7 @@ class MockDataGenerator {
     }
 
     if (goodsData) {
-      const goodsResult = getDb().insertOrderGoods(goodsData);
+      const goodsResult = db.insertOrderGoods(goodsData);
       console.log(`✅ Added new order ${orderNum} with goods ID: ${goodsResult.lastInsertRowid}`);
       return { orderId, goodsId: goodsResult.lastInsertRowid, orderNum };
     }

@@ -29,28 +29,29 @@ export const getApiBaseUrl = () => {
   const currentPort = window.location.port;
   
   console.log(`🌐 Host: ${currentHost}, Protocol: ${currentProtocol}, Port: ${currentPort}`);
-  
+
   let detectedUrl;
-  
+
   // ============================================================================
-  // PRIORITY 1: EXPLICIT ENVIRONMENT VARIABLE (overrides everything)
+  // PRIORITY 1: TUNNEL DOMAIN DETECTION (hydromods.org) - HIGHEST PRIORITY
+  // When accessed via tunnel, ALWAYS use tunnel API regardless of env var
   // ============================================================================
-  if (process.env.REACT_APP_API_BASE_URL && 
-      process.env.REACT_APP_API_BASE_URL.trim() !== '' && 
-      process.env.REACT_APP_API_BASE_URL !== 'auto') {
-    detectedUrl = process.env.REACT_APP_API_BASE_URL;
-    console.log('🔧 Using explicit environment URL:', detectedUrl);
-  }
-  
-  // ============================================================================
-  // PRIORITY 2: TUNNEL DOMAIN DETECTION (hydromods.org) - FIXED
-  // ============================================================================
-  else if (currentHost.includes('hydromods.org')) {
+  if (currentHost.includes('hydromods.org')) {
     console.log('🎯 TUNNEL MATCH! currentHost:', currentHost);
     detectedUrl = 'https://coffee-api.hydromods.org';
     console.log('☁️ Tunnel domain detected, using tunnel API:', detectedUrl);
   }
-  
+
+  // ============================================================================
+  // PRIORITY 2: EXPLICIT ENVIRONMENT VARIABLE (for local/dev use)
+  // ============================================================================
+  else if (process.env.REACT_APP_API_BASE_URL &&
+      process.env.REACT_APP_API_BASE_URL.trim() !== '' &&
+      process.env.REACT_APP_API_BASE_URL !== 'auto') {
+    detectedUrl = process.env.REACT_APP_API_BASE_URL;
+    console.log('🔧 Using explicit environment URL:', detectedUrl);
+  }
+
   // ============================================================================
   // PRIORITY 3: LOCAL NETWORK IP DETECTION (192.168.x.x, 10.x.x.x, etc.)
   // ============================================================================

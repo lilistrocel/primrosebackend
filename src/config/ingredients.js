@@ -1,6 +1,7 @@
 /**
- * Coffee Machine Ingredient Mapping
- * Based on real coffee machine materials data
+ * Machine Ingredient Mapping
+ * Based on real machine materials data
+ * Supports Coffee (CoffeeMatter*) and Ice Cream (IceMatter*) machines
  */
 
 const INGREDIENT_MAPPING = {
@@ -138,6 +139,54 @@ const INGREDIENT_MAPPING = {
     status: "common.abnormal",
     normalLevel: 100,
     warningLevel: 15,
+    criticalLevel: 5
+  },
+
+  // Ice Cream Machine Ingredients (type=3, device=4)
+  // Placeholder names - configurable via frontend
+  IceMatter6: {
+    name_cn: "冰淇淋代码6",
+    name_en: "Ice Code 6",
+    type: "IceCream",
+    status: "common.normal",
+    normalLevel: 100,
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  IceMatter7: {
+    name_cn: "冰淇淋代码7",
+    name_en: "Ice Code 7",
+    type: "IceCream",
+    status: "common.normal",
+    normalLevel: 100,
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  IceMatter8: {
+    name_cn: "冰淇淋代码8",
+    name_en: "Ice Code 8",
+    type: "IceCream",
+    status: "common.normal",
+    normalLevel: 100,
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  IceMatter9: {
+    name_cn: "冰淇淋代码9",
+    name_en: "Ice Code 9",
+    type: "IceCream",
+    status: "common.normal",
+    normalLevel: 100,
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  IceMatter10: {
+    name_cn: "冰淇淋代码10",
+    name_en: "Ice Code 10",
+    type: "IceCream",
+    status: "common.normal",
+    normalLevel: 100,
+    warningLevel: 20,
     criticalLevel: 5
   }
 };

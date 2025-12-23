@@ -339,13 +339,18 @@ function VariableEditor({ item, onClose, onSave }) {
 
   const getVariableDescription = (key) => {
     const descriptions = {
-      'classCode': 'Primary product identifier - determines the recipe/program',
+      // Common
+      'classCode': 'Product recipe code (Coffee: 5XXX, Ice Cream: 0043XXXX)',
+      // Coffee machine parameters
       'CupCode': 'Cup size specification (1=Small, 2=Medium, 3=Large)',
       'BeanCode': 'Coffee bean type (1=Espresso, 2=Arabica, 3=Robusta)',
+      'MilkCode': 'Milk type (1=Regular, 2=Oat)',
       'headCode': 'Temperature setting (1=Cold, 2=Warm, 3=Hot)',
       'cupCode': 'Cup type (1=Glass, 2=Paper, 3=Ceramic)',
       'sweetCode': 'Sweetness level (0=None, 1=Low, 2=Medium, 3=High)',
-      'SugarCode': 'Sugar type (1=White, 2=Brown, 3=Honey)'
+      'SugarCode': 'Sugar type (1=White, 2=Brown, 3=Honey)',
+      // Ice cream machine parameters
+      'fruitpiecesType': 'Topping type (0=None, 1=Oreo Crumbs, 2=Crushed Nuts)'
     };
     return descriptions[key] || 'Custom production parameter';
   };
@@ -584,13 +589,13 @@ function VariableEditor({ item, onClose, onSave }) {
           </div>
 
           <MatterCodeInput
-            placeholder="CoffeeMatter12,CoffeeMatter11,CoffeeMatter1,CoffeeMatter2,CoffeeMatter5"
+            placeholder="Coffee: CoffeeMatter12,CoffeeMatter11,CoffeeMatter1  |  Ice Cream: IceMatter10,IceMatter9,IceMatter7,IceMatter6"
             value={matterCodes}
             onChange={(e) => setMatterCodes(e.target.value)}
           />
-          
+
           <div style={{ marginTop: '12px', color: '#6B7280', fontSize: '0.8rem' }}>
-            Enter ingredient codes separated by commas. These determine which materials the machine will use.
+            Enter ingredient codes separated by commas. Coffee uses CoffeeMatter*, Ice Cream uses IceMatter*.
           </div>
         </Section>
       </Content>

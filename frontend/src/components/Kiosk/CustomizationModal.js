@@ -353,6 +353,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     milkCode: product?.default_milk_code || 1,
     ice: product?.defaultIce || false, // Default to false (no ice) unless explicitly true
     shots: product?.default_shots || 1,
+    toppingType: product?.defaultToppingType || 0, // Ice cream topping: 0=none, 1=Oreo, 2=Nuts
     latteArt: null, // Selected latte art design ID or 'custom' for uploaded image
     latteArtImage: null // Path to selected latte art image
   });
@@ -437,6 +438,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         milkCode: product.default_milk_code || 1,
         ice: product.defaultIce || false, // Use product's defaultIce setting
         shots: product.default_shots || 1,
+        toppingType: product.defaultToppingType || 0, // Ice cream topping
         latteArt: null,
         latteArtImage: null
       });
@@ -660,6 +662,17 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         }
       }
 
+      // Handle ice cream topping (fruitpiecesType)
+      if (product.hasToppingOptions || product.has_topping_options) {
+        const toppingIndex = updatedJson.findIndex(item => item.fruitpiecesType !== undefined);
+        if (toppingIndex >= 0) {
+          updatedJson[toppingIndex].fruitpiecesType = options.toppingType.toString();
+        } else {
+          updatedJson.push({ fruitpiecesType: options.toppingType.toString() });
+        }
+        console.log(`🍦 Topping: fruitpiecesType = ${options.toppingType}`);
+      }
+
       console.log('🎯 Variant ClassCode System:', {
         originalClassCode: jsonArray.find(item => item.classCode)?.classCode,
         selectedOptions: options,
@@ -827,6 +840,39 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
                 >
                   <div className="option-name">{getOptionName('doubleShot', currentLanguage)}</div>
                   <div className="option-desc">{getOptionDescription('doubleShot', currentLanguage)}</div>
+                </OptionButton>
+              </OptionGrid>
+            </OptionSection>
+          )}
+
+          {/* Ice Cream Topping Selection */}
+          {(product.hasToppingOptions || product.has_topping_options) && (
+            <OptionSection>
+              <div className="section-header">
+                <Coffee className="icon" />
+                <div className="title">{t('toppingType') || 'Topping'}</div>
+              </div>
+              <OptionGrid>
+                <OptionButton
+                  className={selectedOptions.toppingType === 0 ? 'selected' : ''}
+                  onClick={() => updateOption('toppingType', 0)}
+                >
+                  <div className="option-name">{getOptionName('fruitpiecesType_0', currentLanguage) || 'No Topping'}</div>
+                  <div className="option-desc">{getOptionDescription('fruitpiecesType_0', currentLanguage) || 'Plain'}</div>
+                </OptionButton>
+                <OptionButton
+                  className={selectedOptions.toppingType === 1 ? 'selected' : ''}
+                  onClick={() => updateOption('toppingType', 1)}
+                >
+                  <div className="option-name">{getOptionName('fruitpiecesType_1', currentLanguage) || 'Oreo Crumbs'}</div>
+                  <div className="option-desc">{getOptionDescription('fruitpiecesType_1', currentLanguage) || 'Crushed Oreo'}</div>
+                </OptionButton>
+                <OptionButton
+                  className={selectedOptions.toppingType === 2 ? 'selected' : ''}
+                  onClick={() => updateOption('toppingType', 2)}
+                >
+                  <div className="option-name">{getOptionName('fruitpiecesType_2', currentLanguage) || 'Crushed Nuts'}</div>
+                  <div className="option-desc">{getOptionDescription('fruitpiecesType_2', currentLanguage) || 'Mixed nuts'}</div>
                 </OptionButton>
               </OptionGrid>
             </OptionSection>

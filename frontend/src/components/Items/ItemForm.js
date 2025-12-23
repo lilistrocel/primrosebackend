@@ -272,6 +272,8 @@ function ItemForm({ item, onClose, onSave }) {
       hasIceOptions: false,
       hasShotOptions: false,
       hasLatteArt: false,
+      hasToppingOptions: false,
+      defaultToppingType: 0,
       defaultBeanCode: 1,
       defaultMilkCode: 1,
       defaultIce: true,
@@ -295,6 +297,8 @@ function ItemForm({ item, onClose, onSave }) {
         hasMilkOptions: Boolean(item.has_milk_options),
         hasIceOptions: Boolean(item.has_ice_options),
         hasShotOptions: Boolean(item.has_shot_options),
+        hasToppingOptions: Boolean(item.hasToppingOptions || item.has_topping_options),
+        defaultToppingType: item.defaultToppingType || item.default_topping_type || 0,
         defaultBeanCode: item.default_bean_code || 1,
         defaultMilkCode: item.default_milk_code || 1,
         defaultIce: Boolean(item.default_ice),
@@ -423,6 +427,8 @@ function ItemForm({ item, onClose, onSave }) {
       hasIceOptions: Boolean(data.hasIceOptions),
       hasShotOptions: Boolean(data.hasShotOptions),
       hasLatteArt: Boolean(data.hasLatteArt),
+      hasToppingOptions: Boolean(data.hasToppingOptions),
+      defaultToppingType: parseInt(data.defaultToppingType) || 0,
       defaultBeanCode: parseInt(data.defaultBeanCode) || 1,
       defaultMilkCode: parseInt(data.defaultMilkCode) || 1,
       defaultIce: data.defaultIce === 'true' || data.defaultIce === true,
@@ -784,8 +790,8 @@ function ItemForm({ item, onClose, onSave }) {
 
                 <FormGroup>
                   <label>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       {...register('hasLatteArt')}
                       style={{ marginRight: '8px' }}
                     />
@@ -793,6 +799,32 @@ function ItemForm({ item, onClose, onSave }) {
                   </label>
                   <div className="helper-text">Allows customers to select latte art designs or upload custom images</div>
                 </FormGroup>
+
+                {/* Ice Cream Topping Options - only show for type 3 */}
+                {watch('type') == 3 && (
+                  <FormGroup>
+                    <label>
+                      <input
+                        type="checkbox"
+                        {...register('hasToppingOptions')}
+                        style={{ marginRight: '8px' }}
+                      />
+                      🍦 Enable Topping Selection
+                    </label>
+                    <div className="helper-text">Allows customers to choose toppings (None, Oreo Crumbs, Crushed Nuts)</div>
+
+                    {watch('hasToppingOptions') && (
+                      <div style={{ marginTop: '12px', paddingLeft: '24px' }}>
+                        <label>Default Topping</label>
+                        <Select {...register('defaultToppingType')}>
+                          <option value={0}>No Topping</option>
+                          <option value={1}>Oreo Crumbs</option>
+                          <option value={2}>Crushed Nuts</option>
+                        </Select>
+                      </div>
+                    )}
+                  </FormGroup>
+                )}
               </FormSection>
 
               <FormSection>

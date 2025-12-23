@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm rebuild:*)",
+      "Bash(node --version:*)",
+      "Bash(npm install:*)",
+      "Bash(node src/database/migrate-option-names.js:*)",
+      "Bash(timeout 10 node:*)",
+      "Bash(npm run init-db:*)",
+      "Bash(cloudflared --version:*)",
+      "Bash(cloudflared tunnel list:*)",
+      "Bash(cmd /c \"cloudflared tunnel list\")",
+      "Bash(cmd /c \"where cloudflared\")",
+      "Bash(cmd /c \"dir %USERPROFILE%\\\\.cloudflared\")",
+      "Bash(powershell -Command \"Get-Command cloudflared -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source; if \\(Test-Path \"\"$env:USERPROFILE\\\\.cloudflared\"\"\\) { Get-ChildItem \"\"$env:USERPROFILE\\\\.cloudflared\"\" }\")",
+      "Bash(powershell -Command \"& ''C:\\\\Program Files \\(x86\\)\\\\cloudflared\\\\cloudflared.exe'' tunnel list\")",
+      "Bash(powershell -Command \"& ''C:\\\\Program Files \\(x86\\)\\\\cloudflared\\\\cloudflared.exe'' tunnel info k2-coffee\")",
+      "Bash(powershell:*)",
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(set PORT=3001)",
+      "Bash(npm start)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(node check-old-db.js:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(node -e:*)",
+      "mcp__playwright__browser_handle_dialog"
+    ]
+  }
+}

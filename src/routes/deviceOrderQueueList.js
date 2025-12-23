@@ -11,12 +11,14 @@ const deviceOrderQueueListSchema = Joi.object({
 
 /**
  * GET DEVICE ORDER QUEUE LIST - MOST CRITICAL ENDPOINT
- * This endpoint is continuously polled by the coffee machine
- * to check for active orders and get production instructions
+ * This endpoint is continuously polled by machines to check for active orders
+ * - Coffee machines look for items in typeList2 (type === 2)
+ * - Ice cream machines look for items in typeList3 (type === 3)
+ * - Other machines can use typeList1 (milk tea) or typeList4 (other)
  */
 router.post('/deviceOrderQueueList', async (req, res) => {
   try {
-    console.log('☕ deviceOrderQueueList called with:', req.body);
+    console.log('🤖 deviceOrderQueueList called with:', req.body);
     
     // Validate request
     const { error, value } = deviceOrderQueueListSchema.validate(req.body);
@@ -30,10 +32,18 @@ router.post('/deviceOrderQueueList', async (req, res) => {
     }
 
     const { deviceId } = value;
+    const deviceIdNum = parseInt(deviceId);
+    
+    // Map device IDs to machine types for better logging
+    const deviceTypeMap = {
+      1: 'Coffee Machine',
+      4: 'Ice Cream Machine'
+    };
+    const machineType = deviceTypeMap[deviceIdNum] || `Device ${deviceIdNum}`;
     
     // Get active orders with goods in single query (OPTIMIZED - prevents N+1)
-    const orders = db.getAllOrdersWithGoods(parseInt(deviceId));
-    console.log(`📋 Found ${orders.length} active orders for device ${deviceId}`);
+    const orders = db.getAllOrdersWithGoods(deviceIdNum);
+    console.log(`📋 ${machineType} (device ${deviceId}) polling: Found ${orders.length} active orders`);
 
     // Check if test mode is enabled
     const isTestMode = db.isTestMode();
@@ -45,6 +55,7 @@ router.post('/deviceOrderQueueList', async (req, res) => {
       const allGoods = order.goods;
       
       // Group goods by type (1=奶茶, 2=咖啡, 3=冰淇淋, 4=其他)
+      // Coffee machines read typeList2, Ice cream machines read typeList3
       const typeList1 = allGoods.filter(goods => goods.type === 1).map(goods => transformGoods(goods));
       const typeList2 = allGoods.filter(goods => goods.type === 2).map(goods => transformGoods(goods));
       const typeList3 = allGoods.filter(goods => goods.type === 3).map(goods => transformGoods(goods));
@@ -89,7 +100,21 @@ router.post('/deviceOrderQueueList', async (req, res) => {
       data: responseData
     };
 
-    console.log('✅ Returning order queue response with', responseData.length, 'orders');
+    // Log summary of items by type for machine debugging
+    const totalType1 = responseData.reduce((sum, o) => sum + o.typeList1.length, 0);
+    const totalType2 = responseData.reduce((sum, o) => sum + o.typeList2.length, 0);
+    const totalType3 = responseData.reduce((sum, o) => sum + o.typeList3.length, 0);
+    const totalType4 = responseData.reduce((sum, o) => sum + o.typeList4.length, 0);
+    console.log(`✅ ${machineType} (device ${deviceId}): Returning ${responseData.length} orders`);
+    console.log(`   📊 Items breakdown: ${totalType1} milk tea, ${totalType2} coffee, ${totalType3} ice cream, ${totalType4} other`);
+    
+    // Warn if machine is polling for wrong type
+    if (deviceIdNum === 4 && totalType3 === 0 && (totalType2 > 0 || totalType1 > 0 || totalType4 > 0)) {
+      console.log(`⚠️ Ice Cream Machine (device 4) found non-ice-cream items. Ensure orders are created with deviceId 4.`);
+    } else if (deviceIdNum === 1 && totalType2 === 0 && totalType3 > 0) {
+      console.log(`⚠️ Coffee Machine (device 1) found ice cream items. These should be on device 4.`);
+    }
+    
     res.json(response);
 
   } catch (error) {

@@ -4,16 +4,22 @@
 
 ### Existing System Architecture
 - **Current Backend**: `http://kintsuji.motonbackend.top/swoft/api/motong/`
-- **Coffee Machine**: 1 physical machine making API calls
+- **Coffee Machine (deviceId: 1)**: 1 physical machine making API calls (reads `typeList2`)
+- **Ice Cream Machine (deviceId: 4)**: 1 physical machine making API calls (reads `typeList3`)
 - **Communication**: HTTP POST requests with JSON payloads
 - **Constraint**: Machine software cannot be modified
+- **Device Assignment**: Orders are automatically assigned to device 1 (coffee) or device 4 (ice cream) based on product type
 
 ### Current API Endpoints Analysis
 
 #### 1. Device Order Queue List (`deviceOrderQueueList`) - **MOST CRITICAL**
-**Purpose**: Coffee machine polls constantly to check for active orders and production instructions
+**Purpose**: Machines poll constantly to check for active orders and production instructions
+- **Coffee machines (deviceId: 1)** read items from `typeList2` (type === 2)
+- **Ice cream machines (deviceId: 4)** read items from `typeList3` (type === 3)
 - **Method**: POST
-- **Input**: `{"deviceId":"1"}`
+- **Input**: 
+  - Coffee machine: `{"deviceId":"1"}`
+  - Ice cream machine: `{"deviceId":"4"}`
 - **Output**: Complex nested structure with order details, categorized by product types
 - **CRITICAL MACHINE OPERATION FIELDS**:
   - **`status`**: Order/item status (4 = "Processing" - machine actively monitors this)
@@ -26,6 +32,8 @@
 - **Additional Fields**:
   - **`matterCodes`**: Required ingredients list (e.g., "CoffeeMatter12,CoffeeMatter11...")
   - **`typeList1-4`**: Product categorization (1:奶茶, 2:咖啡, 3:冰淇淋, 4:其他)
+    - Coffee machines filter for `typeList2` items
+    - Ice cream machines filter for `typeList3` items
   - Multi-language support (`goodsNameEn`, `goodsNameOt`, `language`)
 - **Machine Behavior**: Continuously polls this endpoint to detect new orders and extract production parameters
 

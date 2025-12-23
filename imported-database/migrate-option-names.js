@@ -55,12 +55,7 @@ try {
       
       // Coffee Shots
       ['singleShot', 'Single Shot', 'جرعة واحدة', 'Regular strength', 'قوة عادية'],
-      ['doubleShot', 'Double Shot', 'جرعتان', '+$0.50', '+$0.50'],
-
-      // Ice Cream Toppings (fruitpiecesType)
-      ['fruitpiecesType_0', 'No Topping', 'بدون إضافات', 'Plain ice cream', 'آيس كريم سادة'],
-      ['fruitpiecesType_1', 'Oreo Crumbs', 'فتات أوريو', 'Crushed Oreo cookies', 'قطع بسكويت أوريو'],
-      ['fruitpiecesType_2', 'Crushed Nuts', 'مكسرات مطحونة', 'Assorted crushed nuts', 'مكسرات متنوعة مطحونة']
+      ['doubleShot', 'Double Shot', 'جرعتان', '+$0.50', '+$0.50']
     ];
 
     const insertSQL = `
@@ -76,27 +71,7 @@ try {
     
     console.log('✅ Inserted default option names');
   } else {
-    console.log('ℹ️  Option names table already has data, checking for ice cream topping options...');
-
-    // Add ice cream topping options if they don't exist (for existing databases)
-    const iceCreamToppings = [
-      ['fruitpiecesType_0', 'No Topping', 'بدون إضافات', 'Plain ice cream', 'آيس كريم سادة'],
-      ['fruitpiecesType_1', 'Oreo Crumbs', 'فتات أوريو', 'Crushed Oreo cookies', 'قطع بسكويت أوريو'],
-      ['fruitpiecesType_2', 'Crushed Nuts', 'مكسرات مطحونة', 'Assorted crushed nuts', 'مكسرات متنوعة مطحونة']
-    ];
-
-    const insertSQL = `
-      INSERT OR IGNORE INTO option_names (option_key, name_en, name_ar, description_en, description_ar)
-      VALUES (?, ?, ?, ?, ?)
-    `;
-    const insertStmt = db.prepare(insertSQL);
-
-    for (const [optionKey, nameEn, nameAr, descEn, descAr] of iceCreamToppings) {
-      const result = insertStmt.run(optionKey, nameEn, nameAr, descEn, descAr);
-      if (result.changes > 0) {
-        console.log(`🍦 Added ice cream topping option: ${optionKey}`);
-      }
-    }
+    console.log('ℹ️  Option names table already has data, skipping default insert');
   }
 
   console.log('🎉 Option names migration completed successfully!');

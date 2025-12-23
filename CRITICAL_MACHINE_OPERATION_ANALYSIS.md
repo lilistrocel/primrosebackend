@@ -2,11 +2,26 @@
 
 ## Machine Decision-Making Process
 
-Based on the real API response, here's how the coffee machine operates:
+Based on the real API response, here's how machines operate:
+
+### Machine Types
+The system supports multiple machine types that poll the same API endpoint but read different type lists:
+- **Coffee Machines (deviceId: 1)**: Read items from `typeList2` (type === 2)
+- **Ice Cream Machines (deviceId: 4)**: Read items from `typeList3` (type === 3)
+- **Milk Tea Machines**: Read items from `typeList1` (type === 1)
+- **Other Machines**: Read items from `typeList4` (type === 4)
+
+All machines use the same polling endpoint: `POST /deviceOrderQueueList`
+- Coffee machine polls with: `{"deviceId": "1"}`
+- Ice cream machine polls with: `{"deviceId": "4"}`
+
+**Important**: Orders are automatically assigned to the correct device based on product type:
+- Orders containing ice cream items (type 3) are assigned to deviceId 4
+- Orders containing coffee items (type 2) are assigned to deviceId 1
 
 ### 1. Continuous Polling Cycle
 ```
-Machine → GET deviceOrderQueueList → Parse Response → Make Decision → Update Status → Repeat
+Machine → GET deviceOrderQueueList → Parse Response → Filter by TypeList → Make Decision → Update Status → Repeat
 ```
 
 ### 2. Critical Field Analysis
@@ -81,10 +96,12 @@ const pendingOrders = orders.filter(order => order.status === 3); // Queuing
 ```
 
 #### Step 2: Production Decision
+
+**Coffee Machine Example:**
 ```javascript
 // For each pending order
 pendingOrders.forEach(order => {
-  order.typeList2.forEach(item => {  // Coffee items
+  order.typeList2.forEach(item => {  // Coffee items (type === 2)
     const instructions = JSON.parse(item.jsonCodeVal);
     const classCode = instructions.find(i => i.classCode).classCode;
     const cupCode = instructions.find(i => i.CupCode).CupCode;
@@ -94,6 +111,23 @@ pendingOrders.forEach(order => {
     machine.selectRecipe(classCode);      // "5001" -> Espresso recipe
     machine.setCupSize(cupCode);          // "2" -> 8oz cup
     machine.selectBeans(beanCode);        // "1" -> CoffeeBean1
+  });
+});
+```
+
+**Ice Cream Machine Example:**
+```javascript
+// For each pending order
+pendingOrders.forEach(order => {
+  order.typeList3.forEach(item => {  // Ice cream items (type === 3)
+    const instructions = JSON.parse(item.jsonCodeVal);
+    const classCode = instructions.find(i => i.classCode).classCode;
+    // Ice cream machines may have different code structure
+    // Example: [{"classCode":"00430001"},{"fruitpiecesType":"0"}]
+    
+    // Machine uses these codes to configure production
+    machine.selectRecipe(classCode);      // "00430001" -> Vanilla ice cream recipe
+    // Additional ice cream-specific parameters...
   });
 });
 ```
@@ -125,7 +159,10 @@ The `jsonCodeVal` parsing is extremely sensitive:
   "id": 1048,                     // REQUIRED - For status updates (goodsId)
   "matterCodes": "...",           // REQUIRED - Ingredient validation
   "lhImgPath": "",                // REQUIRED - Even if empty
-  "typeList2": [...],             // REQUIRED - Coffee items container
+  "typeList1": [...],             // REQUIRED - Milk tea items container
+  "typeList2": [...],             // REQUIRED - Coffee items container (for coffee machines)
+  "typeList3": [...],             // REQUIRED - Ice cream items container (for ice cream machines)
+  "typeList4": [...],             // REQUIRED - Other items container
   "goodsName": "意式浓缩",         // REQUIRED - Display/logging
   "goodsNameEn": "Espresso"       // REQUIRED - Multi-language support
 }
@@ -167,7 +204,10 @@ CREATE TABLE order_goods (
 1. **`jsonCodeVal` Structure**: Any change breaks production logic
 2. **Status Workflow**: Incorrect status transitions stop machine operation
 3. **Field Naming**: Machine expects exact field names (camelCase sensitive)
-4. **Type Classification**: `typeList2` must contain coffee items exactly
+4. **Type Classification**: 
+   - `typeList2` must contain coffee items exactly (type === 2)
+   - `typeList3` must contain ice cream items exactly (type === 3)
+   - Each machine type reads from its corresponding typeList
 
 #### ZERO-TOLERANCE FIELDS:
 - `jsonCodeVal` - Must be identical JSON structure

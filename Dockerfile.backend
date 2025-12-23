@@ -1,11 +1,11 @@
-# Coffee Machine Backend Dockerfile
+# K2 Coffee/Ice Cream Machine Backend Dockerfile
 FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for better-sqlite3
-RUN apk add --no-cache python3 make g++ sqlite
+# Install system dependencies for better-sqlite3 and health checks
+RUN apk add --no-cache python3 make g++ sqlite wget
 
 # Copy package files
 COPY package*.json ./

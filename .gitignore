@@ -20,7 +20,7 @@ frontend/.env.test.local
 frontend/.env.production.local
 
 # Database
-coffee_machine.db
+
 coffee_machine.db-shm
 coffee_machine.db-wal
 *.db
@@ -155,3 +155,4 @@ public/uploads/*
 *.local
 .env.development"coffee_machine.db" 
 .dev-jobs.json
+nul

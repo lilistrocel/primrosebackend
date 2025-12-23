@@ -1,0 +1,48 @@
+{
+    "code": 0,
+    "msg": "Request successfully",
+    "data": [
+        {
+            "id": 1511,
+            "num": 1,
+            "realPrice": "1.00",
+            "status": 4,
+            "orderNum": "2025112756521005",
+            "created_at": 1764234056,
+            "language": "en",
+            "createdAt": "2025-11-27 09:00:56",
+            "statusName": "Processing",
+            "typeList4": [],
+            "typeList3": [
+                {
+                    "id": 1709,
+                    "deviceGoodsId": 35,
+                    "type": 3,
+                    "orderId": 1511,
+                    "goodsId": 31,
+                    "goodsName": "巧克力酱酱原味冰激淋",
+                    "goodsNameEn": "Vanilla Ice Cream with chocolate syrup",
+                    "goodsNameOt": "Vanilla Ice Cream with chocolate syrup",
+                    "goodsImg": 125,
+                    "goodsOptionName": "奥利奥",
+                    "goodsOptionNameEn": "Oreo Crumbs",
+                    "goodsOptionNameOt": "Oreo Crumbs",
+                    "language": "en",
+                    "status": 4,
+                    "price": "1.00",
+                    "rePrice": "1.00",
+                    "matterCodes": "IceMatter10,IceMatter9,IceMatter7,IceMatter6",
+                    "num": 1,
+                    "totalPrice": "1.00",
+                    "lhImgPath": "",
+                    "jsonCodeVal": "[{\"classCode\":\"00430004\"},{\"fruitpiecesType\":\"1\"}]",
+                    "path": "public/uploads/20251025/8eeeed84a8cce553b7a8337eebe89950.png",
+                    "goodsPath": "http://kintsuji.motonbackend.top/public/uploads/20251025/8eeeed84a8cce553b7a8337eebe89950.png",
+                    "statusName": "Processing"
+                }
+            ],
+            "typeList2": [],
+            "typeList1": []
+        }
+    ]
+}

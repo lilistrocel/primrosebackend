@@ -1,0 +1,48 @@
+{
+    "code": 0,
+    "msg": "Request successfully",
+    "data": [
+        {
+            "id": 1513,
+            "num": 1,
+            "realPrice": "1.00",
+            "status": 4,
+            "orderNum": "2025112755100984",
+            "created_at": 1764234199,
+            "language": "en",
+            "createdAt": "2025-11-27 09:03:19",
+            "statusName": "Processing",
+            "typeList4": [],
+            "typeList3": [
+                {
+                    "id": 1711,
+                    "deviceGoodsId": 40,
+                    "type": 3,
+                    "orderId": 1513,
+                    "goodsId": 36,
+                    "goodsName": "混合味冰淇淋",
+                    "goodsNameEn": "Mixed flavor ice cream",
+                    "goodsNameOt": "Mixed flavor ice cream",
+                    "goodsImg": 126,
+                    "goodsOptionName": "无",
+                    "goodsOptionNameEn": "NONE",
+                    "goodsOptionNameOt": "NONE",
+                    "language": "en",
+                    "status": 4,
+                    "price": "1.00",
+                    "rePrice": "1.00",
+                    "matterCodes": "IceMatter10,IceMatter9,IceMatter8,IceMatter7,IceMatter6",
+                    "num": 1,
+                    "totalPrice": "1.00",
+                    "lhImgPath": "",
+                    "jsonCodeVal": "[{\"classCode\":\"00430009\"},{\"fruitpiecesType\":\"0\"}]",
+                    "path": "public/uploads/20251025/451df0a095fe33256430f3613a1e73ee.jpg",
+                    "goodsPath": "http://kintsuji.motonbackend.top/public/uploads/20251025/451df0a095fe33256430f3613a1e73ee.jpg",
+                    "statusName": "Processing"
+                }
+            ],
+            "typeList2": [],
+            "typeList1": []
+        }
+    ]
+}

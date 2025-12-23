@@ -1,6 +1,7 @@
 /**
- * Coffee Machine Ingredients Service
+ * Machine Ingredients Service
  * Shared ingredient mapping and utilities for the frontend
+ * Supports Coffee (CoffeeMatter*) and Ice Cream (IceMatter*) machines
  */
 
 // Real coffee machine ingredients mapping (matches backend)
@@ -103,11 +104,49 @@ export const INGREDIENT_MAPPING = {
     warningLevel: 20,
     criticalLevel: 10
   },
-  'CoffeeMatter15': { 
-    name: 'Ice Machine Water', 
-    name_cn: '制冰机水', 
+  'CoffeeMatter15': {
+    name: 'Ice Machine Water',
+    name_cn: '制冰机水',
     type: 'Coffee',
     warningLevel: 15,
+    criticalLevel: 5
+  },
+
+  // Ice Cream Machine Ingredients (type=3, device=4)
+  // Placeholder names - configurable via frontend option names
+  'IceMatter6': {
+    name: 'Ice Code 6',
+    name_cn: '冰淇淋代码6',
+    type: 'IceCream',
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  'IceMatter7': {
+    name: 'Ice Code 7',
+    name_cn: '冰淇淋代码7',
+    type: 'IceCream',
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  'IceMatter8': {
+    name: 'Ice Code 8',
+    name_cn: '冰淇淋代码8',
+    type: 'IceCream',
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  'IceMatter9': {
+    name: 'Ice Code 9',
+    name_cn: '冰淇淋代码9',
+    type: 'IceCream',
+    warningLevel: 20,
+    criticalLevel: 5
+  },
+  'IceMatter10': {
+    name: 'Ice Code 10',
+    name_cn: '冰淇淋代码10',
+    type: 'IceCream',
+    warningLevel: 20,
     criticalLevel: 5
   }
 };
