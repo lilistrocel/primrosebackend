@@ -43,6 +43,10 @@ const productSchema = Joi.object({
   // Ice cream topping options
   hasToppingOptions: Joi.boolean().default(false),
   defaultToppingType: Joi.number().integer().min(0).max(2).default(0),
+  // Ice cream syrup variant classCodes
+  syrup1ClassCode: Joi.string().max(20).allow('', null).optional(),
+  syrup2ClassCode: Joi.string().max(20).allow('', null).optional(),
+  syrup3ClassCode: Joi.string().max(20).allow('', null).optional(),
   // Consumption configuration
   milkConsumption: Joi.number().min(0).default(0),
   coffeeBeansConsumption: Joi.number().min(0).default(0),
@@ -101,7 +105,11 @@ router.get('/products', async (req, res) => {
       hasLatteArt: Boolean(product.has_latte_art),
       // Ice cream topping options
       hasToppingOptions: Boolean(product.has_topping_options),
-      defaultToppingType: product.default_topping_type || 0
+      defaultToppingType: product.default_topping_type || 0,
+      // Ice cream syrup variant classCodes
+      syrup1ClassCode: product.syrup1_class_code || null,
+      syrup2ClassCode: product.syrup2_class_code || null,
+      syrup3ClassCode: product.syrup3_class_code || null
     }));
 
     // Get current ingredient levels for availability checking
@@ -289,8 +297,15 @@ router.put('/products/:id', async (req, res) => {
       icedClassCode: Joi.string().max(10).allow('', null).optional(),
       doubleShotClassCode: Joi.string().max(10).allow('', null).optional(),
       icedAndDoubleClassCode: Joi.string().max(10).allow('', null).optional(),
-      // Latte art printing option  
+      // Latte art printing option
       hasLatteArt: Joi.boolean().optional(),
+      // Ice cream topping options
+      hasToppingOptions: Joi.boolean().optional(),
+      defaultToppingType: Joi.number().integer().min(0).max(2).optional(),
+      // Ice cream syrup variant classCodes
+      syrup1ClassCode: Joi.string().max(20).allow('', null).optional(),
+      syrup2ClassCode: Joi.string().max(20).allow('', null).optional(),
+      syrup3ClassCode: Joi.string().max(20).allow('', null).optional(),
       // Consumption configuration
       milkConsumption: Joi.number().min(0).optional(),
       coffeeBeansConsumption: Joi.number().min(0).optional(),

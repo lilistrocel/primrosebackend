@@ -153,6 +153,17 @@ class DatabaseManager {
         this.db.exec(`ALTER TABLE products ADD COLUMN default_topping_type INTEGER DEFAULT 0`);
       }
 
+      // Add ice cream syrup variant columns for alternative classCodes
+      const syrupVariantColumns = ['syrup1_class_code', 'syrup2_class_code', 'syrup3_class_code'];
+
+      syrupVariantColumns.forEach(columnName => {
+        const hasColumn = columnsResult.some(col => col.name === columnName);
+        if (!hasColumn) {
+          console.log(`🍦 Adding ${columnName} column to products table...`);
+          this.db.exec(`ALTER TABLE products ADD COLUMN ${columnName} VARCHAR(20) DEFAULT NULL`);
+        }
+      });
+
       // Create latte art designs table
       const latteArtTable = this.db.prepare(`
         SELECT name FROM sqlite_master 
@@ -663,7 +674,11 @@ class DatabaseManager {
         hasLatteArt: 'has_latte_art',
         // Ice cream topping options
         hasToppingOptions: 'has_topping_options',
-        defaultToppingType: 'default_topping_type'
+        defaultToppingType: 'default_topping_type',
+        // Ice cream syrup variant classCodes
+        syrup1ClassCode: 'syrup1_class_code',
+        syrup2ClassCode: 'syrup2_class_code',
+        syrup3ClassCode: 'syrup3_class_code'
       };
       
       // Handle ID change specially (dangerous operation)

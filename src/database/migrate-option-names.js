@@ -78,11 +78,22 @@ try {
   } else {
     console.log('ℹ️  Option names table already has data, checking for ice cream topping options...');
 
-    // Add ice cream topping options if they don't exist (for existing databases)
-    const iceCreamToppings = [
+    // Add ice cream topping and syrup options if they don't exist (for existing databases)
+    const iceCreamOptions = [
+      // Section headers
+      ['toppingType', 'Topping', 'الإضافات', 'Choose your topping', 'اختر الإضافة'],
+      ['syrupType', 'Syrup', 'الشراب', 'Choose your syrup', 'اختر الشراب'],
+
+      // Topping options (fruitpiecesType)
       ['fruitpiecesType_0', 'No Topping', 'بدون إضافات', 'Plain ice cream', 'آيس كريم سادة'],
       ['fruitpiecesType_1', 'Oreo Crumbs', 'فتات أوريو', 'Crushed Oreo cookies', 'قطع بسكويت أوريو'],
-      ['fruitpiecesType_2', 'Crushed Nuts', 'مكسرات مطحونة', 'Assorted crushed nuts', 'مكسرات متنوعة مطحونة']
+      ['fruitpiecesType_2', 'Crushed Nuts', 'مكسرات مطحونة', 'Assorted crushed nuts', 'مكسرات متنوعة مطحونة'],
+
+      // Syrup options
+      ['syrupType_0', 'No Syrup', 'بدون شراب', 'Plain', 'سادة'],
+      ['syrupType_1', 'Chocolate', 'شوكولاتة', 'Rich chocolate syrup', 'شراب شوكولاتة غني'],
+      ['syrupType_2', 'Strawberry', 'فراولة', 'Sweet strawberry syrup', 'شراب فراولة حلو'],
+      ['syrupType_3', 'Caramel', 'كراميل', 'Buttery caramel syrup', 'شراب كراميل زبدي']
     ];
 
     const insertSQL = `
@@ -91,10 +102,10 @@ try {
     `;
     const insertStmt = db.prepare(insertSQL);
 
-    for (const [optionKey, nameEn, nameAr, descEn, descAr] of iceCreamToppings) {
+    for (const [optionKey, nameEn, nameAr, descEn, descAr] of iceCreamOptions) {
       const result = insertStmt.run(optionKey, nameEn, nameAr, descEn, descAr);
       if (result.changes > 0) {
-        console.log(`🍦 Added ice cream topping option: ${optionKey}`);
+        console.log(`🍦 Added ice cream option: ${optionKey}`);
       }
     }
   }

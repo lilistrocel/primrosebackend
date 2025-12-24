@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera } from 'lucide-react';
+import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera, IceCream } from 'lucide-react';
 import { getApiUrl, getImageUrl, getApiBaseUrl } from '../../utils/config';
 import { useLanguage } from '../../contexts/LanguageContext';
 // import { getOptionName, getOptionDescription } from '../../utils/optionNames';
@@ -354,6 +354,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     ice: product?.defaultIce || false, // Default to false (no ice) unless explicitly true
     shots: product?.default_shots || 1,
     toppingType: product?.defaultToppingType || 0, // Ice cream topping: 0=none, 1=Oreo, 2=Nuts
+    syrupType: 0, // Ice cream syrup: 0=none, 1=syrup1, 2=syrup2, 3=syrup3
     latteArt: null, // Selected latte art design ID or 'custom' for uploaded image
     latteArtImage: null // Path to selected latte art image
   });
@@ -439,6 +440,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         ice: product.defaultIce || false, // Use product's defaultIce setting
         shots: product.default_shots || 1,
         toppingType: product.defaultToppingType || 0, // Ice cream topping
+        syrupType: 0, // Ice cream syrup - default to none
         latteArt: null,
         latteArtImage: null
       });
@@ -563,12 +565,27 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
     onClose();
   };
 
-  // Determine which classCode to use based on ice and shot options
+  // Determine which classCode to use based on ice, shot, and syrup options
   const getVariantClassCode = (product, options) => {
     const hasIce = options.ice;
     const hasDoubleShot = options.shots === 2;
-    
-    // 🎯 MANUAL VARIANT CLASSCODES ONLY
+
+    // 🍦 ICE CREAM SYRUP VARIANTS
+    // For ice cream (type 3), use syrup variant classCodes
+    if (product.type === 3 && options.syrupType > 0) {
+      if (options.syrupType === 1 && product.syrup1ClassCode) {
+        console.log(`🍦🍫 Using syrup 1 classCode: ${product.syrup1ClassCode}`);
+        return product.syrup1ClassCode;
+      } else if (options.syrupType === 2 && product.syrup2ClassCode) {
+        console.log(`🍦🍓 Using syrup 2 classCode: ${product.syrup2ClassCode}`);
+        return product.syrup2ClassCode;
+      } else if (options.syrupType === 3 && product.syrup3ClassCode) {
+        console.log(`🍦🍯 Using syrup 3 classCode: ${product.syrup3ClassCode}`);
+        return product.syrup3ClassCode;
+      }
+    }
+
+    // ☕ COFFEE VARIANT CLASSCODES
     // Use manually configured variant classCodes from database
     if (hasIce && hasDoubleShot && product.icedAndDoubleClassCode) {
       console.log(`🧊⚡ Using iced + double shot classCode: ${product.icedAndDoubleClassCode}`);
@@ -580,7 +597,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
       console.log(`⚡ Using double shot classCode: ${product.doubleShotClassCode}`);
       return product.doubleShotClassCode;
     }
-    
+
     // Fall back to original classCode from jsonCodeVal
     try {
       const jsonArray = typeof product.jsonCodeVal === 'string' ? JSON.parse(product.jsonCodeVal) : product.jsonCodeVal;
@@ -852,8 +869,8 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
           {(product.hasToppingOptions || product.has_topping_options) && (
             <OptionSection>
               <div className="section-header">
-                <Coffee className="icon" />
-                <div className="title">{t('toppingType') || 'Topping'}</div>
+                <IceCream className="icon" />
+                <div className="title">{getOptionName('toppingType', currentLanguage) || 'Topping'}</div>
               </div>
               <OptionGrid>
                 <OptionButton
@@ -877,6 +894,52 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
                   <div className="option-name">{getOptionName('fruitpiecesType_2', currentLanguage) || 'Crushed Nuts'}</div>
                   <div className="option-desc">{getOptionDescription('fruitpiecesType_2', currentLanguage) || 'Mixed nuts'}</div>
                 </OptionButton>
+              </OptionGrid>
+            </OptionSection>
+          )}
+
+          {/* Ice Cream Syrup Selection - uses variant classCodes */}
+          {product.type === 3 && (product.syrup1ClassCode || product.syrup2ClassCode || product.syrup3ClassCode) && (
+            <OptionSection>
+              <div className="section-header">
+                <IceCream className="icon" />
+                <div className="title">{getOptionName('syrupType', currentLanguage) || 'Syrup'}</div>
+              </div>
+              <OptionGrid>
+                <OptionButton
+                  className={selectedOptions.syrupType === 0 ? 'selected' : ''}
+                  onClick={() => updateOption('syrupType', 0)}
+                >
+                  <div className="option-name">{getOptionName('syrupType_0', currentLanguage) || 'No Syrup'}</div>
+                  <div className="option-desc">{getOptionDescription('syrupType_0', currentLanguage) || 'Plain'}</div>
+                </OptionButton>
+                {product.syrup1ClassCode && (
+                  <OptionButton
+                    className={selectedOptions.syrupType === 1 ? 'selected' : ''}
+                    onClick={() => updateOption('syrupType', 1)}
+                  >
+                    <div className="option-name">{getOptionName('syrupType_1', currentLanguage) || 'Chocolate'}</div>
+                    <div className="option-desc">{getOptionDescription('syrupType_1', currentLanguage) || 'Rich chocolate'}</div>
+                  </OptionButton>
+                )}
+                {product.syrup2ClassCode && (
+                  <OptionButton
+                    className={selectedOptions.syrupType === 2 ? 'selected' : ''}
+                    onClick={() => updateOption('syrupType', 2)}
+                  >
+                    <div className="option-name">{getOptionName('syrupType_2', currentLanguage) || 'Strawberry'}</div>
+                    <div className="option-desc">{getOptionDescription('syrupType_2', currentLanguage) || 'Sweet berry'}</div>
+                  </OptionButton>
+                )}
+                {product.syrup3ClassCode && (
+                  <OptionButton
+                    className={selectedOptions.syrupType === 3 ? 'selected' : ''}
+                    onClick={() => updateOption('syrupType', 3)}
+                  >
+                    <div className="option-name">{getOptionName('syrupType_3', currentLanguage) || 'Caramel'}</div>
+                    <div className="option-desc">{getOptionDescription('syrupType_3', currentLanguage) || 'Buttery caramel'}</div>
+                  </OptionButton>
+                )}
               </OptionGrid>
             </OptionSection>
           )}

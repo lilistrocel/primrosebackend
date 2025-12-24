@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { X, Save, AlertTriangle, Coffee, Settings, Plus, Trash2 } from 'lucide-react';
+import { X, Save, AlertTriangle, Coffee, Settings, Plus, Trash2, IceCream } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const EditorContainer = styled.div`
@@ -299,6 +299,11 @@ function VariableEditor({ item, onClose, onSave }) {
   const [goodsId, setGoodsId] = useState('');
   const [type, setType] = useState('');
   const [productId, setProductId] = useState('');
+  // Syrup variant classCodes for ice cream products
+  const [syrup1ClassCode, setSyrup1ClassCode] = useState('');
+  const [syrup2ClassCode, setSyrup2ClassCode] = useState('');
+  const [syrup3ClassCode, setSyrup3ClassCode] = useState('');
+  const [hasToppingOptions, setHasToppingOptions] = useState(false);
 
   useEffect(() => {
     // Parse existing jsonCodeVal
@@ -321,6 +326,11 @@ function VariableEditor({ item, onClose, onSave }) {
     setGoodsId(item.goodsId || '');
     setType(item.type || '');
     setProductId(item.id || '');
+    // Load syrup variant classCodes for ice cream
+    setSyrup1ClassCode(item.syrup1ClassCode || item.syrup1_class_code || '');
+    setSyrup2ClassCode(item.syrup2ClassCode || item.syrup2_class_code || '');
+    setSyrup3ClassCode(item.syrup3ClassCode || item.syrup3_class_code || '');
+    setHasToppingOptions(item.hasToppingOptions || item.has_topping_options || false);
   }, [item]);
 
   const addVariable = () => {
@@ -373,14 +383,24 @@ function VariableEditor({ item, onClose, onSave }) {
 
     const newJsonCodeVal = JSON.stringify(codeObjects);
 
-    onSave({
+    const saveData = {
       jsonCodeVal: newJsonCodeVal,
       matterCodes: matterCodes,
       deviceGoodsId: parseInt(deviceGoodsId) || item.deviceGoodsId,
       goodsId: parseInt(goodsId) || item.goodsId,
       type: parseInt(type) || item.type,
       id: parseInt(productId) || item.id
-    });
+    };
+
+    // Add ice cream specific fields if type is ice cream (3)
+    if (parseInt(type) === 3) {
+      saveData.syrup1ClassCode = syrup1ClassCode || null;
+      saveData.syrup2ClassCode = syrup2ClassCode || null;
+      saveData.syrup3ClassCode = syrup3ClassCode || null;
+      saveData.hasToppingOptions = hasToppingOptions;
+    }
+
+    onSave(saveData);
   };
 
   return (
@@ -578,6 +598,125 @@ function VariableEditor({ item, onClose, onSave }) {
             </div>
           </div>
         </Section>
+
+        {/* Ice Cream Syrup Variants Section - Only shown for ice cream products */}
+        {(parseInt(type) === 3 || type === '3') && (
+          <Section>
+            <div className="section-header">
+              <IceCream className="icon" />
+              <div>
+                <h3 className="title">Ice Cream Syrup Variants</h3>
+              </div>
+              <span className="description">Configure syrup flavor classCodes</span>
+            </div>
+
+            <div style={{
+              background: '#ECFDF5',
+              border: '1px solid #10B981',
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <IceCream style={{ color: '#10B981', width: '16px', height: '16px' }} />
+              <div style={{ fontSize: '0.85rem', color: '#065F46' }}>
+                Each syrup variant uses a different classCode. When a customer selects a syrup, the order will use the corresponding variant classCode instead of the base classCode.
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={hasToppingOptions}
+                  onChange={(e) => setHasToppingOptions(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ fontWeight: '500', color: '#374151' }}>Enable Topping Options</span>
+                <span style={{ color: '#6B7280', fontSize: '0.85rem' }}>(Oreo Crumbs, Crushed Nuts)</span>
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Syrup 1 ClassCode
+                </label>
+                <input
+                  type="text"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #E5E7EB',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder="e.g. 00430002"
+                  value={syrup1ClassCode}
+                  onChange={(e) => setSyrup1ClassCode(e.target.value)}
+                />
+                <div style={{ marginTop: '4px', color: '#6B7280', fontSize: '0.75rem' }}>
+                  Chocolate Syrup variant
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Syrup 2 ClassCode
+                </label>
+                <input
+                  type="text"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #E5E7EB',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder="e.g. 00430003"
+                  value={syrup2ClassCode}
+                  onChange={(e) => setSyrup2ClassCode(e.target.value)}
+                />
+                <div style={{ marginTop: '4px', color: '#6B7280', fontSize: '0.75rem' }}>
+                  Strawberry Syrup variant
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Syrup 3 ClassCode
+                </label>
+                <input
+                  type="text"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #E5E7EB',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder="e.g. 00430004"
+                  value={syrup3ClassCode}
+                  onChange={(e) => setSyrup3ClassCode(e.target.value)}
+                />
+                <div style={{ marginTop: '4px', color: '#6B7280', fontSize: '0.75rem' }}>
+                  Caramel Syrup variant
+                </div>
+              </div>
+            </div>
+          </Section>
+        )}
 
         <Section>
           <div className="section-header">

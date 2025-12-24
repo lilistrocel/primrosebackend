@@ -2100,8 +2100,17 @@ function KioskOrder() {
                 
                 // Only open modal if clicking on the card itself, not buttons
                 if (e.target === e.currentTarget || e.target.closest('.product-image') || e.target.closest('.product-name') || e.target.closest('.product-price')) {
-                  const hasOptions = product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options;
-                  console.log('🔄 Product card clicked:', product.goodsNameEn, 'Has options:', hasOptions);
+                  // Coffee options
+                  const hasCoffeeOptions = product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options;
+                  // Ice cream options - toppings or syrups
+                  const hasIceCreamOptions = product.hasToppingOptions || product.has_topping_options ||
+                    product.syrup1ClassCode || product.syrup2ClassCode || product.syrup3ClassCode;
+                  // Latte art
+                  const hasLatteArt = product.hasLatteArt;
+
+                  const hasOptions = hasCoffeeOptions || hasIceCreamOptions || hasLatteArt;
+                  console.log('🔄 Product card clicked:', product.goodsNameEn, 'Has options:', hasOptions,
+                    '(coffee:', hasCoffeeOptions, 'icecream:', hasIceCreamOptions, 'latte art:', hasLatteArt, ')');
                   if (hasOptions) {
                     openCustomizationModal(product);
                   } else {
