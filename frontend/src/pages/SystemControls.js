@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Power, TestTube, Settings, AlertTriangle, Check, X, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Power, TestTube, Settings, AlertTriangle, Check, X, RefreshCw, Eye, EyeOff, CreditCard, KeyRound, Copy } from 'lucide-react';
 import { getApiUrl } from '../utils/config';
 
 const Container = styled.div`
@@ -191,7 +191,7 @@ const AlertBanner = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  
+
   .alert-icon {
     width: 20px;
     height: 20px;
@@ -202,7 +202,7 @@ const AlertBanner = styled.div`
       return '#2563EB';
     }};
   }
-  
+
   .alert-text {
     flex: 1;
     color: ${props => {
@@ -215,15 +215,80 @@ const AlertBanner = styled.div`
   }
 `;
 
+const PinDisplay = styled.div`
+  background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+  color: white;
+
+  .pin-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+
+  .pin-value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+
+    .pin-digits {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: 12px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(255,255,255,0.3);
+      }
+
+      svg {
+        width: 20px;
+        height: 20px;
+        color: white;
+      }
+    }
+  }
+
+  .pin-note {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+`;
+
 function SystemControls() {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [frontendEnabled, setFrontendEnabled] = useState(true);
   const [testMode, setTestMode] = useState(false);
+  const [paymentEnabled, setPaymentEnabled] = useState(true);
+  const [dailyPin, setDailyPin] = useState('');
+  const [pinCopied, setPinCopied] = useState(false);
 
   useEffect(() => {
     fetchSettings();
+    fetchPaymentStatus();
   }, []);
 
   const fetchSettings = async () => {
@@ -231,16 +296,18 @@ function SystemControls() {
       setLoading(true);
       const response = await fetch(getApiUrl('/api/motong/system-settings'));
       const result = await response.json();
-      
+
       if (result.code === 0) {
         setSettings(result.data);
-        
+
         // Update local state for quick access
         const frontendSetting = result.data.find(s => s.key === 'frontend_enabled');
         const testSetting = result.data.find(s => s.key === 'test_mode');
-        
+        const paymentSetting = result.data.find(s => s.key === 'payment_enabled');
+
         setFrontendEnabled(frontendSetting ? frontendSetting.value : true);
         setTestMode(testSetting ? testSetting.value : false);
+        setPaymentEnabled(paymentSetting ? paymentSetting.value : true);
       } else {
         console.error('Failed to fetch system settings:', result.msg);
       }
@@ -251,29 +318,58 @@ function SystemControls() {
     }
   };
 
+  const fetchPaymentStatus = async () => {
+    try {
+      const response = await fetch(getApiUrl('/api/motong/system-settings/status/payment'));
+      const result = await response.json();
+
+      if (result.code === 0) {
+        setPaymentEnabled(result.data.paymentEnabled);
+        setDailyPin(result.data.dailyPin);
+      }
+    } catch (error) {
+      console.error('Error fetching payment status:', error);
+    }
+  };
+
+  const copyPin = () => {
+    navigator.clipboard.writeText(dailyPin);
+    setPinCopied(true);
+    setTimeout(() => setPinCopied(false), 2000);
+  };
+
   const toggleSetting = async (key, currentValue) => {
     if (updating === key) return;
 
     try {
       setUpdating(key);
-      
+
       const response = await fetch(getApiUrl(`/api/motong/system-settings/toggle/${key}`), {
         method: 'POST'
       });
-      
+
       const result = await response.json();
-      
+
       if (result.code === 0) {
         // Update local state
         if (key === 'frontend_enabled') {
           setFrontendEnabled(result.data.newValue);
         } else if (key === 'test_mode') {
           setTestMode(result.data.newValue);
+        } else if (key === 'payment_enabled') {
+          setPaymentEnabled(result.data.newValue);
+          // If payment was disabled, update the daily PIN
+          if (!result.data.newValue && result.data.dailyPin) {
+            setDailyPin(result.data.dailyPin);
+          }
         }
-        
+
         // Refresh settings to get updated data
         fetchSettings();
-        
+        if (key === 'payment_enabled') {
+          fetchPaymentStatus();
+        }
+
         console.log(`✅ Toggled ${key}:`, result.data.previousValue, '→', result.data.newValue);
       } else {
         alert('Failed to toggle setting: ' + result.msg);
@@ -325,6 +421,15 @@ function SystemControls() {
           <TestTube className="alert-icon" />
           <div className="alert-text">
             <strong>Test Mode Active:</strong> Coffee orders are being sent to typeList100 instead of typeList2, and all ingredients are forced to full stock. The machine will not process these orders.
+          </div>
+        </AlertBanner>
+      )}
+
+      {!paymentEnabled && (
+        <AlertBanner type="info">
+          <KeyRound className="alert-icon" />
+          <div className="alert-text">
+            <strong>Payment Bypassed:</strong> Customers must enter today's PIN ({dailyPin}) to complete orders without payment.
           </div>
         </AlertBanner>
       )}
@@ -395,14 +500,71 @@ function SystemControls() {
               disabled={updating === 'test_mode'}
             >
               {testMode ? <Check /> : <TestTube />}
-              {updating === 'test_mode' 
-                ? 'Updating...' 
-                : testMode 
-                  ? 'Disable Test Mode' 
+              {updating === 'test_mode'
+                ? 'Updating...'
+                : testMode
+                  ? 'Disable Test Mode'
                   : 'Enable Test Mode'
               }
             </ActionButton>
           </div>
+        </ControlCard>
+
+        {/* Payment Control */}
+        <ControlCard
+          variant={paymentEnabled ? 'success' : 'warning'}
+          enabled={paymentEnabled}
+        >
+          <div className="card-header">
+            <div className="title-section">
+              <CreditCard className="icon" />
+              <div className="title">Payment System</div>
+            </div>
+            <div className="status">
+              {paymentEnabled ? <Check className="status-icon" /> : <KeyRound className="status-icon" />}
+              {paymentEnabled ? 'Required' : 'PIN Mode'}
+            </div>
+          </div>
+
+          <div className="card-description">
+            When enabled, customers must complete payment to place orders.
+            When disabled, customers can bypass payment by entering a daily PIN code.
+          </div>
+
+          <div className="card-actions">
+            <ActionButton
+              variant={paymentEnabled ? 'warning' : 'success'}
+              onClick={() => toggleSetting('payment_enabled', paymentEnabled)}
+              disabled={updating === 'payment_enabled'}
+            >
+              {paymentEnabled ? <KeyRound /> : <CreditCard />}
+              {updating === 'payment_enabled'
+                ? 'Updating...'
+                : paymentEnabled
+                  ? 'Disable Payment'
+                  : 'Enable Payment'
+              }
+            </ActionButton>
+          </div>
+
+          {/* Daily PIN Display - only visible when payment is disabled */}
+          {!paymentEnabled && dailyPin && (
+            <PinDisplay>
+              <div className="pin-header">
+                <KeyRound size={16} />
+                Today's Bypass PIN
+              </div>
+              <div className="pin-value">
+                <span className="pin-digits">{dailyPin}</span>
+                <button className="copy-btn" onClick={copyPin} title="Copy PIN">
+                  <Copy />
+                </button>
+              </div>
+              <div className="pin-note">
+                {pinCopied ? '✓ Copied!' : 'This PIN changes daily at midnight'}
+              </div>
+            </PinDisplay>
+          )}
         </ControlCard>
       </Grid>
 
@@ -420,6 +582,12 @@ function SystemControls() {
             <div style={{ color: '#6B7280', marginBottom: '4px' }}>Test Mode</div>
             <div style={{ fontWeight: '600', color: testMode ? '#D97706' : '#059669' }}>
               {testMode ? '🧪 Enabled' : '✅ Disabled'}
+            </div>
+          </div>
+          <div>
+            <div style={{ color: '#6B7280', marginBottom: '4px' }}>Payment Mode</div>
+            <div style={{ fontWeight: '600', color: paymentEnabled ? '#059669' : '#D97706' }}>
+              {paymentEnabled ? '💳 Required' : '🔐 PIN Mode'}
             </div>
           </div>
           <div>

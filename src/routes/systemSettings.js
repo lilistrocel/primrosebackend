@@ -251,6 +251,108 @@ router.get('/status/test-mode', (req, res) => {
 });
 
 /**
+ * GET /api/motong/system-settings/status/payment
+ * Get payment status and daily PIN for admin
+ */
+router.get('/status/payment', (req, res) => {
+  try {
+    console.log('💳 Checking payment status...');
+
+    const isPaymentEnabled = db.isPaymentEnabled();
+    const dailyPin = db.getDailyPin();
+
+    console.log(`💳 Payment status: ${isPaymentEnabled ? 'ENABLED' : 'DISABLED (PIN required)'}`);
+
+    res.json({
+      code: 0,
+      msg: 'Request successfully',
+      data: {
+        paymentEnabled: isPaymentEnabled,
+        dailyPin: dailyPin // Only show in admin, not in kiosk
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error checking payment status:', error);
+    res.status(500).json({
+      code: 1,
+      msg: 'Failed to check payment status',
+      data: null
+    });
+  }
+});
+
+/**
+ * GET /api/motong/system-settings/kiosk/payment-status
+ * Get payment status for kiosk (no PIN exposed)
+ */
+router.get('/kiosk/payment-status', (req, res) => {
+  try {
+    const isPaymentEnabled = db.isPaymentEnabled();
+
+    res.json({
+      code: 0,
+      msg: 'Request successfully',
+      data: {
+        paymentEnabled: isPaymentEnabled
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error checking payment status for kiosk:', error);
+    res.status(500).json({
+      code: 1,
+      msg: 'Failed to check payment status',
+      data: null
+    });
+  }
+});
+
+/**
+ * POST /api/motong/system-settings/verify-pin
+ * Verify daily PIN for checkout bypass
+ */
+router.post('/verify-pin', (req, res) => {
+  try {
+    const { pin } = req.body;
+
+    if (!pin) {
+      return res.status(400).json({
+        code: 1,
+        msg: 'PIN is required',
+        data: null
+      });
+    }
+
+    console.log('🔐 Verifying daily PIN...');
+
+    const isValid = db.verifyDailyPin(pin);
+
+    if (isValid) {
+      console.log('✅ PIN verified successfully');
+    } else {
+      console.log('❌ Invalid PIN entered');
+    }
+
+    res.json({
+      code: 0,
+      msg: isValid ? 'PIN verified' : 'Invalid PIN',
+      data: {
+        valid: isValid
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error verifying PIN:', error);
+    res.status(500).json({
+      code: 1,
+      msg: 'Failed to verify PIN',
+      data: null
+    });
+  }
+});
+
+/**
  * POST /api/motong/system-settings/toggle/:key
  * Quick toggle for boolean settings
  */
@@ -300,20 +402,30 @@ router.post('/toggle/:key', (req, res) => {
     } else if (key === 'test_mode') {
       console.log(`🧪 TEST MODE ${newValue ? 'ENABLED' : 'DISABLED'}`);
       webSocketManager.notifyTestModeChange(newValue);
+    } else if (key === 'payment_enabled') {
+      console.log(`💳 PAYMENT ${newValue ? 'ENABLED' : 'DISABLED (PIN required)'}`);
     }
-    
+
     // General system setting change notification
     webSocketManager.notifySystemSettingChange(key, newValue);
-    
+
+    // Build response data
+    const responseData = {
+      key: key,
+      previousValue: existingSetting.setting_value,
+      newValue: newValue,
+      toggled: true
+    };
+
+    // Include daily PIN in response when payment is disabled
+    if (key === 'payment_enabled' && !newValue) {
+      responseData.dailyPin = db.getDailyPin();
+    }
+
     res.json({
       code: 0,
       msg: 'System setting toggled successfully',
-      data: { 
-        key: key, 
-        previousValue: existingSetting.setting_value,
-        newValue: newValue,
-        toggled: true
-      }
+      data: responseData
     });
     
   } catch (error) {

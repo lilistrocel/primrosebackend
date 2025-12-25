@@ -258,11 +258,17 @@ class DatabaseManager {
             type: 'string', 
             description: 'Message displayed when frontend is disabled' 
           },
-          { 
-            key: 'test_mode_message', 
-            value: 'TEST MODE ACTIVE - Orders will not be sent to the coffee machine', 
-            type: 'string', 
-            description: 'Message displayed in admin when test mode is active' 
+          {
+            key: 'test_mode_message',
+            value: 'TEST MODE ACTIVE - Orders will not be sent to the coffee machine',
+            type: 'string',
+            description: 'Message displayed in admin when test mode is active'
+          },
+          {
+            key: 'payment_enabled',
+            value: 'true',
+            type: 'boolean',
+            description: 'When enabled, payment is required for checkout. When disabled, a daily PIN is required instead.'
           }
         ];
 
@@ -286,6 +292,26 @@ class DatabaseManager {
 
         // Create index for performance
         this.db.exec(`CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(setting_key)`);
+      } else {
+        // Table exists, ensure new settings are added (for existing databases)
+        const paymentSetting = this.db.prepare(`SELECT * FROM system_settings WHERE setting_key = 'payment_enabled'`).get();
+        if (!paymentSetting) {
+          console.log('💳 Adding payment_enabled setting to existing database...');
+          try {
+            this.db.prepare(`
+              INSERT INTO system_settings (setting_key, setting_value, setting_type, description)
+              VALUES (?, ?, ?, ?)
+            `).run(
+              'payment_enabled',
+              'true',
+              'boolean',
+              'When enabled, payment is required for checkout. When disabled, a daily PIN is required instead.'
+            );
+            console.log('✅ Added payment_enabled setting');
+          } catch (error) {
+            console.error('❌ Failed to add payment_enabled setting:', error.message);
+          }
+        }
       }
 
       // Create indexes if they don't exist
@@ -1057,6 +1083,51 @@ class DatabaseManager {
       console.error('Error fetching out of order message:', error);
       return 'Sorry, our coffee machine is temporarily out of order. Please try again later.';
     }
+  }
+
+  isPaymentEnabled() {
+    try {
+      const setting = this.getSystemSetting('payment_enabled');
+      return setting ? setting.setting_value : true; // Default to enabled
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      return true; // Default to enabled if error
+    }
+  }
+
+  // Generate a daily PIN based on the current date
+  // PIN changes every day at midnight
+  getDailyPin() {
+    try {
+      const today = new Date();
+      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+      // Simple hash function to generate a 4-digit PIN from the date
+      // Using a seed to make it less predictable
+      const seed = 'K2Coffee2025';
+      const combined = dateString + seed;
+
+      let hash = 0;
+      for (let i = 0; i < combined.length; i++) {
+        const char = combined.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+
+      // Get absolute value and extract 4 digits
+      const absHash = Math.abs(hash);
+      const pin = String(absHash).slice(-4).padStart(4, '0');
+
+      return pin;
+    } catch (error) {
+      console.error('Error generating daily PIN:', error);
+      return '0000'; // Fallback PIN
+    }
+  }
+
+  verifyDailyPin(inputPin) {
+    const correctPin = this.getDailyPin();
+    return inputPin === correctPin;
   }
 
   // Option Names Management

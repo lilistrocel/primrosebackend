@@ -1343,6 +1343,11 @@ function KioskOrder() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [frontendStatus, setFrontendStatus] = useState({ enabled: true, message: null });
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [paymentEnabled, setPaymentEnabled] = useState(true);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [verifyingPin, setVerifyingPin] = useState(false);
 
   // Fullscreen functionality
   const toggleFullscreen = async () => {
@@ -1480,7 +1485,7 @@ function KioskOrder() {
       setCheckingStatus(true);
       const response = await fetch(getApiUrl('/api/motong/system-settings/status/frontend'));
       const result = await response.json();
-      
+
       if (result.code === 0) {
         setFrontendStatus(result.data);
         console.log('📱 Frontend status:', result.data.enabled ? 'ENABLED' : 'DISABLED');
@@ -1496,6 +1501,79 @@ function KioskOrder() {
     } finally {
       setCheckingStatus(false);
     }
+  };
+
+  // Check payment status for PIN mode
+  const checkPaymentStatus = async () => {
+    try {
+      const response = await fetch(getApiUrl('/api/motong/system-settings/kiosk/payment-status'));
+      const result = await response.json();
+
+      if (result.code === 0) {
+        setPaymentEnabled(result.data.paymentEnabled);
+        console.log('💳 Payment status:', result.data.paymentEnabled ? 'ENABLED' : 'PIN MODE');
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      // Default to payment enabled if we can't check
+      setPaymentEnabled(true);
+    }
+  };
+
+  // Verify daily PIN
+  const verifyPin = async () => {
+    if (pinInput.length !== 4) {
+      setPinError('Please enter a 4-digit PIN');
+      return;
+    }
+
+    setVerifyingPin(true);
+    setPinError('');
+
+    try {
+      const response = await fetch(getApiUrl('/api/motong/system-settings/verify-pin'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pinInput })
+      });
+
+      const result = await response.json();
+
+      if (result.code === 0 && result.data.valid) {
+        // PIN is correct, proceed with order
+        setShowPinModal(false);
+        setPinInput('');
+        setPinError('');
+        // Actually submit the order
+        await processOrder();
+      } else {
+        setPinError('Invalid PIN. Please try again.');
+        setPinInput('');
+      }
+    } catch (error) {
+      console.error('Error verifying PIN:', error);
+      setPinError('Error verifying PIN. Please try again.');
+    } finally {
+      setVerifyingPin(false);
+    }
+  };
+
+  // Handle PIN input (only allow digits)
+  const handlePinInput = (digit) => {
+    if (pinInput.length < 4) {
+      setPinInput(prev => prev + digit);
+      setPinError('');
+    }
+  };
+
+  const handlePinBackspace = () => {
+    setPinInput(prev => prev.slice(0, -1));
+    setPinError('');
+  };
+
+  const handlePinClear = () => {
+    setPinInput('');
+    setPinError('');
   };
 
   // Fetch order queue from both coffee (device 1) and ice cream (device 4) machines
@@ -1605,9 +1683,13 @@ function KioskOrder() {
   // Check frontend status periodically (fallback)
   useEffect(() => {
     checkFrontendStatus(); // Initial check
-    
+    checkPaymentStatus(); // Check payment status
+
     // Check status every 60 seconds as fallback (WebSocket should handle most updates)
-    const statusInterval = setInterval(checkFrontendStatus, 60000);
+    const statusInterval = setInterval(() => {
+      checkFrontendStatus();
+      checkPaymentStatus();
+    }, 60000);
     return () => clearInterval(statusInterval);
   }, []);
 
@@ -1826,7 +1908,26 @@ function KioskOrder() {
     return `KIOSK${timestamp.slice(-8)}`;
   };
 
+  // Handle order button click - check payment status first
   const submitOrder = async () => {
+    if (cart.length === 0) return;
+
+    // Check if payment is required
+    if (!paymentEnabled) {
+      // Payment is disabled, show PIN modal
+      setShowPinModal(true);
+      setPinInput('');
+      setPinError('');
+      return;
+    }
+
+    // Payment is enabled, proceed with order directly
+    // (In the future, this would integrate with actual payment system)
+    await processOrder();
+  };
+
+  // Actually process and submit the order (called after payment/PIN verification)
+  const processOrder = async () => {
     if (cart.length === 0) return;
 
     setIsSubmitting(true);
@@ -1836,7 +1937,7 @@ function KioskOrder() {
 
       console.log('🚀 KIOSK ORDER SUBMISSION DEBUG:');
       console.log('Cart contents:', cart);
-      
+
       const orderData = {
         orderNum,
         deviceId: 1,
@@ -1845,7 +1946,7 @@ function KioskOrder() {
           console.log(`📦 Processing cart item:`, item.product.goodsNameEn);
           console.log(`   Has customization:`, !!item.product.customization);
           console.log(`   jsonCodeVal:`, item.product.jsonCodeVal);
-          
+
           // Build option name based on customization
           let optionName = '无';
           let optionNameEn = 'NONE';
@@ -1895,7 +1996,7 @@ function KioskOrder() {
           };
         })
       };
-      
+
       console.log('📤 Final order data being sent:', orderData);
 
       const response = await fetch(getApiUrl(API_ENDPOINTS.CREATE_ORDER), {
@@ -2415,6 +2516,176 @@ function KioskOrder() {
         onClose={closeCustomizationModal}
         onAddToCart={handleCustomizedAddToCart}
       />
+
+      {/* PIN Entry Modal */}
+      {showPinModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9998,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '40px',
+            maxWidth: '400px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+                fontSize: '36px'
+              }}>
+                🔐
+              </div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1F2937', marginBottom: '8px' }}>
+                Enter PIN
+              </h2>
+              <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
+                Please enter the daily PIN to complete your order
+              </p>
+            </div>
+
+            {/* PIN Display */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '12px',
+              marginBottom: '24px'
+            }}>
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} style={{
+                  width: '50px',
+                  height: '60px',
+                  border: '2px solid',
+                  borderColor: pinInput.length > i ? '#3B82F6' : '#E5E7EB',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.75rem',
+                  fontWeight: '700',
+                  color: '#1F2937',
+                  background: pinInput.length > i ? '#EBF5FF' : '#F9FAFB',
+                  transition: 'all 0.2s'
+                }}>
+                  {pinInput[i] ? '●' : ''}
+                </div>
+              ))}
+            </div>
+
+            {/* Error Message */}
+            {pinError && (
+              <div style={{
+                background: '#FEE2E2',
+                color: '#DC2626',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}>
+                {pinError}
+              </div>
+            )}
+
+            {/* Number Pad */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '12px',
+              marginBottom: '24px'
+            }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '⌫'].map(key => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    if (key === 'C') handlePinClear();
+                    else if (key === '⌫') handlePinBackspace();
+                    else handlePinInput(key.toString());
+                  }}
+                  disabled={verifyingPin}
+                  style={{
+                    padding: '20px',
+                    fontSize: '1.5rem',
+                    fontWeight: '600',
+                    border: 'none',
+                    borderRadius: '12px',
+                    background: key === 'C' ? '#FEE2E2' : key === '⌫' ? '#FEF3C7' : '#F3F4F6',
+                    color: key === 'C' ? '#DC2626' : key === '⌫' ? '#D97706' : '#1F2937',
+                    cursor: verifyingPin ? 'not-allowed' : 'pointer',
+                    opacity: verifyingPin ? 0.5 : 1,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  setShowPinModal(false);
+                  setPinInput('');
+                  setPinError('');
+                }}
+                disabled={verifyingPin}
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  border: '2px solid #E5E7EB',
+                  borderRadius: '12px',
+                  background: 'white',
+                  color: '#6B7280',
+                  cursor: verifyingPin ? 'not-allowed' : 'pointer',
+                  opacity: verifyingPin ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={verifyPin}
+                disabled={pinInput.length !== 4 || verifyingPin}
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  border: 'none',
+                  borderRadius: '12px',
+                  background: pinInput.length === 4 ? '#3B82F6' : '#E5E7EB',
+                  color: pinInput.length === 4 ? 'white' : '#9CA3AF',
+                  cursor: pinInput.length === 4 && !verifyingPin ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {verifyingPin ? 'Verifying...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Out of Order Overlay */}
       {!frontendStatus.enabled && (
