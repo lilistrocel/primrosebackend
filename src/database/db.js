@@ -269,6 +269,12 @@ class DatabaseManager {
             value: 'true',
             type: 'boolean',
             description: 'When enabled, payment is required for checkout. When disabled, a daily PIN is required instead.'
+          },
+          {
+            key: 'pin_seed',
+            value: 'K2Coffee2025',
+            type: 'string',
+            description: 'Seed used to generate daily PIN. Change this to regenerate a new PIN.'
           }
         ];
 
@@ -310,6 +316,26 @@ class DatabaseManager {
             console.log('✅ Added payment_enabled setting');
           } catch (error) {
             console.error('❌ Failed to add payment_enabled setting:', error.message);
+          }
+        }
+
+        // Add pin_seed setting if it doesn't exist
+        const pinSeedSetting = this.db.prepare(`SELECT * FROM system_settings WHERE setting_key = 'pin_seed'`).get();
+        if (!pinSeedSetting) {
+          console.log('🔑 Adding pin_seed setting to existing database...');
+          try {
+            this.db.prepare(`
+              INSERT INTO system_settings (setting_key, setting_value, setting_type, description)
+              VALUES (?, ?, ?, ?)
+            `).run(
+              'pin_seed',
+              'K2Coffee2025',
+              'string',
+              'Seed used to generate daily PIN. Change this to regenerate a new PIN.'
+            );
+            console.log('✅ Added pin_seed setting');
+          } catch (error) {
+            console.error('❌ Failed to add pin_seed setting:', error.message);
           }
         }
       }
@@ -1095,16 +1121,26 @@ class DatabaseManager {
     }
   }
 
-  // Generate a daily PIN based on the current date
-  // PIN changes every day at midnight
+  // Get the PIN seed from database
+  getPinSeed() {
+    try {
+      const setting = this.getSystemSetting('pin_seed');
+      return setting ? setting.setting_value : 'K2Coffee2025';
+    } catch (error) {
+      console.error('Error getting PIN seed:', error);
+      return 'K2Coffee2025';
+    }
+  }
+
+  // Generate a daily PIN based on the current date and seed
+  // PIN changes every day at midnight or when seed is regenerated
   getDailyPin() {
     try {
       const today = new Date();
       const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-      // Simple hash function to generate a 4-digit PIN from the date
-      // Using a seed to make it less predictable
-      const seed = 'K2Coffee2025';
+      // Get seed from database (can be regenerated)
+      const seed = this.getPinSeed();
       const combined = dateString + seed;
 
       let hash = 0;
@@ -1122,6 +1158,30 @@ class DatabaseManager {
     } catch (error) {
       console.error('Error generating daily PIN:', error);
       return '0000'; // Fallback PIN
+    }
+  }
+
+  // Regenerate PIN by creating a new random seed
+  regeneratePin() {
+    try {
+      // Generate a new random seed
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 15);
+      const newSeed = `K2Pin${timestamp}${random}`;
+
+      // Update the seed in database
+      const success = this.updateSystemSetting('pin_seed', newSeed);
+
+      if (success) {
+        const newPin = this.getDailyPin();
+        console.log(`🔑 PIN regenerated successfully. New PIN: ${newPin}`);
+        return { success: true, newPin };
+      } else {
+        return { success: false, error: 'Failed to update PIN seed' };
+      }
+    } catch (error) {
+      console.error('Error regenerating PIN:', error);
+      return { success: false, error: error.message };
     }
   }
 

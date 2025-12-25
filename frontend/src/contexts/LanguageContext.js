@@ -26,6 +26,7 @@ const translations = {
     
     // Product actions
     addToCart: 'Add to Cart',
+    orderNow: 'Order Now',
     unavailable: 'Unavailable',
     loading: 'Loading...',
     
@@ -39,6 +40,7 @@ const translations = {
     queuing: 'Queuing',
     making: 'Making',
     noOrders: 'No orders in queue',
+    tapToOrder: 'Tap a product to place your order',
     
     // Success modal
     orderPlaced: 'Order Placed Successfully!',
@@ -110,6 +112,7 @@ const translations = {
     
     // Product actions
     addToCart: 'أضف للسلة',
+    orderNow: 'اطلب الآن',
     unavailable: 'غير متوفر',
     loading: 'جاري التحميل...',
     
@@ -123,6 +126,7 @@ const translations = {
     queuing: 'في الطابور',
     making: 'جاري التحضير',
     noOrders: 'لا توجد طلبات في الطابور',
+    tapToOrder: 'اضغط على منتج لتقديم طلبك',
     
     // Success modal
     orderPlaced: 'تم وضع الطلب بنجاح!',

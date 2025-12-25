@@ -353,6 +353,48 @@ router.post('/verify-pin', (req, res) => {
 });
 
 /**
+ * POST /api/motong/system-settings/regenerate-pin
+ * Regenerate the daily PIN by creating a new seed
+ */
+router.post('/regenerate-pin', (req, res) => {
+  try {
+    console.log('🔑 Regenerating daily PIN...');
+
+    const result = db.regeneratePin();
+
+    if (result.success) {
+      console.log(`✅ PIN regenerated successfully. New PIN: ${result.newPin}`);
+
+      // Notify WebSocket clients about the new PIN
+      webSocketManager.notifySystemSettingChange('pin_regenerated', result.newPin);
+
+      res.json({
+        code: 0,
+        msg: 'PIN regenerated successfully',
+        data: {
+          newPin: result.newPin,
+          regenerated: true
+        }
+      });
+    } else {
+      res.status(500).json({
+        code: 1,
+        msg: result.error || 'Failed to regenerate PIN',
+        data: null
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error regenerating PIN:', error);
+    res.status(500).json({
+      code: 1,
+      msg: 'Failed to regenerate PIN',
+      data: null
+    });
+  }
+});
+
+/**
  * POST /api/motong/system-settings/toggle/:key
  * Quick toggle for boolean settings
  */

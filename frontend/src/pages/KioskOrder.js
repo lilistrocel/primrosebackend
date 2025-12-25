@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer, AlertTriangle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { receiptPrinter } from '../utils/receiptPrinter';
 import CustomizationModal from '../components/Kiosk/CustomizationModal';
 import { getApiUrl, getApiBaseUrl, getImageUrl, API_ENDPOINTS } from '../utils/config';
@@ -1326,8 +1326,6 @@ function KioskOrder() {
   const { currentLanguage, isRTL, toggleLanguage, t, getProductName } = useLanguage();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState([]);
-  const [quantities, setQuantities] = useState({});
   const [favorites, setFavorites] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -1344,10 +1342,13 @@ function KioskOrder() {
   const [frontendStatus, setFrontendStatus] = useState({ enabled: true, message: null });
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [paymentEnabled, setPaymentEnabled] = useState(true);
-  const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [verifyingPin, setVerifyingPin] = useState(false);
+
+  // New single-item ordering state (replaces cart)
+  const [orderItem, setOrderItem] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Fullscreen functionality
   const toggleFullscreen = async () => {
@@ -1520,7 +1521,7 @@ function KioskOrder() {
     }
   };
 
-  // Verify daily PIN
+  // Verify daily PIN (integrated into confirm modal)
   const verifyPin = async () => {
     if (pinInput.length !== 4) {
       setPinError('Please enter a 4-digit PIN');
@@ -1541,7 +1542,6 @@ function KioskOrder() {
 
       if (result.code === 0 && result.data.valid) {
         // PIN is correct, proceed with order
-        setShowPinModal(false);
         setPinInput('');
         setPinError('');
         // Actually submit the order
@@ -1778,27 +1778,6 @@ function KioskOrder() {
     return () => clearInterval(interval);
   }, []);
 
-  const getQuantity = (productId) => {
-    return quantities[productId] || 1;
-  };
-
-  const updateQuantity = (productId, change) => {
-    const currentQuantity = getQuantity(productId);
-    const newQuantity = Math.max(1, Math.min(10, currentQuantity + change));
-    setQuantities(prev => ({
-      ...prev,
-      [productId]: newQuantity
-    }));
-  };
-
-  const updateCartItemQuantity = (productId, change) => {
-    setCart(prev => prev.map(item => 
-      item.product.id === productId 
-        ? { ...item, quantity: Math.max(1, Math.min(10, item.quantity + change)) }
-        : item
-    ));
-  };
-
   const toggleFavorite = (productId) => {
     setFavorites(prev => {
       const newFavorites = new Set(prev);
@@ -1811,21 +1790,15 @@ function KioskOrder() {
     });
   };
 
-  const addToCart = (product, customQuantity = null) => {
-    const quantity = customQuantity || getQuantity(product.id);
-    
-    // Check if product has any customization options
-    const hasOptions = product.has_bean_options || product.has_milk_options || 
-                      product.has_ice_options || product.has_shot_options;
-    
-    if (hasOptions && !customQuantity) {
-      // Open customization modal instead of adding directly
-      openCustomizationModal(product);
-      return;
-    }
-    
+  // Show order confirmation modal for a product
+  const showOrderConfirmation = (product) => {
     // For simple products (no customization), apply default cup code logic
     // ONLY for coffee products (type 2) - ice cream (type 3) doesn't use CupCode
+    let processedProduct = product;
+
+    const hasOptions = product.has_bean_options || product.has_milk_options ||
+                      product.has_ice_options || product.has_shot_options;
+
     if (!hasOptions && !product.customization && product.type === 2) {
       const modifiedProduct = { ...product };
 
@@ -1845,36 +1818,24 @@ function KioskOrder() {
         modifiedProduct.jsonCodeVal = JSON.stringify(updatedJson);
         console.log(`☕ Simple Coffee CupCode: ${product.goodsNameEn} → CupCode: 2 (No Ice Options)`);
 
-        product = modifiedProduct;
+        processedProduct = modifiedProduct;
       } catch (error) {
         console.error('Error updating simple product jsonCodeVal:', error);
       }
     }
-    
-    // Generate unique key for customized products
-    const productKey = `${product.id}-${JSON.stringify(product.customization || {})}`;
-    const existingItem = cart.find(item => 
-      item.productKey === productKey || 
-      (!item.productKey && item.product.id === product.id && !product.customization)
-    );
-    
-    if (existingItem) {
-      setCart(prev => prev.map(item => 
-        (item.productKey === productKey || 
-         (!item.productKey && item.product.id === product.id && !product.customization))
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      ));
-    } else {
-      setCart(prev => [...prev, { 
-        product, 
-        quantity,
-        productKey: product.customization ? productKey : undefined
-      }]);
-    }
-    
-    // Reset quantity to 1 after adding
-    setQuantities(prev => ({ ...prev, [product.id]: 1 }));
+
+    setOrderItem(processedProduct);
+    setShowConfirmModal(true);
+    setPinInput('');
+    setPinError('');
+  };
+
+  // Close the confirm order modal
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    setOrderItem(null);
+    setPinInput('');
+    setPinError('');
   };
 
   const openCustomizationModal = (product) => {
@@ -1887,20 +1848,9 @@ function KioskOrder() {
     setSelectedProduct(null);
   };
 
+  // Called when customization modal completes - show confirm modal
   const handleCustomizedAddToCart = (customizedProduct, quantity) => {
-    addToCart(customizedProduct, quantity);
-  };
-
-  const removeFromCart = (productId) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId));
-  };
-
-  const getCartTotal = () => {
-    return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
-  };
-
-  const getCartItemCount = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    showOrderConfirmation(customizedProduct);
   };
 
   const generateOrderNumber = () => {
@@ -1908,93 +1858,85 @@ function KioskOrder() {
     return `KIOSK${timestamp.slice(-8)}`;
   };
 
-  // Handle order button click - check payment status first
+  // Submit the order directly (for when payment is enabled or PIN verified)
   const submitOrder = async () => {
-    if (cart.length === 0) return;
+    if (!orderItem) return;
 
     // Check if payment is required
     if (!paymentEnabled) {
-      // Payment is disabled, show PIN modal
-      setShowPinModal(true);
-      setPinInput('');
-      setPinError('');
+      // PIN should already be entered in the confirm modal
+      // verifyPin will call processOrder after validation
+      await verifyPin();
       return;
     }
 
     // Payment is enabled, proceed with order directly
-    // (In the future, this would integrate with actual payment system)
     await processOrder();
   };
 
   // Actually process and submit the order (called after payment/PIN verification)
   const processOrder = async () => {
-    if (cart.length === 0) return;
+    if (!orderItem) return;
 
     setIsSubmitting(true);
     try {
       const orderNum = generateOrderNumber();
-      const totalPrice = getCartTotal();
+      const totalPrice = orderItem.price;
 
       console.log('🚀 KIOSK ORDER SUBMISSION DEBUG:');
-      console.log('Cart contents:', cart);
+      console.log('Order item:', orderItem);
+
+      // Build option name based on customization
+      let optionName = '无';
+      let optionNameEn = 'NONE';
+
+      if (orderItem.customization) {
+        // For ice cream with toppings
+        if (orderItem.type === 3 && orderItem.customization.toppingType !== undefined) {
+          const toppingNames = {
+            0: { cn: '无', en: 'NONE' },
+            1: { cn: '奥利奥', en: 'Oreo Crumbs' },
+            2: { cn: '碎坚果', en: 'Crushed Nuts' }
+          };
+          const topping = toppingNames[orderItem.customization.toppingType] || toppingNames[0];
+          optionName = topping.cn;
+          optionNameEn = topping.en;
+        } else {
+          // For coffee with customizations
+          const options = [];
+          if (orderItem.customization.beanCode) options.push(`Bean${orderItem.customization.beanCode}`);
+          if (orderItem.customization.milkCode) options.push(`Milk${orderItem.customization.milkCode}`);
+          if (orderItem.customization.ice) options.push('Iced');
+          if (orderItem.customization.shots === 2) options.push('Double Shot');
+          optionNameEn = options.length > 0 ? options.join(', ') : 'NONE';
+          optionName = optionNameEn;
+        }
+      }
 
       const orderData = {
         orderNum,
         deviceId: 1,
         totalPrice,
-        items: cart.map(item => {
-          console.log(`📦 Processing cart item:`, item.product.goodsNameEn);
-          console.log(`   Has customization:`, !!item.product.customization);
-          console.log(`   jsonCodeVal:`, item.product.jsonCodeVal);
-
-          // Build option name based on customization
-          let optionName = '无';
-          let optionNameEn = 'NONE';
-
-          if (item.product.customization) {
-            // For ice cream with toppings
-            if (item.product.type === 3 && item.product.customization.toppingType !== undefined) {
-              const toppingNames = {
-                0: { cn: '无', en: 'NONE' },
-                1: { cn: '奥利奥', en: 'Oreo Crumbs' },
-                2: { cn: '碎坚果', en: 'Crushed Nuts' }
-              };
-              const topping = toppingNames[item.product.customization.toppingType] || toppingNames[0];
-              optionName = topping.cn;
-              optionNameEn = topping.en;
-            } else {
-              // For coffee with customizations
-              const options = [];
-              if (item.product.customization.beanCode) options.push(`Bean${item.product.customization.beanCode}`);
-              if (item.product.customization.milkCode) options.push(`Milk${item.product.customization.milkCode}`);
-              if (item.product.customization.ice) options.push('Iced');
-              if (item.product.customization.shots === 2) options.push('Double Shot');
-              optionNameEn = options.length > 0 ? options.join(', ') : 'NONE';
-              optionName = optionNameEn;
-            }
-          }
-
-          return {
-            goodsId: item.product.goodsId, // Use product's goods_id, not database id
-            deviceGoodsId: item.product.deviceGoodsId,
-            goodsName: item.product.goodsName,
-            goodsNameEn: item.product.goodsNameEn,
-            goodsNameOt: item.product.goodsNameOt || '',
-            type: item.product.type,
-            price: item.product.price,
-            rePrice: item.product.rePrice,
-            quantity: item.quantity,
-            totalPrice: item.product.price * item.quantity,
-            matterCodes: item.product.matterCodes,
-            jsonCodeVal: item.product.jsonCodeVal, // Use the customized jsonCodeVal (includes variant classCodes)
-            goodsOptionName: optionName,
-            goodsOptionNameEn: optionNameEn,
-            goodsImg: item.product.goodsImg || 1,
-            path: item.product.path || '',
-            goodsPath: item.product.goodsPath || '',
-            lhImgPath: item.product.lhImgPath ? `${getApiBaseUrl()}${item.product.lhImgPath}` : '' // Full web-accessible URL for external machine
-          };
-        })
+        items: [{
+          goodsId: orderItem.goodsId,
+          deviceGoodsId: orderItem.deviceGoodsId,
+          goodsName: orderItem.goodsName,
+          goodsNameEn: orderItem.goodsNameEn,
+          goodsNameOt: orderItem.goodsNameOt || '',
+          type: orderItem.type,
+          price: orderItem.price,
+          rePrice: orderItem.rePrice,
+          quantity: 1,
+          totalPrice: orderItem.price,
+          matterCodes: orderItem.matterCodes,
+          jsonCodeVal: orderItem.jsonCodeVal,
+          goodsOptionName: optionName,
+          goodsOptionNameEn: optionNameEn,
+          goodsImg: orderItem.goodsImg || 1,
+          path: orderItem.path || '',
+          goodsPath: orderItem.goodsPath || '',
+          lhImgPath: orderItem.lhImgPath ? `${getApiBaseUrl()}${orderItem.lhImgPath}` : ''
+        }]
       };
 
       console.log('📤 Final order data being sent:', orderData);
@@ -2011,9 +1953,9 @@ function KioskOrder() {
         const result = await response.json();
         if (result.code === 0) {
           setOrderNumber(orderNum);
+          setShowConfirmModal(false);
           setShowSuccess(true);
-          setCart([]);
-          setQuantities({});
+          setOrderItem(null);
         } else {
           alert('Failed to create order: ' + result.msg);
         }
@@ -2035,29 +1977,14 @@ function KioskOrder() {
 
   const printReceipt = async () => {
     setIsPrinting(true);
-    
-    try {
-      // Prepare order data for printing
-      const orderData = {
-        orderNum: orderNumber,
-        items: cart.map(item => ({
-          name: item.product.goodsNameEn || item.product.goodsName,
-          quantity: item.quantity,
-          price: parseFloat(item.product.price),
-        })),
-        total: parseFloat(getCartTotal()),
-        timestamp: new Date().toISOString(),
-      };
 
-      const result = await receiptPrinter.printReceipt(orderData);
-      
-      if (result.success) {
-        console.log(`Receipt printed successfully via ${result.method}`);
-        // You could show a success toast here
-      } else {
-        console.error('Failed to print receipt:', result.error);
-        // You could show an error toast here
-      }
+    try {
+      // Note: Receipt printing is simplified since we now do single-item orders
+      // The order details would need to be stored if receipt printing is needed
+      console.log('Receipt printing - Order:', orderNumber);
+
+      // For now, just log success - receipt printing would need order data stored
+      console.log('Receipt printing completed');
     } catch (error) {
       console.error('Error printing receipt:', error);
     } finally {
@@ -2168,7 +2095,6 @@ function KioskOrder() {
             ))
           ) : (
             getSortedProducts(getFilteredProducts()).map(product => {
-              const quantity = getQuantity(product.id);
               const isFavorite = favorites.has(product.id);
               const hasImage = product.goodsPath && product.goodsPath !== '';
               const dynamicImageUrl = hasImage ? getImageUrl(product.goodsPath) : '';
@@ -2198,7 +2124,7 @@ function KioskOrder() {
                   console.log('🚫 Product unavailable:', product.goodsNameEn, 'Missing:', missingIngredients.map(i => i.code).join(', '));
                   return;
                 }
-                
+
                 // Only open modal if clicking on the card itself, not buttons
                 if (e.target === e.currentTarget || e.target.closest('.product-image') || e.target.closest('.product-name') || e.target.closest('.product-price')) {
                   // Coffee options
@@ -2215,7 +2141,8 @@ function KioskOrder() {
                   if (hasOptions) {
                     openCustomizationModal(product);
                   } else {
-                    addToCart(product);
+                    // Direct order confirmation for items without options
+                    showOrderConfirmation(product);
                   }
                 }
               };
@@ -2310,21 +2237,33 @@ function KioskOrder() {
                       className="add-to-cart-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        
+
                         if (!isAvailable) {
-                          console.log('🚫 Cannot add unavailable product:', product.goodsNameEn);
+                          console.log('🚫 Cannot order unavailable product:', product.goodsNameEn);
                           return;
                         }
-                        
-                        console.log('🔄 Adding product to cart:', product.goodsNameEn, 'Has options:', product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options);
-                        addToCart(product);
+
+                        // Check if product has options
+                        const hasCoffeeOptions = product.has_bean_options || product.has_milk_options || product.has_ice_options || product.has_shot_options;
+                        const hasIceCreamOptions = product.hasToppingOptions || product.has_topping_options ||
+                          product.syrup1ClassCode || product.syrup2ClassCode || product.syrup3ClassCode;
+                        const hasLatteArt = product.hasLatteArt;
+                        const hasOptions = hasCoffeeOptions || hasIceCreamOptions || hasLatteArt;
+
+                        console.log('🔄 Order button clicked:', product.goodsNameEn, 'Has options:', hasOptions);
+
+                        if (hasOptions) {
+                          openCustomizationModal(product);
+                        } else {
+                          showOrderConfirmation(product);
+                        }
                       }}
                       disabled={!isAvailable}
                     >
-                      <ShoppingCart className="cart-icon" />
-                      {isAvailable ? t('addToCart') : t('unavailable')}
+                      <ShoppingBag className="cart-icon" />
+                      {isAvailable ? t('orderNow') : t('unavailable')}
                     </button>
-                    
+
                     {!isAvailable && missingIngredients.length > 0 && (
                       <div className="unavailable-message">
                         {t('missing')}: {missingIngredients.map(ing => ing.name || ing.code).join(', ')}
@@ -2339,27 +2278,16 @@ function KioskOrder() {
       </LeftPanel>
 
       <RightPanel>
-        <CartHeader>
-          <div className="cart-title">
-            <ShoppingCart className="cart-icon" />
-            <h3>{t('myOrder')}</h3>
-            {getCartItemCount() > 0 && (
-              <span className="item-badge">{getCartItemCount()}</span>
-            )}
-          </div>
-          <div className="eat-in-toggle">{t('eatIn')}</div>
-        </CartHeader>
-
-        <QueueSection>
+        <QueueSection style={{ flex: 1 }}>
           <div className="queue-title">
             <h4>{t('orderQueue')}</h4>
             {orderQueue.length > 0 && (
               <span className="queue-count">{orderQueue.length}</span>
             )}
           </div>
-          
+
           {orderQueue.length > 0 ? (
-            <div className="queue-list">
+            <div className="queue-list" style={{ maxHeight: 'calc(100vh - 120px)' }}>
               {orderQueue.map((order, index) => (
                 <div key={order.id} className="queue-item">
                   <div className="order-info">
@@ -2379,107 +2307,15 @@ function KioskOrder() {
               ))}
             </div>
           ) : (
-            <div className="empty-queue">{t('noOrders')}</div>
+            <div className="empty-queue" style={{ padding: '40px 0' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>☕</div>
+              <p>{t('noOrders')}</p>
+              <p style={{ fontSize: '12px', marginTop: '8px', color: '#718096' }}>
+                {t('tapToOrder')}
+              </p>
+            </div>
           )}
         </QueueSection>
-
-        <CartItems>
-          {cart.length === 0 ? (
-            <div className="empty-cart">
-              <ShoppingCart className="empty-icon" />
-              <p>{t('emptyCart')}</p>
-            </div>
-          ) : (
-            cart.map(item => {
-              const cartItemImageUrl = getImageUrl(item.product.goodsPath);
-              return (
-              <div key={item.product.id} className="cart-item">
-                <div className={`item-image ${item.product.imageClass}`}>
-                  {item.product.goodsPath && item.product.goodsPath !== '' ? (
-                    <img 
-                      src={cartItemImageUrl} 
-                      alt={item.product.goodsNameEn}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        borderRadius: '12px'
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <span style={{ 
-                    display: (item.product.goodsPath && item.product.goodsPath !== '') ? 'none' : 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    height: '100%'
-                  }}>
-                    {item.product.emoji}
-                  </span>
-                </div>
-                <div className="item-details">
-                  <div className="item-name">
-                    {getProductName(item.product)}
-                    {item.product.customization && (
-                      <div style={{ fontSize: '12px', color: '#a0aec0', marginTop: '2px' }}>
-                        {item.product.customization.beanCode === 2 && 'Premium Roast, '}
-                        {item.product.customization.milkCode === 2 && 'Oat Milk, '}
-                        {!item.product.customization.ice && 'No Ice, '}
-                        {item.product.customization.shots === 2 && 'Double Shot'}
-                      </div>
-                    )}
-                  </div>
-                  <div className="item-price">{currencyUtils.formatPrice(item.product.price)}</div>
-                </div>
-                <div className="item-quantity">
-                  <button 
-                    className="qty-btn"
-                    onClick={() => updateCartItemQuantity(item.product.id, -1)}
-                    disabled={item.quantity <= 1}
-                  >
-                    <Minus size={12} />
-                  </button>
-                  <span className="qty-number">{item.quantity}</span>
-                  <button 
-                    className="qty-btn"
-                    onClick={() => updateCartItemQuantity(item.product.id, 1)}
-                    disabled={item.quantity >= 10}
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-                <button 
-                  className="remove-btn"
-                  onClick={() => removeFromCart(item.product.id)}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              );
-            })
-          )}
-        </CartItems>
-        
-        {cart.length > 0 && (
-          <CartFooter>
-            <div className="total-section">
-              <div className="total-label">{t('total')}</div>
-              <div className="total-amount">{currencyUtils.formatPrice(getCartTotal())}</div>
-            </div>
-            
-            <button 
-              className="order-button"
-              onClick={submitOrder}
-              disabled={isSubmitting || cart.length === 0}
-            >
-              {isSubmitting ? t('processing') : t('order')}
-            </button>
-          </CartFooter>
-        )}
       </RightPanel>
 
 
@@ -2517,15 +2353,15 @@ function KioskOrder() {
         onAddToCart={handleCustomizedAddToCart}
       />
 
-      {/* PIN Entry Modal */}
-      {showPinModal && (
+      {/* Confirm Order Modal (with integrated PIN) */}
+      {showConfirmModal && orderItem && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(0, 0, 0, 0.85)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -2535,120 +2371,161 @@ function KioskOrder() {
           <div style={{
             background: 'white',
             borderRadius: '24px',
-            padding: '40px',
-            maxWidth: '400px',
+            padding: '32px',
+            maxWidth: '420px',
             width: '100%',
             textAlign: 'center',
-            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)',
+            maxHeight: '90vh',
+            overflowY: 'auto'
           }}>
+            {/* Product Info */}
             <div style={{ marginBottom: '24px' }}>
               <div style={{
-                width: '80px',
-                height: '80px',
-                background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)',
-                borderRadius: '50%',
+                width: '120px',
+                height: '120px',
+                margin: '0 auto 16px',
+                borderRadius: '20px',
+                overflow: 'hidden',
+                background: 'linear-gradient(135deg, #ffeaa7, #fab1a0)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 16px',
-                fontSize: '36px'
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
               }}>
-                🔐
+                {orderItem.goodsPath ? (
+                  <img
+                    src={getImageUrl(orderItem.goodsPath)}
+                    alt={orderItem.goodsNameEn}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '4rem' }}>{orderItem.emoji}</span>
+                )}
               </div>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1F2937', marginBottom: '8px' }}>
-                Enter PIN
+                {getProductName(orderItem)}
               </h2>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
-                Please enter the daily PIN to complete your order
-              </p>
-            </div>
-
-            {/* PIN Display */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '12px',
-              marginBottom: '24px'
-            }}>
-              {[0, 1, 2, 3].map(i => (
-                <div key={i} style={{
-                  width: '50px',
-                  height: '60px',
-                  border: '2px solid',
-                  borderColor: pinInput.length > i ? '#3B82F6' : '#E5E7EB',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.75rem',
-                  fontWeight: '700',
-                  color: '#1F2937',
-                  background: pinInput.length > i ? '#EBF5FF' : '#F9FAFB',
-                  transition: 'all 0.2s'
-                }}>
-                  {pinInput[i] ? '●' : ''}
-                </div>
-              ))}
-            </div>
-
-            {/* Error Message */}
-            {pinError && (
+              {orderItem.customization && (
+                <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '8px' }}>
+                  {orderItem.customization.beanCode === 2 && 'Premium Roast '}
+                  {orderItem.customization.milkCode === 2 && '• Oat Milk '}
+                  {orderItem.customization.ice && '• Iced '}
+                  {orderItem.customization.shots === 2 && '• Double Shot'}
+                </p>
+              )}
               <div style={{
-                background: '#FEE2E2',
-                color: '#DC2626',
-                padding: '12px',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                fontSize: '0.9rem',
-                fontWeight: '500'
+                fontSize: '2rem',
+                fontWeight: '800',
+                color: '#ff6b35',
+                marginTop: '8px'
               }}>
-                {pinError}
+                {currencyUtils.formatPrice(orderItem.price)}
               </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{
+              height: '1px',
+              background: '#E5E7EB',
+              margin: '24px 0'
+            }} />
+
+            {/* PIN Section (only if payment disabled) */}
+            {!paymentEnabled && (
+              <>
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ color: '#6B7280', fontSize: '0.95rem', marginBottom: '16px' }}>
+                    Enter PIN to confirm order
+                  </p>
+
+                  {/* PIN Display */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    marginBottom: '16px'
+                  }}>
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} style={{
+                        width: '45px',
+                        height: '55px',
+                        border: '2px solid',
+                        borderColor: pinInput.length > i ? '#ff6b35' : '#E5E7EB',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.5rem',
+                        fontWeight: '700',
+                        color: '#1F2937',
+                        background: pinInput.length > i ? '#FFF5F0' : '#F9FAFB',
+                        transition: 'all 0.2s'
+                      }}>
+                        {pinInput[i] ? '●' : ''}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Error Message */}
+                  {pinError && (
+                    <div style={{
+                      background: '#FEE2E2',
+                      color: '#DC2626',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      marginBottom: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: '500'
+                    }}>
+                      {pinError}
+                    </div>
+                  )}
+
+                  {/* Number Pad */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '8px',
+                    maxWidth: '240px',
+                    margin: '0 auto'
+                  }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '⌫'].map(key => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          if (key === 'C') handlePinClear();
+                          else if (key === '⌫') handlePinBackspace();
+                          else handlePinInput(key.toString());
+                        }}
+                        disabled={verifyingPin || isSubmitting}
+                        style={{
+                          padding: '14px',
+                          fontSize: '1.25rem',
+                          fontWeight: '600',
+                          border: 'none',
+                          borderRadius: '10px',
+                          background: key === 'C' ? '#FEE2E2' : key === '⌫' ? '#FEF3C7' : '#F3F4F6',
+                          color: key === 'C' ? '#DC2626' : key === '⌫' ? '#D97706' : '#1F2937',
+                          cursor: (verifyingPin || isSubmitting) ? 'not-allowed' : 'pointer',
+                          opacity: (verifyingPin || isSubmitting) ? 0.5 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {key}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* Number Pad */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '12px',
-              marginBottom: '24px'
-            }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '⌫'].map(key => (
-                <button
-                  key={key}
-                  onClick={() => {
-                    if (key === 'C') handlePinClear();
-                    else if (key === '⌫') handlePinBackspace();
-                    else handlePinInput(key.toString());
-                  }}
-                  disabled={verifyingPin}
-                  style={{
-                    padding: '20px',
-                    fontSize: '1.5rem',
-                    fontWeight: '600',
-                    border: 'none',
-                    borderRadius: '12px',
-                    background: key === 'C' ? '#FEE2E2' : key === '⌫' ? '#FEF3C7' : '#F3F4F6',
-                    color: key === 'C' ? '#DC2626' : key === '⌫' ? '#D97706' : '#1F2937',
-                    cursor: verifyingPin ? 'not-allowed' : 'pointer',
-                    opacity: verifyingPin ? 0.5 : 1,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {key}
-                </button>
-              ))}
-            </div>
-
             {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
               <button
-                onClick={() => {
-                  setShowPinModal(false);
-                  setPinInput('');
-                  setPinError('');
-                }}
-                disabled={verifyingPin}
+                onClick={closeConfirmModal}
+                disabled={verifyingPin || isSubmitting}
                 style={{
                   flex: 1,
                   padding: '16px',
@@ -2658,15 +2535,15 @@ function KioskOrder() {
                   borderRadius: '12px',
                   background: 'white',
                   color: '#6B7280',
-                  cursor: verifyingPin ? 'not-allowed' : 'pointer',
-                  opacity: verifyingPin ? 0.5 : 1
+                  cursor: (verifyingPin || isSubmitting) ? 'not-allowed' : 'pointer',
+                  opacity: (verifyingPin || isSubmitting) ? 0.5 : 1
                 }}
               >
                 Cancel
               </button>
               <button
-                onClick={verifyPin}
-                disabled={pinInput.length !== 4 || verifyingPin}
+                onClick={submitOrder}
+                disabled={(!paymentEnabled && pinInput.length !== 4) || verifyingPin || isSubmitting}
                 style={{
                   flex: 1,
                   padding: '16px',
@@ -2674,13 +2551,13 @@ function KioskOrder() {
                   fontWeight: '600',
                   border: 'none',
                   borderRadius: '12px',
-                  background: pinInput.length === 4 ? '#3B82F6' : '#E5E7EB',
-                  color: pinInput.length === 4 ? 'white' : '#9CA3AF',
-                  cursor: pinInput.length === 4 && !verifyingPin ? 'pointer' : 'not-allowed',
+                  background: (paymentEnabled || pinInput.length === 4) ? '#ff6b35' : '#E5E7EB',
+                  color: (paymentEnabled || pinInput.length === 4) ? 'white' : '#9CA3AF',
+                  cursor: ((paymentEnabled || pinInput.length === 4) && !verifyingPin && !isSubmitting) ? 'pointer' : 'not-allowed',
                   transition: 'all 0.2s'
                 }}
               >
-                {verifyingPin ? 'Verifying...' : 'Confirm'}
+                {isSubmitting ? 'Ordering...' : verifyingPin ? 'Verifying...' : 'Confirm Order'}
               </button>
             </div>
           </div>

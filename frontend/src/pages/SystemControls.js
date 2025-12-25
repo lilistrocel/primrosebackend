@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Power, TestTube, Settings, AlertTriangle, Check, X, RefreshCw, Eye, EyeOff, CreditCard, KeyRound, Copy } from 'lucide-react';
+import { Power, TestTube, Settings, AlertTriangle, Check, X, RefreshCw, Eye, EyeOff, CreditCard, KeyRound, Copy, RotateCcw } from 'lucide-react';
 import { getApiUrl } from '../utils/config';
 
 const Container = styled.div`
@@ -222,6 +222,11 @@ const PinDisplay = styled.div`
   margin-top: 16px;
   color: white;
 
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   .pin-header {
     display: flex;
     align-items: center;
@@ -235,7 +240,7 @@ const PinDisplay = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 12px;
 
     .pin-digits {
       font-size: 2.5rem;
@@ -260,9 +265,14 @@ const PinDisplay = styled.div`
         background: rgba(255,255,255,0.3);
       }
 
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       svg {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         color: white;
       }
     }
@@ -285,6 +295,7 @@ function SystemControls() {
   const [paymentEnabled, setPaymentEnabled] = useState(true);
   const [dailyPin, setDailyPin] = useState('');
   const [pinCopied, setPinCopied] = useState(false);
+  const [regeneratingPin, setRegeneratingPin] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -336,6 +347,28 @@ function SystemControls() {
     navigator.clipboard.writeText(dailyPin);
     setPinCopied(true);
     setTimeout(() => setPinCopied(false), 2000);
+  };
+
+  const regeneratePin = async () => {
+    try {
+      setRegeneratingPin(true);
+      const response = await fetch(getApiUrl('/api/motong/system-settings/regenerate-pin'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const result = await response.json();
+
+      if (result.code === 0 && result.data.newPin) {
+        setDailyPin(result.data.newPin);
+        console.log('✅ PIN regenerated:', result.data.newPin);
+      } else {
+        console.error('Failed to regenerate PIN:', result.msg);
+      }
+    } catch (error) {
+      console.error('Error regenerating PIN:', error);
+    } finally {
+      setRegeneratingPin(false);
+    }
   };
 
   const toggleSetting = async (key, currentValue) => {
@@ -557,11 +590,20 @@ function SystemControls() {
               <div className="pin-value">
                 <span className="pin-digits">{dailyPin}</span>
                 <button className="copy-btn" onClick={copyPin} title="Copy PIN">
-                  <Copy />
+                  <Copy size={14} />
+                </button>
+                <button
+                  className="copy-btn"
+                  onClick={regeneratePin}
+                  title="Generate New PIN"
+                  disabled={regeneratingPin}
+                  style={{ marginLeft: '4px' }}
+                >
+                  <RotateCcw size={14} style={{ animation: regeneratingPin ? 'spin 1s linear infinite' : 'none' }} />
                 </button>
               </div>
               <div className="pin-note">
-                {pinCopied ? '✓ Copied!' : 'This PIN changes daily at midnight'}
+                {pinCopied ? '✓ Copied!' : 'Click 🔄 to generate a new PIN'}
               </div>
             </PinDisplay>
           )}

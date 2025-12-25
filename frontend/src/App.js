@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
+import AdminPinModal from './components/AdminPinModal';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import Dashboard from './pages/Dashboard';
@@ -68,12 +70,53 @@ const ContentArea = styled.div`
   }
 `;
 
+// Protected Admin Panel component
+function AdminPanel() {
+  const { isAuthenticated, isLoading } = useAdminAuth();
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
+
+  if (!isAuthenticated) {
+    return <AdminPinModal />;
+  }
+
+  return (
+    <AppContainer>
+      <Sidebar />
+      <MainContent>
+        <Header />
+        <ContentArea>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/items" element={<ItemManagement />} />
+            <Route path="/latte-art" element={<LatteArtManagement />} />
+            <Route path="/option-names" element={<OptionNamesManagement />} />
+            <Route path="/orders" element={<OrderMonitor />} />
+            <Route path="/order-monitor" element={<OrderMonitor />} />
+            <Route path="/order-history" element={<OrderHistory />} />
+            <Route path="/create-order" element={<CreateOrder />} />
+            <Route path="/device" element={<DeviceStatus />} />
+            <Route path="/system-controls" element={<SystemControls />} />
+            <Route path="/inventory" element={<InventoryDashboard />} />
+            <Route path="/inventory/management" element={<InventoryManagement />} />
+            <Route path="/inventory/consumption-config" element={<ProductConsumptionConfig />} />
+            <Route path="/alerts" element={<AlertDashboard />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </ContentArea>
+      </MainContent>
+    </AppContainer>
+  );
+}
+
 function App() {
   const location = useLocation();
   const isKioskMode = location.pathname === '/kiosk';
   const isMobileKioskMode = location.pathname === '/mobile-kiosk';
 
-  // Full-screen kiosk modes
+  // Full-screen kiosk modes (no PIN required)
   if (isKioskMode) {
     return (
       <LanguageProvider>
@@ -90,34 +133,12 @@ function App() {
     );
   }
 
-  // Regular admin interface with sidebar
+  // Protected admin interface with PIN
   return (
     <LanguageProvider>
-      <AppContainer>
-        <Sidebar />
-        <MainContent>
-          <Header />
-          <ContentArea>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/items" element={<ItemManagement />} />
-              <Route path="/latte-art" element={<LatteArtManagement />} />
-              <Route path="/option-names" element={<OptionNamesManagement />} />
-              <Route path="/orders" element={<OrderMonitor />} />
-              <Route path="/order-monitor" element={<OrderMonitor />} />
-              <Route path="/order-history" element={<OrderHistory />} />
-              <Route path="/create-order" element={<CreateOrder />} />
-              <Route path="/device" element={<DeviceStatus />} />
-              <Route path="/system-controls" element={<SystemControls />} />
-            <Route path="/inventory" element={<InventoryDashboard />} />
-            <Route path="/inventory/management" element={<InventoryManagement />} />
-            <Route path="/inventory/consumption-config" element={<ProductConsumptionConfig />} />
-            <Route path="/alerts" element={<AlertDashboard />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </ContentArea>
-        </MainContent>
-      </AppContainer>
+      <AdminAuthProvider>
+        <AdminPanel />
+      </AdminAuthProvider>
     </LanguageProvider>
   );
 }
