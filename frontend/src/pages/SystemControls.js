@@ -293,6 +293,7 @@ function SystemControls() {
   const [frontendEnabled, setFrontendEnabled] = useState(true);
   const [testMode, setTestMode] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState(true);
+  const [pinEnabled, setPinEnabled] = useState(true);
   const [dailyPin, setDailyPin] = useState('');
   const [pinCopied, setPinCopied] = useState(false);
   const [regeneratingPin, setRegeneratingPin] = useState(false);
@@ -315,10 +316,12 @@ function SystemControls() {
         const frontendSetting = result.data.find(s => s.key === 'frontend_enabled');
         const testSetting = result.data.find(s => s.key === 'test_mode');
         const paymentSetting = result.data.find(s => s.key === 'payment_enabled');
+        const pinSetting = result.data.find(s => s.key === 'pin_enabled');
 
         setFrontendEnabled(frontendSetting ? frontendSetting.value : true);
         setTestMode(testSetting ? testSetting.value : false);
         setPaymentEnabled(paymentSetting ? paymentSetting.value : true);
+        setPinEnabled(pinSetting ? pinSetting.value : true);
       } else {
         console.error('Failed to fetch system settings:', result.msg);
       }
@@ -336,6 +339,7 @@ function SystemControls() {
 
       if (result.code === 0) {
         setPaymentEnabled(result.data.paymentEnabled);
+        setPinEnabled(result.data.pinEnabled !== undefined ? result.data.pinEnabled : true);
         setDailyPin(result.data.dailyPin);
       }
     } catch (error) {
@@ -395,11 +399,13 @@ function SystemControls() {
           if (!result.data.newValue && result.data.dailyPin) {
             setDailyPin(result.data.dailyPin);
           }
+        } else if (key === 'pin_enabled') {
+          setPinEnabled(result.data.newValue);
         }
 
         // Refresh settings to get updated data
         fetchSettings();
-        if (key === 'payment_enabled') {
+        if (key === 'payment_enabled' || key === 'pin_enabled') {
           fetchPaymentStatus();
         }
 
@@ -458,11 +464,20 @@ function SystemControls() {
         </AlertBanner>
       )}
 
-      {!paymentEnabled && (
+      {!paymentEnabled && pinEnabled && (
         <AlertBanner type="info">
           <KeyRound className="alert-icon" />
           <div className="alert-text">
-            <strong>Payment Bypassed:</strong> Customers must enter today's PIN ({dailyPin}) to complete orders without payment.
+            <strong>Payment Bypassed (PIN Mode):</strong> Customers must enter today's PIN ({dailyPin}) to complete orders without payment.
+          </div>
+        </AlertBanner>
+      )}
+
+      {!paymentEnabled && !pinEnabled && (
+        <AlertBanner type="warning">
+          <AlertTriangle className="alert-icon" />
+          <div className="alert-text">
+            <strong>Free Order Mode:</strong> Both payment and PIN are disabled. Customers can order without any verification.
           </div>
         </AlertBanner>
       )}
@@ -545,7 +560,7 @@ function SystemControls() {
 
         {/* Payment Control */}
         <ControlCard
-          variant={paymentEnabled ? 'success' : 'warning'}
+          variant={paymentEnabled ? 'success' : (!pinEnabled ? 'danger' : 'warning')}
           enabled={paymentEnabled}
         >
           <div className="card-header">
@@ -554,14 +569,18 @@ function SystemControls() {
               <div className="title">Payment System</div>
             </div>
             <div className="status">
-              {paymentEnabled ? <Check className="status-icon" /> : <KeyRound className="status-icon" />}
-              {paymentEnabled ? 'Required' : 'PIN Mode'}
+              {paymentEnabled ? <Check className="status-icon" /> : (!pinEnabled ? <X className="status-icon" /> : <KeyRound className="status-icon" />)}
+              {paymentEnabled ? 'Required' : (!pinEnabled ? 'Free Mode' : 'PIN Mode')}
             </div>
           </div>
 
           <div className="card-description">
-            When enabled, customers must complete payment to place orders.
-            When disabled, customers can bypass payment by entering a daily PIN code.
+            {paymentEnabled
+              ? 'Payment is required for customers to place orders.'
+              : pinEnabled
+                ? 'Payment is disabled. Customers must enter a daily PIN code to order.'
+                : 'Both payment and PIN are disabled. Customers can order freely without any verification.'
+            }
           </div>
 
           <div className="card-actions">
@@ -580,8 +599,29 @@ function SystemControls() {
             </ActionButton>
           </div>
 
-          {/* Daily PIN Display - only visible when payment is disabled */}
-          {!paymentEnabled && dailyPin && (
+          {/* PIN Toggle - only visible when payment is disabled */}
+          {!paymentEnabled && (
+            <div style={{ marginTop: '12px' }}>
+              <div className="card-actions">
+                <ActionButton
+                  variant={pinEnabled ? 'danger' : 'warning'}
+                  onClick={() => toggleSetting('pin_enabled', pinEnabled)}
+                  disabled={updating === 'pin_enabled'}
+                >
+                  {pinEnabled ? <X /> : <KeyRound />}
+                  {updating === 'pin_enabled'
+                    ? 'Updating...'
+                    : pinEnabled
+                      ? 'Disable PIN'
+                      : 'Enable PIN'
+                  }
+                </ActionButton>
+              </div>
+            </div>
+          )}
+
+          {/* Daily PIN Display - only visible when payment is disabled and PIN is enabled */}
+          {!paymentEnabled && pinEnabled && dailyPin && (
             <PinDisplay>
               <div className="pin-header">
                 <KeyRound size={16} />
@@ -628,8 +668,8 @@ function SystemControls() {
           </div>
           <div>
             <div style={{ color: '#6B7280', marginBottom: '4px' }}>Payment Mode</div>
-            <div style={{ fontWeight: '600', color: paymentEnabled ? '#059669' : '#D97706' }}>
-              {paymentEnabled ? '💳 Required' : '🔐 PIN Mode'}
+            <div style={{ fontWeight: '600', color: paymentEnabled ? '#059669' : (!pinEnabled ? '#DC2626' : '#D97706') }}>
+              {paymentEnabled ? '💳 Required' : (!pinEnabled ? '🔓 Free Mode' : '🔐 PIN Mode')}
             </div>
           </div>
           <div>

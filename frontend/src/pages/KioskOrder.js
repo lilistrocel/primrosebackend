@@ -1342,6 +1342,7 @@ function KioskOrder() {
   const [frontendStatus, setFrontendStatus] = useState({ enabled: true, message: null });
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [paymentEnabled, setPaymentEnabled] = useState(true);
+  const [pinEnabled, setPinEnabled] = useState(true);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [verifyingPin, setVerifyingPin] = useState(false);
@@ -1512,12 +1513,15 @@ function KioskOrder() {
 
       if (result.code === 0) {
         setPaymentEnabled(result.data.paymentEnabled);
-        console.log('💳 Payment status:', result.data.paymentEnabled ? 'ENABLED' : 'PIN MODE');
+        setPinEnabled(result.data.pinEnabled !== undefined ? result.data.pinEnabled : true);
+        console.log('💳 Payment status:', result.data.paymentEnabled ? 'ENABLED' : 'DISABLED',
+          '| PIN:', result.data.pinEnabled ? 'ENABLED' : 'DISABLED');
       }
     } catch (error) {
       console.error('Error checking payment status:', error);
       // Default to payment enabled if we can't check
       setPaymentEnabled(true);
+      setPinEnabled(true);
     }
   };
 
@@ -1858,19 +1862,18 @@ function KioskOrder() {
     return `KIOSK${timestamp.slice(-8)}`;
   };
 
-  // Submit the order directly (for when payment is enabled or PIN verified)
+  // Submit the order directly (for when payment is enabled, PIN verified, or free mode)
   const submitOrder = async () => {
     if (!orderItem) return;
 
     // Check if payment is required
-    if (!paymentEnabled) {
-      // PIN should already be entered in the confirm modal
-      // verifyPin will call processOrder after validation
+    if (!paymentEnabled && pinEnabled) {
+      // PIN mode: verify PIN first, then processOrder is called after validation
       await verifyPin();
       return;
     }
 
-    // Payment is enabled, proceed with order directly
+    // Payment enabled OR free mode (payment disabled + PIN disabled): proceed directly
     await processOrder();
   };
 
@@ -2432,8 +2435,8 @@ function KioskOrder() {
               margin: '24px 0'
             }} />
 
-            {/* PIN Section (only if payment disabled) */}
-            {!paymentEnabled && (
+            {/* PIN Section (only if payment disabled AND PIN enabled) */}
+            {!paymentEnabled && pinEnabled && (
               <>
                 <div style={{ marginBottom: '16px' }}>
                   <p style={{ color: '#6B7280', fontSize: '0.95rem', marginBottom: '16px' }}>
@@ -2543,7 +2546,7 @@ function KioskOrder() {
               </button>
               <button
                 onClick={submitOrder}
-                disabled={(!paymentEnabled && pinInput.length !== 4) || verifyingPin || isSubmitting}
+                disabled={(!paymentEnabled && pinEnabled && pinInput.length !== 4) || verifyingPin || isSubmitting}
                 style={{
                   flex: 1,
                   padding: '16px',
@@ -2551,9 +2554,9 @@ function KioskOrder() {
                   fontWeight: '600',
                   border: 'none',
                   borderRadius: '12px',
-                  background: (paymentEnabled || pinInput.length === 4) ? '#ff6b35' : '#E5E7EB',
-                  color: (paymentEnabled || pinInput.length === 4) ? 'white' : '#9CA3AF',
-                  cursor: ((paymentEnabled || pinInput.length === 4) && !verifyingPin && !isSubmitting) ? 'pointer' : 'not-allowed',
+                  background: (paymentEnabled || !pinEnabled || pinInput.length === 4) ? '#ff6b35' : '#E5E7EB',
+                  color: (paymentEnabled || !pinEnabled || pinInput.length === 4) ? 'white' : '#9CA3AF',
+                  cursor: ((paymentEnabled || !pinEnabled || pinInput.length === 4) && !verifyingPin && !isSubmitting) ? 'pointer' : 'not-allowed',
                   transition: 'all 0.2s'
                 }}
               >

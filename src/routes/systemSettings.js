@@ -259,15 +259,17 @@ router.get('/status/payment', (req, res) => {
     console.log('💳 Checking payment status...');
 
     const isPaymentEnabled = db.isPaymentEnabled();
+    const isPinEnabled = db.isPinEnabled();
     const dailyPin = db.getDailyPin();
 
-    console.log(`💳 Payment status: ${isPaymentEnabled ? 'ENABLED' : 'DISABLED (PIN required)'}`);
+    console.log(`💳 Payment status: ${isPaymentEnabled ? 'ENABLED' : 'DISABLED'}, PIN: ${isPinEnabled ? 'ENABLED' : 'DISABLED'}`);
 
     res.json({
       code: 0,
       msg: 'Request successfully',
       data: {
         paymentEnabled: isPaymentEnabled,
+        pinEnabled: isPinEnabled,
         dailyPin: dailyPin // Only show in admin, not in kiosk
       }
     });
@@ -289,12 +291,14 @@ router.get('/status/payment', (req, res) => {
 router.get('/kiosk/payment-status', (req, res) => {
   try {
     const isPaymentEnabled = db.isPaymentEnabled();
+    const isPinEnabled = db.isPinEnabled();
 
     res.json({
       code: 0,
       msg: 'Request successfully',
       data: {
-        paymentEnabled: isPaymentEnabled
+        paymentEnabled: isPaymentEnabled,
+        pinEnabled: isPinEnabled
       }
     });
 
@@ -445,7 +449,9 @@ router.post('/toggle/:key', (req, res) => {
       console.log(`🧪 TEST MODE ${newValue ? 'ENABLED' : 'DISABLED'}`);
       webSocketManager.notifyTestModeChange(newValue);
     } else if (key === 'payment_enabled') {
-      console.log(`💳 PAYMENT ${newValue ? 'ENABLED' : 'DISABLED (PIN required)'}`);
+      console.log(`💳 PAYMENT ${newValue ? 'ENABLED' : 'DISABLED'}`);
+    } else if (key === 'pin_enabled') {
+      console.log(`🔐 PIN ${newValue ? 'ENABLED' : 'DISABLED'}`);
     }
 
     // General system setting change notification

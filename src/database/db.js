@@ -271,6 +271,12 @@ class DatabaseManager {
             description: 'When enabled, payment is required for checkout. When disabled, a daily PIN is required instead.'
           },
           {
+            key: 'pin_enabled',
+            value: 'true',
+            type: 'boolean',
+            description: 'When payment is disabled, controls whether a PIN is required for checkout. When disabled, orders go through without any verification.'
+          },
+          {
             key: 'pin_seed',
             value: 'K2Coffee2025',
             type: 'string',
@@ -336,6 +342,26 @@ class DatabaseManager {
             console.log('✅ Added pin_seed setting');
           } catch (error) {
             console.error('❌ Failed to add pin_seed setting:', error.message);
+          }
+        }
+
+        // Add pin_enabled setting if it doesn't exist
+        const pinEnabledSetting = this.db.prepare(`SELECT * FROM system_settings WHERE setting_key = 'pin_enabled'`).get();
+        if (!pinEnabledSetting) {
+          console.log('🔐 Adding pin_enabled setting to existing database...');
+          try {
+            this.db.prepare(`
+              INSERT INTO system_settings (setting_key, setting_value, setting_type, description)
+              VALUES (?, ?, ?, ?)
+            `).run(
+              'pin_enabled',
+              'true',
+              'boolean',
+              'When payment is disabled, controls whether a PIN is required for checkout. When disabled, orders go through without any verification.'
+            );
+            console.log('✅ Added pin_enabled setting');
+          } catch (error) {
+            console.error('❌ Failed to add pin_enabled setting:', error.message);
           }
         }
       }
@@ -1117,6 +1143,16 @@ class DatabaseManager {
       return setting ? setting.setting_value : true; // Default to enabled
     } catch (error) {
       console.error('Error checking payment status:', error);
+      return true; // Default to enabled if error
+    }
+  }
+
+  isPinEnabled() {
+    try {
+      const setting = this.getSystemSetting('pin_enabled');
+      return setting ? setting.setting_value : true; // Default to enabled
+    } catch (error) {
+      console.error('Error checking PIN enabled status:', error);
       return true; // Default to enabled if error
     }
   }
