@@ -325,26 +325,6 @@ class DatabaseManager {
           }
         }
 
-        // Add pin_seed setting if it doesn't exist
-        const pinSeedSetting = this.db.prepare(`SELECT * FROM system_settings WHERE setting_key = 'pin_seed'`).get();
-        if (!pinSeedSetting) {
-          console.log('🔑 Adding pin_seed setting to existing database...');
-          try {
-            this.db.prepare(`
-              INSERT INTO system_settings (setting_key, setting_value, setting_type, description)
-              VALUES (?, ?, ?, ?)
-            `).run(
-              'pin_seed',
-              'K2Coffee2025',
-              'string',
-              'Seed used to generate daily PIN. Change this to regenerate a new PIN.'
-            );
-            console.log('✅ Added pin_seed setting');
-          } catch (error) {
-            console.error('❌ Failed to add pin_seed setting:', error.message);
-          }
-        }
-
         // Add pin_enabled setting if it doesn't exist
         const pinEnabledSetting = this.db.prepare(`SELECT * FROM system_settings WHERE setting_key = 'pin_enabled'`).get();
         if (!pinEnabledSetting) {
@@ -366,12 +346,79 @@ class DatabaseManager {
         }
       }
 
+      // Customers (RFID card holders OR PIN holders) table + orders.customer_id column
+      const customersTable = this.db.prepare(`
+        SELECT name FROM sqlite_master WHERE type='table' AND name='customers'
+      `).get();
+      if (!customersTable) {
+        console.log('👤 Creating customers table...');
+        this.db.exec(`
+          CREATE TABLE customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uid VARCHAR(32) UNIQUE,
+            pin VARCHAR(8) UNIQUE,
+            name VARCHAR(100) NOT NULL,
+            organization VARCHAR(100) NOT NULL,
+            nickname VARCHAR(50),
+            phone VARCHAR(32),
+            balance DECIMAL(10,2) NOT NULL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            CHECK (uid IS NOT NULL OR pin IS NOT NULL)
+          );
+        `);
+      } else {
+        // Idempotent migration: drop NOT NULL on uid + add pin column if the table predates PIN support.
+        const customerCols = this.db.prepare(`PRAGMA table_info(customers)`).all();
+        const uidCol = customerCols.find(c => c.name === 'uid');
+        const hasPin = customerCols.some(c => c.name === 'pin');
+        if ((uidCol && uidCol.notnull === 1) || !hasPin) {
+          console.log('👤 Rebuilding customers table to make uid nullable and add pin column...');
+          this.db.pragma('foreign_keys = OFF');
+          const rebuild = this.db.transaction(() => {
+            this.db.exec(`
+              CREATE TABLE customers_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uid VARCHAR(32) UNIQUE,
+                pin VARCHAR(8) UNIQUE,
+                name VARCHAR(100) NOT NULL,
+                organization VARCHAR(100) NOT NULL,
+                nickname VARCHAR(50),
+                phone VARCHAR(32),
+                balance DECIMAL(10,2) NOT NULL DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                CHECK (uid IS NOT NULL OR pin IS NOT NULL)
+              );
+            `);
+            this.db.exec(`
+              INSERT INTO customers_new (id, uid, pin, name, organization, nickname, phone, balance, created_at, updated_at)
+              SELECT id, uid, ${hasPin ? 'pin' : 'NULL'}, name, organization, nickname, phone, balance, created_at, updated_at
+              FROM customers
+            `);
+            this.db.exec(`DROP TABLE customers`);
+            this.db.exec(`ALTER TABLE customers_new RENAME TO customers`);
+          });
+          rebuild();
+          this.db.pragma('foreign_keys = ON');
+          console.log('✅ Customers table rebuilt');
+        }
+      }
+      const orderCols = this.db.prepare(`PRAGMA table_info(orders)`).all();
+      if (!orderCols.some(c => c.name === 'customer_id')) {
+        console.log('👤 Adding customer_id column to orders...');
+        this.db.exec(`ALTER TABLE orders ADD COLUMN customer_id INTEGER REFERENCES customers(id)`);
+      }
+
       // Create indexes if they don't exist
       console.log('📋 Creating new indexes...');
       try {
         this.db.exec(`CREATE INDEX IF NOT EXISTS idx_categories_display_order ON categories(display_order)`);
         this.db.exec(`CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)`);
         this.db.exec(`CREATE INDEX IF NOT EXISTS idx_products_display_order ON products(display_order)`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_customers_uid ON customers(uid)`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_customers_pin ON customers(pin)`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id)`);
       } catch (error) {
         console.log('📋 Indexes may already exist, continuing...');
       }
@@ -612,8 +659,9 @@ class DatabaseManager {
       INSERT INTO orders (
         device_id, order_num, uid, num, real_price, pay_money, status,
         created_at, created_time, updated_time, pay_time, queue_time, make_time, success_time,
-        payment_intent, name, address, guomao_code, guomao_channel, guomao_used_user, language
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        payment_intent, name, address, guomao_code, guomao_channel, guomao_used_user, language,
+        customer_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(
       orderData.deviceId, orderData.orderNum, orderData.uid, orderData.num,
@@ -621,8 +669,90 @@ class DatabaseManager {
       orderData.createdAt, orderData.createdTime, orderData.updatedTime,
       orderData.payTime, orderData.queueTime, orderData.makeTime, orderData.successTime,
       orderData.paymentIntent, orderData.name, orderData.address, orderData.guomaoCode,
-      orderData.guomaoChannel, orderData.guomaoUsedUser, orderData.language
+      orderData.guomaoChannel, orderData.guomaoUsedUser, orderData.language,
+      orderData.customerId || null
     );
+  }
+
+  // Customer (RFID card holder OR PIN holder) methods
+  getCustomerByUid(uid) {
+    if (!uid) return null;
+    return this.db.prepare(`SELECT * FROM customers WHERE uid = ?`).get(uid);
+  }
+
+  getCustomerByPin(pin) {
+    if (!pin) return null;
+    return this.db.prepare(`SELECT * FROM customers WHERE pin = ?`).get(pin);
+  }
+
+  getCustomerById(id) {
+    return this.db.prepare(`SELECT * FROM customers WHERE id = ?`).get(id);
+  }
+
+  generateUniqueCustomerPin(maxAttempts = 40) {
+    const taken = this.db.prepare(`SELECT pin FROM customers WHERE pin IS NOT NULL`).all();
+    const used = new Set(taken.map(r => r.pin));
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const pin = String(Math.floor(Math.random() * 9000) + 1000);
+      if (!used.has(pin)) return pin;
+    }
+    throw new Error('Could not allocate a unique PIN — address book is effectively full');
+  }
+
+  insertCustomer({ uid, pin, name, organization, nickname, phone }) {
+    if (!uid && !pin) {
+      pin = this.generateUniqueCustomerPin();
+    }
+    const stmt = this.db.prepare(`
+      INSERT INTO customers (uid, pin, name, organization, nickname, phone)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(uid || null, pin || null, name, organization, nickname || null, phone || null);
+    return this.getCustomerById(result.lastInsertRowid);
+  }
+
+  getAllCustomers() {
+    return this.db.prepare(`
+      SELECT c.*, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count
+      FROM customers c
+      ORDER BY c.name COLLATE NOCASE
+    `).all();
+  }
+
+  updateCustomer(id, { uid, pin, name, organization, nickname, phone, balance }) {
+    const existing = this.getCustomerById(id);
+    if (!existing) return null;
+    const nextUid = uid === undefined ? existing.uid : (uid || null);
+    const nextPin = pin === undefined ? existing.pin : (pin || null);
+    if (!nextUid && !nextPin) {
+      throw new Error('Customer must keep either a card UID or a PIN');
+    }
+    const stmt = this.db.prepare(`
+      UPDATE customers
+      SET uid = ?, pin = ?, name = ?, organization = ?, nickname = ?, phone = ?, balance = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    stmt.run(
+      nextUid,
+      nextPin,
+      name ?? existing.name,
+      organization ?? existing.organization,
+      nickname ?? existing.nickname,
+      phone ?? existing.phone,
+      balance ?? existing.balance,
+      id
+    );
+    return this.getCustomerById(id);
+  }
+
+  deleteCustomer(id) {
+    const info = this.db.prepare(`DELETE FROM customers WHERE id = ?`).run(id);
+    return info.changes > 0;
+  }
+
+  countOrdersForCustomer(id) {
+    const row = this.db.prepare(`SELECT COUNT(*) AS n FROM orders WHERE customer_id = ?`).get(id);
+    return row ? row.n : 0;
   }
 
   insertOrderGoods(goodsData) {
@@ -1155,75 +1285,6 @@ class DatabaseManager {
       console.error('Error checking PIN enabled status:', error);
       return true; // Default to enabled if error
     }
-  }
-
-  // Get the PIN seed from database
-  getPinSeed() {
-    try {
-      const setting = this.getSystemSetting('pin_seed');
-      return setting ? setting.setting_value : 'K2Coffee2025';
-    } catch (error) {
-      console.error('Error getting PIN seed:', error);
-      return 'K2Coffee2025';
-    }
-  }
-
-  // Generate a daily PIN based on the current date and seed
-  // PIN changes every day at midnight or when seed is regenerated
-  getDailyPin() {
-    try {
-      const today = new Date();
-      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-      // Get seed from database (can be regenerated)
-      const seed = this.getPinSeed();
-      const combined = dateString + seed;
-
-      let hash = 0;
-      for (let i = 0; i < combined.length; i++) {
-        const char = combined.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
-      }
-
-      // Get absolute value and extract 4 digits
-      const absHash = Math.abs(hash);
-      const pin = String(absHash).slice(-4).padStart(4, '0');
-
-      return pin;
-    } catch (error) {
-      console.error('Error generating daily PIN:', error);
-      return '0000'; // Fallback PIN
-    }
-  }
-
-  // Regenerate PIN by creating a new random seed
-  regeneratePin() {
-    try {
-      // Generate a new random seed
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 15);
-      const newSeed = `K2Pin${timestamp}${random}`;
-
-      // Update the seed in database
-      const success = this.updateSystemSetting('pin_seed', newSeed);
-
-      if (success) {
-        const newPin = this.getDailyPin();
-        console.log(`🔑 PIN regenerated successfully. New PIN: ${newPin}`);
-        return { success: true, newPin };
-      } else {
-        return { success: false, error: 'Failed to update PIN seed' };
-      }
-    } catch (error) {
-      console.error('Error regenerating PIN:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  verifyDailyPin(inputPin) {
-    const correctPin = this.getDailyPin();
-    return inputPin === correctPin;
   }
 
   // Option Names Management

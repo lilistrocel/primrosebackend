@@ -23,5 +23,12 @@ ingress:
       connectTimeout: 30s
       noTLSVerify: true
 
+  # NFC / RFID bridge (host-side systemd service on :8765)
+  - hostname: nfc.hydromods.org
+    service: http://host.docker.internal:8765
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: true
+
   # Catch-all rule (required)
   - service: http_status:404

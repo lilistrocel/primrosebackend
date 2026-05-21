@@ -37,6 +37,8 @@ services:
       dockerfile: Dockerfile
       args:
         - REACT_APP_API_BASE_URL=${API_URL:-http://localhost:3000}
+        - REACT_APP_NFC_WS_URL=${NFC_WS_URL:-}
+        - REACT_APP_NFC_TOKEN=${NFC_TOKEN:-}
     container_name: k2-frontend
     restart: unless-stopped
     ports:
@@ -55,6 +57,9 @@ services:
     command: tunnel --config /etc/cloudflared/config.yml run
     volumes:
       - ./cloudflared:/etc/cloudflared:ro
+    extra_hosts:
+      # Lets the tunnel reach services running directly on the Docker host (e.g. the NFC bridge on :8765).
+      - "host.docker.internal:host-gateway"
     depends_on:
       backend:
         condition: service_healthy

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
-import { 
-  Coffee, 
-  Package, 
-  ClipboardList, 
-  Activity, 
+import {
+  Coffee,
+  Package,
+  ClipboardList,
+  Activity,
   Settings,
   Home,
   ShoppingCart,
@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  CreditCard
 } from 'lucide-react';
 
 const SidebarContainer = styled.div`
@@ -374,6 +375,11 @@ function Sidebar() {
         <NavItem to="/option-names" collapsed={collapsed} data-tooltip="Option Names" onClick={closeMobileMenu}>
           <Languages />
           <span>Option Names</span>
+        </NavItem>
+
+        <NavItem to="/customers" collapsed={collapsed} data-tooltip="Customers" onClick={closeMobileMenu}>
+          <CreditCard />
+          <span>Customers</span>
         </NavItem>
         
         <NavItem to="/create-order" collapsed={collapsed} data-tooltip="Create Order" onClick={closeMobileMenu}>

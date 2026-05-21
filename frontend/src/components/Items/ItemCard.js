@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Edit, Settings, Trash2, Coffee, Eye, DollarSign } from 'lucide-react';
+import { Edit, Settings, Trash2, Coffee, Eye, DollarSign, Power, PowerOff } from 'lucide-react';
 import { formatIngredientList } from '../../services/ingredients';
 
 const Card = styled.div`
@@ -10,12 +10,29 @@ const Card = styled.div`
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
-  
+  position: relative;
+  opacity: ${p => (p.$inactive ? 0.55 : 1)};
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     background: rgba(255, 255, 255, 0.15);
   }
+`;
+
+const StatusBadge = styled.span`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: ${p => (p.$active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)')};
+  color: ${p => (p.$active ? '#10B981' : '#EF4444')};
+  border: 1px solid ${p => (p.$active ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)')};
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 `;
 
 const CardHeader = styled.div`
@@ -218,7 +235,8 @@ const ActionButton = styled.button`
   }
 `;
 
-function ItemCard({ item, onEdit, onEditVariables, onDelete }) {
+function ItemCard({ item, onEdit, onEditVariables, onDelete, onToggleStatus }) {
+  const isActive = item.status !== 'inactive';
   const getTypeName = (type) => {
     switch (type) {
       case 1: return 'Tea';
@@ -248,7 +266,8 @@ function ItemCard({ item, onEdit, onEditVariables, onDelete }) {
   const ingredients = formatIngredientList(item.matterCodes);
 
   return (
-    <Card>
+    <Card $inactive={!isActive}>
+      <StatusBadge $active={isActive}>{isActive ? 'Active' : 'Disabled'}</StatusBadge>
       <CardHeader>
         <ItemImage>
           <Coffee />
@@ -299,13 +318,20 @@ function ItemCard({ item, onEdit, onEditVariables, onDelete }) {
       </ProductionInfo>
 
       <Actions>
-        <ActionButton className="primary" onClick={onEdit}>
+        <ActionButton className="primary" onClick={onEdit} title="Edit">
           <Edit />
         </ActionButton>
-        <ActionButton className="warning" onClick={onEditVariables}>
+        <ActionButton className="warning" onClick={onEditVariables} title="Production variables">
           <Settings />
         </ActionButton>
-        <ActionButton className="danger" onClick={onDelete}>
+        <ActionButton
+          className={isActive ? 'warning' : 'primary'}
+          onClick={() => onToggleStatus && onToggleStatus(item)}
+          title={isActive ? 'Disable — hides this item from the kiosk menu' : 'Enable — show this item on the kiosk'}
+        >
+          {isActive ? <PowerOff /> : <Power />}
+        </ActionButton>
+        <ActionButton className="danger" onClick={onDelete} title="Delete">
           <Trash2 />
         </ActionButton>
       </Actions>

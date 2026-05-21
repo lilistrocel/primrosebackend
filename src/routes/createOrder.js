@@ -23,6 +23,7 @@ const createOrderSchema = Joi.object({
   orderNum: Joi.string().required(),
   deviceId: Joi.number().integer().default(1),
   totalPrice: Joi.number().positive().required(),
+  customerId: Joi.number().integer().allow(null).optional(),
   items: Joi.array().items(
     Joi.object({
       goodsId: Joi.number().integer().required(),
@@ -75,7 +76,7 @@ router.post('/createOrder', async (req, res) => {
     
     console.log('✅ Validation passed!');
 
-    const { orderNum, deviceId: providedDeviceId, totalPrice, items } = value;
+    const { orderNum, deviceId: providedDeviceId, totalPrice, items, customerId } = value;
     
     // Auto-determine deviceId based on product types if not explicitly provided
     // Device mapping: 1 = Coffee (type 2), 4 = Ice Cream (type 3)
@@ -139,7 +140,8 @@ router.post('/createOrder', async (req, res) => {
       guomaoCode: '',
       guomaoChannel: 'FRONTEND',
       guomaoUsedUser: 'ADMIN',
-      language: 'en'
+      language: 'en',
+      customerId: customerId || null
     };
 
     console.log('📝 Creating order:', orderData);

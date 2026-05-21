@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { ShoppingCart, Plus, Minus, Coffee, Heart, Star, ArrowLeft, Check, X, Maximize, Minimize, Printer, AlertTriangle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { receiptPrinter } from '../utils/receiptPrinter';
@@ -1345,11 +1345,26 @@ function KioskOrder() {
   const [pinEnabled, setPinEnabled] = useState(true);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
-  const [verifyingPin, setVerifyingPin] = useState(false);
 
   // New single-item ordering state (replaces cart)
   const [orderItem, setOrderItem] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // NFC / RFID customer state
+  const [nfcConnected, setNfcConnected] = useState(false);
+  const [nfcCustomer, setNfcCustomer] = useState(null);
+  const [nfcLookupBusy, setNfcLookupBusy] = useState(false);
+  const [nfcError, setNfcError] = useState('');
+  const [pendingCardUid, setPendingCardUid] = useState(null);
+  const [showCustomerRegister, setShowCustomerRegister] = useState(false);
+  const [customerRegForm, setCustomerRegForm] = useState({ name: '', organization: '', nickname: '', phone: '' });
+  const [registeringCustomer, setRegisteringCustomer] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+  const [assignedPin, setAssignedPin] = useState('');
+  const [editedPin, setEditedPin] = useState('');
+  const [savingPin, setSavingPin] = useState(false);
+  const [pinSaveError, setPinSaveError] = useState('');
+  const nfcWsRef = useRef(null);
 
   // Fullscreen functionality
   const toggleFullscreen = async () => {
@@ -1525,43 +1540,6 @@ function KioskOrder() {
     }
   };
 
-  // Verify daily PIN (integrated into confirm modal)
-  const verifyPin = async () => {
-    if (pinInput.length !== 4) {
-      setPinError('Please enter a 4-digit PIN');
-      return;
-    }
-
-    setVerifyingPin(true);
-    setPinError('');
-
-    try {
-      const response = await fetch(getApiUrl('/api/motong/system-settings/verify-pin'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pinInput })
-      });
-
-      const result = await response.json();
-
-      if (result.code === 0 && result.data.valid) {
-        // PIN is correct, proceed with order
-        setPinInput('');
-        setPinError('');
-        // Actually submit the order
-        await processOrder();
-      } else {
-        setPinError('Invalid PIN. Please try again.');
-        setPinInput('');
-      }
-    } catch (error) {
-      console.error('Error verifying PIN:', error);
-      setPinError('Error verifying PIN. Please try again.');
-    } finally {
-      setVerifyingPin(false);
-    }
-  };
-
   // Handle PIN input (only allow digits)
   const handlePinInput = (digit) => {
     if (pinInput.length < 4) {
@@ -1578,6 +1556,264 @@ function KioskOrder() {
   const handlePinClear = () => {
     setPinInput('');
     setPinError('');
+  };
+
+  // === NFC / RFID customer flow ===
+  const resetNfcState = useCallback(() => {
+    setNfcCustomer(null);
+    setNfcLookupBusy(false);
+    setNfcError('');
+    setPendingCardUid(null);
+    setShowCustomerRegister(false);
+    setCustomerRegForm({ name: '', organization: '', nickname: '', phone: '' });
+    setRegisteringCustomer(false);
+    setRegisterError('');
+    setAssignedPin('');
+    setEditedPin('');
+    setPinSaveError('');
+    setSavingPin(false);
+  }, []);
+
+  const lookupCustomerByPin = useCallback(async (pin) => {
+    setNfcLookupBusy(true);
+    setNfcError('');
+    try {
+      const res = await fetch(getApiUrl(`/api/motong/customers/by-pin/${encodeURIComponent(pin)}`));
+      if (res.status === 404) {
+        setPinError('PIN not recognized');
+        setPinInput('');
+      } else if (res.ok) {
+        const json = await res.json();
+        if (json.code === 0 && json.data) {
+          setNfcCustomer(json.data);
+          setPinInput('');
+          setPinError('');
+        } else {
+          setPinError(json.msg || 'Lookup failed');
+          setPinInput('');
+        }
+      } else {
+        setPinError(`Lookup failed (${res.status})`);
+        setPinInput('');
+      }
+    } catch (err) {
+      console.error('PIN lookup error:', err);
+      setPinError('Could not reach server');
+    } finally {
+      setNfcLookupBusy(false);
+    }
+  }, []);
+
+  const lookupCustomerByUid = useCallback(async (uid) => {
+    setNfcLookupBusy(true);
+    setNfcError('');
+    try {
+      const res = await fetch(getApiUrl(`/api/motong/customers/by-uid/${encodeURIComponent(uid)}`));
+      if (res.status === 404) {
+        setPendingCardUid(uid);
+        setShowCustomerRegister(true);
+        setNfcCustomer(null);
+      } else if (res.ok) {
+        const json = await res.json();
+        if (json.code === 0 && json.data) {
+          setNfcCustomer(json.data);
+          setPendingCardUid(null);
+          setShowCustomerRegister(false);
+          setPinInput('');
+          setPinError('');
+        } else {
+          setNfcError(json.msg || 'Lookup failed');
+        }
+      } else {
+        setNfcError(`Lookup failed (${res.status})`);
+      }
+    } catch (err) {
+      console.error('NFC lookup error:', err);
+      setNfcError('Could not reach server');
+    } finally {
+      setNfcLookupBusy(false);
+    }
+  }, []);
+
+  // When the user fills the PIN pad, auto-identify the customer by PIN.
+  // We trigger on pinInput length === 4 and no customer already identified.
+  useEffect(() => {
+    if (!showConfirmModal || nfcCustomer || pinInput.length !== 4 || nfcLookupBusy) return;
+    lookupCustomerByPin(pinInput);
+  }, [showConfirmModal, nfcCustomer, pinInput, nfcLookupBusy, lookupCustomerByPin]);
+
+  // Open WS to local NFC bridge only while the confirm modal is open
+  useEffect(() => {
+    if (!showConfirmModal) return undefined;
+
+    let closedByEffect = false;
+    // Prefer the tunneled WSS URL when the page is served over HTTPS; fall back to localhost for dev.
+    const configuredUrl = process.env.REACT_APP_NFC_WS_URL || '';
+    const token = process.env.REACT_APP_NFC_TOKEN || '';
+    let url;
+    if (configuredUrl) {
+      url = configuredUrl;
+    } else if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      url = `wss://${window.location.host.replace(/^k2\.|^coffee\./, 'nfc.')}`;
+    } else {
+      url = 'ws://127.0.0.1:8765';
+    }
+    if (token) {
+      url += (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
+    }
+    console.log('🔗 NFC bridge target:', url.replace(/token=[^&]+/, 'token=***'));
+    let ws;
+    try {
+      ws = new WebSocket(url);
+    } catch (err) {
+      console.warn('NFC bridge unreachable:', err);
+      setNfcConnected(false);
+      return undefined;
+    }
+    nfcWsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('🔗 NFC bridge connected');
+      setNfcConnected(true);
+    };
+    ws.onclose = () => {
+      setNfcConnected(false);
+      if (!closedByEffect) console.log('🔌 NFC bridge closed');
+    };
+    ws.onerror = () => {
+      setNfcConnected(false);
+    };
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.event === 'status') {
+          setNfcConnected(Boolean(msg.readerConnected));
+        } else if (msg.event === 'reader_connected') {
+          setNfcConnected(true);
+        } else if (msg.event === 'reader_disconnected') {
+          setNfcConnected(false);
+        } else if (msg.event === 'card' && msg.uid) {
+          lookupCustomerByUid(msg.uid);
+        }
+      } catch (err) {
+        console.warn('Bad NFC message:', evt.data);
+      }
+    };
+
+    return () => {
+      closedByEffect = true;
+      try { ws.close(); } catch {}
+      nfcWsRef.current = null;
+      setNfcConnected(false);
+    };
+  }, [showConfirmModal, lookupCustomerByUid]);
+
+  const handleRegisterCustomer = async () => {
+    const name = customerRegForm.name.trim();
+    const organization = customerRegForm.organization.trim();
+    if (!name || !organization) {
+      setRegisterError('Name and organization are required');
+      return;
+    }
+    setRegisteringCustomer(true);
+    setRegisterError('');
+    try {
+      const body = {
+        name,
+        organization,
+        nickname: customerRegForm.nickname.trim(),
+        phone: customerRegForm.phone.trim()
+      };
+      if (pendingCardUid) body.uid = pendingCardUid;
+      const res = await fetch(getApiUrl('/api/motong/customers'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const json = await res.json().catch(() => ({}));
+      if ((res.ok || res.status === 201) && json.code === 0 && json.data) {
+        const newlyAssignedPin = json.data.pin && !pendingCardUid ? json.data.pin : '';
+        if (newlyAssignedPin) {
+          // Show PIN prominently first; customer is only "committed" after they click Continue.
+          setAssignedPin(newlyAssignedPin);
+          setEditedPin(newlyAssignedPin);
+          setPinSaveError('');
+          // Hold onto the customer so Continue can identify them.
+          setNfcCustomer(json.data);
+        } else {
+          setNfcCustomer(json.data);
+          setShowCustomerRegister(false);
+          setPendingCardUid(null);
+          setCustomerRegForm({ name: '', organization: '', nickname: '', phone: '' });
+          setPinInput('');
+          setPinError('');
+        }
+      } else {
+        setRegisterError(json.msg || `Registration failed (${res.status})`);
+      }
+    } catch (err) {
+      console.error('Register customer error:', err);
+      setRegisterError('Could not reach server');
+    } finally {
+      setRegisteringCustomer(false);
+    }
+  };
+
+  const finishRegistration = () => {
+    setAssignedPin('');
+    setEditedPin('');
+    setPinSaveError('');
+    setShowCustomerRegister(false);
+    setPendingCardUid(null);
+    setCustomerRegForm({ name: '', organization: '', nickname: '', phone: '' });
+    setPinInput('');
+    setPinError('');
+  };
+
+  const saveCustomPinAndContinue = async () => {
+    const desired = (editedPin || '').trim();
+    if (!/^\d{4}$/.test(desired)) {
+      setPinSaveError('Please enter exactly 4 digits');
+      return;
+    }
+    // No change → just proceed without a server round-trip.
+    if (desired === assignedPin) {
+      finishRegistration();
+      return;
+    }
+    if (!nfcCustomer || !nfcCustomer.id) {
+      setPinSaveError('Customer context lost — please register again');
+      return;
+    }
+    setSavingPin(true);
+    setPinSaveError('');
+    try {
+      const res = await fetch(getApiUrl(`/api/motong/customers/${nfcCustomer.id}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: desired })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.code === 0 && json.data) {
+        setNfcCustomer(json.data);
+        finishRegistration();
+      } else if (res.status === 409) {
+        setPinSaveError('That PIN is already taken — try another');
+      } else {
+        setPinSaveError(json.msg || `Could not save PIN (${res.status})`);
+      }
+    } catch (err) {
+      console.error('Save PIN error:', err);
+      setPinSaveError('Could not reach server');
+    } finally {
+      setSavingPin(false);
+    }
+  };
+
+  const rollRandomPin = () => {
+    const p = String(Math.floor(Math.random() * 9000) + 1000);
+    setEditedPin(p);
+    setPinSaveError('');
   };
 
   // Fetch order queue from both coffee (device 1) and ice cream (device 4) machines
@@ -1840,6 +2076,7 @@ function KioskOrder() {
     setOrderItem(null);
     setPinInput('');
     setPinError('');
+    resetNfcState();
   };
 
   const openCustomizationModal = (product) => {
@@ -1862,18 +2099,11 @@ function KioskOrder() {
     return `KIOSK${timestamp.slice(-8)}`;
   };
 
-  // Submit the order directly (for when payment is enabled, PIN verified, or free mode)
+  // Submit the order directly. Customer identification (card tap OR PIN lookup)
+  // happens earlier, so by the time Confirm is pressed we either have a customer
+  // or we're in payment / free mode where no identification is required.
   const submitOrder = async () => {
     if (!orderItem) return;
-
-    // Check if payment is required
-    if (!paymentEnabled && pinEnabled) {
-      // PIN mode: verify PIN first, then processOrder is called after validation
-      await verifyPin();
-      return;
-    }
-
-    // Payment enabled OR free mode (payment disabled + PIN disabled): proceed directly
     await processOrder();
   };
 
@@ -1920,6 +2150,7 @@ function KioskOrder() {
         orderNum,
         deviceId: 1,
         totalPrice,
+        customerId: nfcCustomer ? nfcCustomer.id : null,
         items: [{
           goodsId: orderItem.goodsId,
           deviceGoodsId: orderItem.deviceGoodsId,
@@ -1959,6 +2190,7 @@ function KioskOrder() {
           setShowConfirmModal(false);
           setShowSuccess(true);
           setOrderItem(null);
+          resetNfcState();
         } else {
           alert('Failed to create order: ' + result.msg);
         }
@@ -2102,8 +2334,10 @@ function KioskOrder() {
               const hasImage = product.goodsPath && product.goodsPath !== '';
               const dynamicImageUrl = hasImage ? getImageUrl(product.goodsPath) : '';
               
-              // Check ingredient availability
-              const isAvailable = product.available !== false; // Default to available if not specified  
+              // Check availability — either the item is disabled by admin, or ingredients are out.
+              const isDisabled = product.status === 'inactive';
+              const ingredientOk = product.available !== false; // Default to available if not specified
+              const isAvailable = !isDisabled && ingredientOk;
               const missingIngredients = product.missingIngredients || [];
               
               // Debug logging for availability - ENHANCED DEBUGGING
@@ -2175,7 +2409,7 @@ function KioskOrder() {
                   {!isAvailable && (
                     <AvailabilityBadge className="unavailable">
                       <AlertTriangle className="icon" />
-                      <span>Unavailable</span>
+                      <span>{isDisabled ? 'Unavailable' : 'Out of Stock'}</span>
                     </AvailabilityBadge>
                   )}
                   
@@ -2435,12 +2669,74 @@ function KioskOrder() {
               margin: '24px 0'
             }} />
 
-            {/* PIN Section (only if payment disabled AND PIN enabled) */}
-            {!paymentEnabled && pinEnabled && (
+            {/* NFC status banner */}
+            <div style={{
+              background: nfcConnected ? '#ECFDF5' : '#F3F4F6',
+              border: `1px solid ${nfcConnected ? '#A7F3D0' : '#E5E7EB'}`,
+              color: nfcConnected ? '#065F46' : '#6B7280',
+              borderRadius: '10px',
+              padding: '10px 12px',
+              marginBottom: '16px',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              justifyContent: 'center'
+            }}>
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: nfcConnected ? '#10B981' : '#9CA3AF',
+                display: 'inline-block'
+              }} />
+              {nfcLookupBusy
+                ? 'Checking...'
+                : nfcCustomer
+                  ? `Welcome, ${nfcCustomer.name}`
+                  : nfcConnected
+                    ? 'Tap your card or enter your PIN'
+                    : 'Card reader offline — use your PIN'}
+            </div>
+            {nfcError && (
+              <div style={{
+                background: '#FEF3C7', color: '#92400E',
+                borderRadius: '8px', padding: '8px 10px',
+                fontSize: '0.8rem', marginBottom: '12px'
+              }}>{nfcError}</div>
+            )}
+
+            {/* Recognized customer panel (replaces PIN section) */}
+            {nfcCustomer && (
+              <div style={{
+                background: '#FFF7ED',
+                border: '1px solid #FED7AA',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                marginBottom: '16px',
+                textAlign: 'left'
+              }}>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1F2937', marginBottom: '2px' }}>
+                  {nfcCustomer.name}
+                  {nfcCustomer.nickname ? <span style={{ color: '#6B7280', fontWeight: 500 }}> ({nfcCustomer.nickname})</span> : null}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>
+                  {nfcCustomer.organization}
+                  {nfcCustomer.phone ? ` • ${nfcCustomer.phone}` : ''}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '6px' }}>
+                  Balance: {currencyUtils.formatPrice(Number(nfcCustomer.balance) || 0)}
+                </div>
+              </div>
+            )}
+
+            {/* PIN Section (only if payment disabled AND PIN enabled AND no NFC customer) */}
+            {!paymentEnabled && pinEnabled && !nfcCustomer && (
               <>
                 <div style={{ marginBottom: '16px' }}>
                   <p style={{ color: '#6B7280', fontSize: '0.95rem', marginBottom: '16px' }}>
-                    Enter PIN to confirm order
+                    Enter your 4-digit PIN
                   </p>
 
                   {/* PIN Display */}
@@ -2502,7 +2798,7 @@ function KioskOrder() {
                           else if (key === '⌫') handlePinBackspace();
                           else handlePinInput(key.toString());
                         }}
-                        disabled={verifyingPin || isSubmitting}
+                        disabled={isSubmitting || nfcLookupBusy}
                         style={{
                           padding: '14px',
                           fontSize: '1.25rem',
@@ -2511,8 +2807,8 @@ function KioskOrder() {
                           borderRadius: '10px',
                           background: key === 'C' ? '#FEE2E2' : key === '⌫' ? '#FEF3C7' : '#F3F4F6',
                           color: key === 'C' ? '#DC2626' : key === '⌫' ? '#D97706' : '#1F2937',
-                          cursor: (verifyingPin || isSubmitting) ? 'not-allowed' : 'pointer',
-                          opacity: (verifyingPin || isSubmitting) ? 0.5 : 1,
+                          cursor: (isSubmitting || nfcLookupBusy) ? 'not-allowed' : 'pointer',
+                          opacity: (isSubmitting || nfcLookupBusy) ? 0.5 : 1,
                           transition: 'all 0.2s'
                         }}
                       >
@@ -2520,6 +2816,32 @@ function KioskOrder() {
                       </button>
                     ))}
                   </div>
+
+                  {/* Register without a card */}
+                  <button
+                    onClick={() => {
+                      setShowCustomerRegister(true);
+                      setPendingCardUid(null);
+                      setRegisterError('');
+                      setCustomerRegForm({ name: '', organization: '', nickname: '', phone: '' });
+                    }}
+                    disabled={isSubmitting || nfcLookupBusy}
+                    style={{
+                      width: '100%',
+                      marginTop: '16px',
+                      padding: '10px 12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      background: 'transparent',
+                      color: '#ff6b35',
+                      border: '1px dashed #ff6b35',
+                      borderRadius: '10px',
+                      cursor: (isSubmitting || nfcLookupBusy) ? 'not-allowed' : 'pointer',
+                      opacity: (isSubmitting || nfcLookupBusy) ? 0.5 : 1
+                    }}
+                  >
+                    Don't have a PIN? Register
+                  </button>
                 </div>
               </>
             )}
@@ -2528,7 +2850,7 @@ function KioskOrder() {
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
               <button
                 onClick={closeConfirmModal}
-                disabled={verifyingPin || isSubmitting}
+                disabled={isSubmitting}
                 style={{
                   flex: 1,
                   padding: '16px',
@@ -2538,31 +2860,253 @@ function KioskOrder() {
                   borderRadius: '12px',
                   background: 'white',
                   color: '#6B7280',
-                  cursor: (verifyingPin || isSubmitting) ? 'not-allowed' : 'pointer',
-                  opacity: (verifyingPin || isSubmitting) ? 0.5 : 1
+                  cursor: (isSubmitting) ? 'not-allowed' : 'pointer',
+                  opacity: (isSubmitting) ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              {(() => {
+                // A customer is "identified" if they tapped a card or entered a valid PIN.
+                // Payment mode and (no-payment + no-PIN) free mode don't require identification.
+                const canConfirm = Boolean(
+                  nfcCustomer ||
+                  paymentEnabled ||
+                  !pinEnabled
+                );
+                const busy = isSubmitting || nfcLookupBusy;
+                return (
+                  <button
+                    onClick={submitOrder}
+                    disabled={!canConfirm || busy}
+                    style={{
+                      flex: 1,
+                      padding: '16px',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      border: 'none',
+                      borderRadius: '12px',
+                      background: canConfirm ? '#ff6b35' : '#E5E7EB',
+                      color: canConfirm ? 'white' : '#9CA3AF',
+                      cursor: (canConfirm && !busy) ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {isSubmitting ? 'Ordering...' : nfcLookupBusy ? 'Reading...' : 'Confirm Order'}
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Customer Registration Modal (triggered when an unknown card is tapped) */}
+      {showConfirmModal && showCustomerRegister && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.88)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '20px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '32px',
+            maxWidth: '440px',
+            width: '100%',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            {assignedPin ? (
+              <>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#1F2937', marginBottom: '4px', textAlign: 'center' }}>
+                  You're registered!
+                </h2>
+                <p style={{ color: '#6B7280', fontSize: '0.9rem', textAlign: 'center', marginBottom: '18px' }}>
+                  Pick a 4-digit PIN you'll remember — keep the one below, type your own, or shuffle a new one.
+                </p>
+                <div style={{
+                  background: '#FFF7ED',
+                  border: '2px solid #FED7AA',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  marginBottom: '14px'
+                }}>
+                  <div style={{ color: '#92400E', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px', textAlign: 'center' }}>
+                    Your PIN
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center' }}>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={4}
+                      value={editedPin}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+                        setEditedPin(digits);
+                        setPinSaveError('');
+                      }}
+                      disabled={savingPin}
+                      style={{
+                        flex: 1,
+                        maxWidth: '220px',
+                        padding: '14px 16px',
+                        fontSize: '2.4rem',
+                        fontWeight: 800,
+                        color: '#ff6b35',
+                        textAlign: 'center',
+                        letterSpacing: '0.5rem',
+                        fontVariantNumeric: 'tabular-nums',
+                        border: '2px solid #FED7AA',
+                        borderRadius: '12px',
+                        outline: 'none',
+                        background: 'white',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={rollRandomPin}
+                      disabled={savingPin}
+                      title="Generate a random PIN"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        gap: '6px',
+                        padding: '14px 14px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        border: '1px solid #FED7AA',
+                        borderRadius: '12px',
+                        background: 'white',
+                        color: '#92400E',
+                        cursor: savingPin ? 'not-allowed' : 'pointer',
+                        opacity: savingPin ? 0.5 : 1
+                      }}
+                    >
+                      <RefreshCw size={16} />
+                      Random
+                    </button>
+                  </div>
+                </div>
+
+                {pinSaveError && (
+                  <div style={{
+                    background: '#FEE2E2', color: '#DC2626',
+                    borderRadius: '8px', padding: '10px 12px',
+                    fontSize: '0.85rem', marginBottom: '14px', textAlign: 'center'
+                  }}>{pinSaveError}</div>
+                )}
+
+                <button
+                  onClick={saveCustomPinAndContinue}
+                  disabled={savingPin || editedPin.length !== 4}
+                  style={{
+                    width: '100%', padding: '14px', fontSize: '1rem', fontWeight: 700,
+                    border: 'none', borderRadius: '12px',
+                    background: (savingPin || editedPin.length !== 4) ? '#E5E7EB' : '#ff6b35',
+                    color: (savingPin || editedPin.length !== 4) ? '#9CA3AF' : 'white',
+                    cursor: (savingPin || editedPin.length !== 4) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {savingPin ? 'Saving…' : 'Continue to order'}
+                </button>
+              </>
+            ) : (
+            <>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#1F2937', marginBottom: '4px', textAlign: 'center' }}>
+              {pendingCardUid ? 'Register New Card' : 'Register'}
+            </h2>
+            {pendingCardUid ? (
+              <p style={{ color: '#6B7280', fontSize: '0.85rem', textAlign: 'center', marginBottom: '20px' }}>
+                Card UID: <code style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{pendingCardUid}</code>
+              </p>
+            ) : (
+              <p style={{ color: '#6B7280', fontSize: '0.85rem', textAlign: 'center', marginBottom: '20px' }}>
+                No card? We'll give you a 4-digit PIN to use at checkout.
+              </p>
+            )}
+
+            {['name', 'organization', 'nickname', 'phone'].map((field) => {
+              const required = field === 'name' || field === 'organization';
+              const label = {
+                name: 'Full Name', organization: 'Organization',
+                nickname: 'Nickname (optional)', phone: 'Phone (optional)'
+              }[field];
+              return (
+                <div key={field} style={{ marginBottom: '12px' }}>
+                  <label style={{
+                    display: 'block', fontSize: '0.8rem', fontWeight: 600,
+                    color: '#374151', marginBottom: '6px'
+                  }}>
+                    {label}{required && <span style={{ color: '#DC2626' }}> *</span>}
+                  </label>
+                  <input
+                    type={field === 'phone' ? 'tel' : 'text'}
+                    value={customerRegForm[field]}
+                    onChange={(e) => setCustomerRegForm((prev) => ({ ...prev, [field]: e.target.value }))}
+                    disabled={registeringCustomer}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      fontSize: '1rem',
+                      border: '2px solid #E5E7EB',
+                      borderRadius: '10px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      background: registeringCustomer ? '#F9FAFB' : 'white'
+                    }}
+                  />
+                </div>
+              );
+            })}
+
+            {registerError && (
+              <div style={{
+                background: '#FEE2E2', color: '#DC2626',
+                padding: '10px', borderRadius: '8px',
+                fontSize: '0.85rem', marginBottom: '12px'
+              }}>{registerError}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button
+                onClick={() => {
+                  setShowCustomerRegister(false);
+                  setPendingCardUid(null);
+                  setRegisterError('');
+                  setCustomerRegForm({ name: '', organization: '', nickname: '', phone: '' });
+                }}
+                disabled={registeringCustomer}
+                style={{
+                  flex: 1, padding: '14px', fontSize: '0.95rem', fontWeight: 600,
+                  border: '2px solid #E5E7EB', borderRadius: '12px',
+                  background: 'white', color: '#6B7280',
+                  cursor: registeringCustomer ? 'not-allowed' : 'pointer',
+                  opacity: registeringCustomer ? 0.5 : 1
                 }}
               >
                 Cancel
               </button>
               <button
-                onClick={submitOrder}
-                disabled={(!paymentEnabled && pinEnabled && pinInput.length !== 4) || verifyingPin || isSubmitting}
+                onClick={handleRegisterCustomer}
+                disabled={registeringCustomer || !customerRegForm.name.trim() || !customerRegForm.organization.trim()}
                 style={{
-                  flex: 1,
-                  padding: '16px',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  border: 'none',
-                  borderRadius: '12px',
-                  background: (paymentEnabled || !pinEnabled || pinInput.length === 4) ? '#ff6b35' : '#E5E7EB',
-                  color: (paymentEnabled || !pinEnabled || pinInput.length === 4) ? 'white' : '#9CA3AF',
-                  cursor: ((paymentEnabled || !pinEnabled || pinInput.length === 4) && !verifyingPin && !isSubmitting) ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.2s'
+                  flex: 1, padding: '14px', fontSize: '0.95rem', fontWeight: 600,
+                  border: 'none', borderRadius: '12px',
+                  background: (!registeringCustomer && customerRegForm.name.trim() && customerRegForm.organization.trim()) ? '#ff6b35' : '#E5E7EB',
+                  color: (!registeringCustomer && customerRegForm.name.trim() && customerRegForm.organization.trim()) ? 'white' : '#9CA3AF',
+                  cursor: (!registeringCustomer && customerRegForm.name.trim() && customerRegForm.organization.trim()) ? 'pointer' : 'not-allowed'
                 }}
               >
-                {isSubmitting ? 'Ordering...' : verifyingPin ? 'Verifying...' : 'Confirm Order'}
+                {registeringCustomer ? 'Saving...' : 'Register & Continue'}
               </button>
             </div>
+            </>
+            )}
           </div>
         </div>
       )}

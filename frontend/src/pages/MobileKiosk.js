@@ -988,17 +988,21 @@ function MobileKiosk() {
 
         {/* Products Grid */}
         <ProductsGrid>
-          {filteredProducts.map(product => (
-            <ProductCard 
-              key={product.id} 
-              $available={product.available}
-              onClick={() => addToCart(product)}
+          {filteredProducts.map(product => {
+            const disabled = product.status === 'inactive';
+            const usable = !disabled && product.available !== false;
+            return (
+            <ProductCard
+              key={product.id}
+              $available={usable}
+              onClick={() => usable && addToCart(product)}
+              style={{ cursor: usable ? 'pointer' : 'not-allowed', opacity: usable ? 1 : 0.55 }}
             >
               <ProductImage src={getImageUrl(product.goodsPath)}>
-                {!product.available && (
-                  <ProductBadge type="unavailable">Out of Stock</ProductBadge>
+                {!usable && (
+                  <ProductBadge type="unavailable">{disabled ? 'Unavailable' : 'Out of Stock'}</ProductBadge>
                 )}
-                {product.available && product.hasLatteArt && (
+                {usable && product.hasLatteArt && (
                   <ProductBadge type="latte-art">🎨 Art</ProductBadge>
                 )}
               </ProductImage>
@@ -1006,20 +1010,21 @@ function MobileKiosk() {
               <ProductInfo>
                 <ProductName>{product.goodsNameEn}</ProductName>
                 <ProductPrice>{currencyUtils.formatPrice(product.price)}</ProductPrice>
-                
-                <AddToCartButton disabled={!product.available}>
-                  {product.available ? (
+
+                <AddToCartButton disabled={!usable}>
+                  {usable ? (
                     <>
                       <Plus size={16} />
                       Add to Cart
                     </>
                   ) : (
-                    'Out of Stock'
+                    disabled ? 'Unavailable' : 'Out of Stock'
                   )}
                 </AddToCartButton>
               </ProductInfo>
             </ProductCard>
-          ))}
+            );
+          })}
         </ProductsGrid>
       </MainContent>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Power, TestTube, Settings, AlertTriangle, Check, X, RefreshCw, Eye, EyeOff, CreditCard, KeyRound, Copy, RotateCcw } from 'lucide-react';
+import { Power, TestTube, Settings, AlertTriangle, Check, X, RefreshCw, Eye, EyeOff, CreditCard, KeyRound } from 'lucide-react';
 import { getApiUrl } from '../utils/config';
 
 const Container = styled.div`
@@ -215,77 +215,6 @@ const AlertBanner = styled.div`
   }
 `;
 
-const PinDisplay = styled.div`
-  background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 16px;
-  color: white;
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  .pin-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    font-size: 0.9rem;
-    opacity: 0.9;
-  }
-
-  .pin-value {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-
-    .pin-digits {
-      font-size: 2.5rem;
-      font-weight: 700;
-      letter-spacing: 12px;
-      font-family: 'Courier New', monospace;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    .copy-btn {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      border-radius: 8px;
-      padding: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-
-      &:hover {
-        background: rgba(255,255,255,0.3);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      svg {
-        width: 18px;
-        height: 18px;
-        color: white;
-      }
-    }
-  }
-
-  .pin-note {
-    text-align: center;
-    margin-top: 12px;
-    font-size: 0.8rem;
-    opacity: 0.8;
-  }
-`;
-
 function SystemControls() {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -294,9 +223,6 @@ function SystemControls() {
   const [testMode, setTestMode] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState(true);
   const [pinEnabled, setPinEnabled] = useState(true);
-  const [dailyPin, setDailyPin] = useState('');
-  const [pinCopied, setPinCopied] = useState(false);
-  const [regeneratingPin, setRegeneratingPin] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -340,38 +266,9 @@ function SystemControls() {
       if (result.code === 0) {
         setPaymentEnabled(result.data.paymentEnabled);
         setPinEnabled(result.data.pinEnabled !== undefined ? result.data.pinEnabled : true);
-        setDailyPin(result.data.dailyPin);
       }
     } catch (error) {
       console.error('Error fetching payment status:', error);
-    }
-  };
-
-  const copyPin = () => {
-    navigator.clipboard.writeText(dailyPin);
-    setPinCopied(true);
-    setTimeout(() => setPinCopied(false), 2000);
-  };
-
-  const regeneratePin = async () => {
-    try {
-      setRegeneratingPin(true);
-      const response = await fetch(getApiUrl('/api/motong/system-settings/regenerate-pin'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const result = await response.json();
-
-      if (result.code === 0 && result.data.newPin) {
-        setDailyPin(result.data.newPin);
-        console.log('✅ PIN regenerated:', result.data.newPin);
-      } else {
-        console.error('Failed to regenerate PIN:', result.msg);
-      }
-    } catch (error) {
-      console.error('Error regenerating PIN:', error);
-    } finally {
-      setRegeneratingPin(false);
     }
   };
 
@@ -395,10 +292,6 @@ function SystemControls() {
           setTestMode(result.data.newValue);
         } else if (key === 'payment_enabled') {
           setPaymentEnabled(result.data.newValue);
-          // If payment was disabled, update the daily PIN
-          if (!result.data.newValue && result.data.dailyPin) {
-            setDailyPin(result.data.dailyPin);
-          }
         } else if (key === 'pin_enabled') {
           setPinEnabled(result.data.newValue);
         }
@@ -468,7 +361,7 @@ function SystemControls() {
         <AlertBanner type="info">
           <KeyRound className="alert-icon" />
           <div className="alert-text">
-            <strong>Payment Bypassed (PIN Mode):</strong> Customers must enter today's PIN ({dailyPin}) to complete orders without payment.
+            <strong>Identified-customer mode:</strong> Customers must tap their card or enter their 4-digit PIN (issued at registration) to place an order.
           </div>
         </AlertBanner>
       )}
@@ -620,33 +513,6 @@ function SystemControls() {
             </div>
           )}
 
-          {/* Daily PIN Display - only visible when payment is disabled and PIN is enabled */}
-          {!paymentEnabled && pinEnabled && dailyPin && (
-            <PinDisplay>
-              <div className="pin-header">
-                <KeyRound size={16} />
-                Today's Bypass PIN
-              </div>
-              <div className="pin-value">
-                <span className="pin-digits">{dailyPin}</span>
-                <button className="copy-btn" onClick={copyPin} title="Copy PIN">
-                  <Copy size={14} />
-                </button>
-                <button
-                  className="copy-btn"
-                  onClick={regeneratePin}
-                  title="Generate New PIN"
-                  disabled={regeneratingPin}
-                  style={{ marginLeft: '4px' }}
-                >
-                  <RotateCcw size={14} style={{ animation: regeneratingPin ? 'spin 1s linear infinite' : 'none' }} />
-                </button>
-              </div>
-              <div className="pin-note">
-                {pinCopied ? '✓ Copied!' : 'Click 🔄 to generate a new PIN'}
-              </div>
-            </PinDisplay>
-          )}
         </ControlCard>
       </Grid>
 

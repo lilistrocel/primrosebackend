@@ -225,6 +225,27 @@ function ItemManagement() {
     setShowVariableEditor(true);
   };
 
+  const handleToggleStatus = async (item) => {
+    const nextStatus = item.status === 'inactive' ? 'active' : 'inactive';
+    try {
+      const response = await fetch(getApiUrl(`api/motong/products/${item.id}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.code === 0) {
+        toast.success(nextStatus === 'active' ? `Enabled "${item.goodsNameEn}"` : `Disabled "${item.goodsNameEn}"`);
+        refetch();
+      } else {
+        toast.error(result.msg || 'Failed to update item status');
+      }
+    } catch (error) {
+      console.error('Error toggling item status:', error);
+      toast.error('Error updating item status');
+    }
+  };
+
   const handleDeleteItem = async (item) => {
     if (window.confirm(`Are you sure you want to delete "${item.goodsNameEn}"?`)) {
       try {
@@ -381,6 +402,7 @@ function ItemManagement() {
               item={item}
               onEdit={() => handleEditItem(item)}
               onEditVariables={() => handleEditVariables(item)}
+              onToggleStatus={() => handleToggleStatus(item)}
               onDelete={() => handleDeleteItem(item)}
             />
           ))

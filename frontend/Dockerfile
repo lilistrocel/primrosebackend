@@ -19,6 +19,12 @@ COPY env.example ./
 ARG REACT_APP_API_BASE_URL=http://localhost:3000
 ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
 
+# NFC bridge (optional — if unset, frontend falls back to ws://localhost:8765)
+ARG REACT_APP_NFC_WS_URL=
+ENV REACT_APP_NFC_WS_URL=$REACT_APP_NFC_WS_URL
+ARG REACT_APP_NFC_TOKEN=
+ENV REACT_APP_NFC_TOKEN=$REACT_APP_NFC_TOKEN
+
 # Build the app
 RUN npm run build
 

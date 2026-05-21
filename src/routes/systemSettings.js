@@ -252,16 +252,12 @@ router.get('/status/test-mode', (req, res) => {
 
 /**
  * GET /api/motong/system-settings/status/payment
- * Get payment status and daily PIN for admin
+ * Get payment + PIN-pad toggle state for admin panels
  */
 router.get('/status/payment', (req, res) => {
   try {
-    console.log('💳 Checking payment status...');
-
     const isPaymentEnabled = db.isPaymentEnabled();
     const isPinEnabled = db.isPinEnabled();
-    const dailyPin = db.getDailyPin();
-
     console.log(`💳 Payment status: ${isPaymentEnabled ? 'ENABLED' : 'DISABLED'}, PIN: ${isPinEnabled ? 'ENABLED' : 'DISABLED'}`);
 
     res.json({
@@ -269,8 +265,7 @@ router.get('/status/payment', (req, res) => {
       msg: 'Request successfully',
       data: {
         paymentEnabled: isPaymentEnabled,
-        pinEnabled: isPinEnabled,
-        dailyPin: dailyPin // Only show in admin, not in kiosk
+        pinEnabled: isPinEnabled
       }
     });
 
@@ -307,92 +302,6 @@ router.get('/kiosk/payment-status', (req, res) => {
     res.status(500).json({
       code: 1,
       msg: 'Failed to check payment status',
-      data: null
-    });
-  }
-});
-
-/**
- * POST /api/motong/system-settings/verify-pin
- * Verify daily PIN for checkout bypass
- */
-router.post('/verify-pin', (req, res) => {
-  try {
-    const { pin } = req.body;
-
-    if (!pin) {
-      return res.status(400).json({
-        code: 1,
-        msg: 'PIN is required',
-        data: null
-      });
-    }
-
-    console.log('🔐 Verifying daily PIN...');
-
-    const isValid = db.verifyDailyPin(pin);
-
-    if (isValid) {
-      console.log('✅ PIN verified successfully');
-    } else {
-      console.log('❌ Invalid PIN entered');
-    }
-
-    res.json({
-      code: 0,
-      msg: isValid ? 'PIN verified' : 'Invalid PIN',
-      data: {
-        valid: isValid
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error verifying PIN:', error);
-    res.status(500).json({
-      code: 1,
-      msg: 'Failed to verify PIN',
-      data: null
-    });
-  }
-});
-
-/**
- * POST /api/motong/system-settings/regenerate-pin
- * Regenerate the daily PIN by creating a new seed
- */
-router.post('/regenerate-pin', (req, res) => {
-  try {
-    console.log('🔑 Regenerating daily PIN...');
-
-    const result = db.regeneratePin();
-
-    if (result.success) {
-      console.log(`✅ PIN regenerated successfully. New PIN: ${result.newPin}`);
-
-      // Notify WebSocket clients about the new PIN
-      webSocketManager.notifySystemSettingChange('pin_regenerated', result.newPin);
-
-      res.json({
-        code: 0,
-        msg: 'PIN regenerated successfully',
-        data: {
-          newPin: result.newPin,
-          regenerated: true
-        }
-      });
-    } else {
-      res.status(500).json({
-        code: 1,
-        msg: result.error || 'Failed to regenerate PIN',
-        data: null
-      });
-    }
-
-  } catch (error) {
-    console.error('❌ Error regenerating PIN:', error);
-    res.status(500).json({
-      code: 1,
-      msg: 'Failed to regenerate PIN',
       data: null
     });
   }
@@ -464,11 +373,6 @@ router.post('/toggle/:key', (req, res) => {
       newValue: newValue,
       toggled: true
     };
-
-    // Include daily PIN in response when payment is disabled
-    if (key === 'payment_enabled' && !newValue) {
-      responseData.dailyPin = db.getDailyPin();
-    }
 
     res.json({
       code: 0,

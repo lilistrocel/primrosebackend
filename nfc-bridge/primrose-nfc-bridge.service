@@ -1,0 +1,21 @@
+[Unit]
+Description=Primrose NFC (ACR122U) -> WebSocket bridge
+After=pcscd.service network.target
+Requires=pcscd.service
+
+[Service]
+Type=simple
+User=noobcity
+Group=noobcity
+WorkingDirectory=/home/noobcity/Code/primrosebackend/nfc-bridge
+ExecStart=/usr/bin/node /home/noobcity/Code/primrosebackend/nfc-bridge/index.js
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+Environment=NODE_ENV=production
+# Token and bind host are read from /etc/default/primrose-nfc-bridge so secrets stay out of git.
+EnvironmentFile=-/etc/default/primrose-nfc-bridge
+
+[Install]
+WantedBy=multi-user.target

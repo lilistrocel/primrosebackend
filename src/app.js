@@ -28,6 +28,7 @@ const currencyConfigRoute = require('./routes/currencyConfig');
 const inventoryRoute = require('./routes/inventory');
 const orderHistoryRoute = require('./routes/orderHistory');
 const alertDashboardRoute = require('./routes/alertDashboard');
+const customersRoute = require('./routes/customers');
 const webSocketManager = require('./websocket/WebSocketManager');
 
 class CoffeeMachineBackend {
@@ -35,11 +36,17 @@ class CoffeeMachineBackend {
     this.app = express();
     this.port = networkConfig.BACKEND_PORT;
     this.host = networkConfig.HOST;
-    
+
+    // Disable Express's default weak ETag on JSON responses. Without an explicit
+    // Cache-Control, browsers (especially Firefox/Brave) apply heuristic freshness
+    // and can serve stale 304-revalidated bodies across schema changes — which shows
+    // up as "empty kiosk in Firefox, works in Chrome".
+    this.app.set('etag', false);
+
     // Display network and currency configuration on startup
     networkConfig.display();
     currencyConfig.display();
-    
+
     this.setupMiddleware();
     this.setupRoutes();
     this.setupStaticFiles();
@@ -75,6 +82,15 @@ class CoffeeMachineBackend {
       optionsSuccessStatus: 200
     }));
     
+    // Force API responses to be uncached by browsers. The static frontend bundle
+    // (served elsewhere by nginx) can still be cached; this only affects JSON APIs.
+    this.app.use((req, res, next) => {
+      if (req.path.startsWith('/api/') || req.path.startsWith('/swoft/api/') || req.path === '/health') {
+        res.set('Cache-Control', 'no-store');
+      }
+      next();
+    });
+
     // Request parsing
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -82,18 +98,10 @@ class CoffeeMachineBackend {
     // Logging
     this.app.use(morgan('combined'));
     
-    // Handle preflight requests explicitly (dynamic configuration)
-    this.app.options('*', (req, res) => {
-      const allowedOrigins = networkConfig.getCorsOrigins();
-      const origin = req.headers.origin;
-      if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-      }
-      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.sendStatus(200);
-    });
+    // Note: CORS preflight is handled fully by the cors() middleware above (it supports
+    // both string and regex entries in the origin list). A previous manual app.options
+    // handler used Array#includes() against that list and silently failed to match the
+    // *.hydromods.org regex — we've removed it to avoid confusion.
 
     // COMPREHENSIVE TRAFFIC MONITORING - ALL REQUESTS
     this.app.use((req, res, next) => {
@@ -181,6 +189,7 @@ class CoffeeMachineBackend {
     this.app.use('/api/motong/inventory', inventoryRoute); // Inventory management endpoints
     this.app.use('/api/motong/order-history', orderHistoryRoute); // Order history and debugging endpoints
     this.app.use('/api/motong/alert-dashboard', alertDashboardRoute); // Alert dashboard endpoints
+    this.app.use('/api/motong/customers', customersRoute); // RFID-linked customer accounts
 
     // Alternative route paths (in case machine uses different paths)
     this.app.use('/swoft/api/motong', deviceOrderQueueListRoute);
@@ -199,6 +208,7 @@ class CoffeeMachineBackend {
     this.app.use('/swoft/api/motong/inventory', inventoryRoute); // Inventory management endpoints
     this.app.use('/swoft/api/motong/order-history', orderHistoryRoute); // Order history and debugging endpoints
     this.app.use('/swoft/api/motong/alert-dashboard', alertDashboardRoute); // Alert dashboard endpoints
+    this.app.use('/swoft/api/motong/customers', customersRoute); // RFID-linked customer accounts
 
     // Root redirect
     this.app.get('/', (req, res) => {
