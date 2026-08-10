@@ -403,13 +403,15 @@ function OrderHistory() {
       if (dateFrom) requestBody.dateFrom = dateFrom;
       if (dateTo) requestBody.dateTo = dateTo;
       
-      // Use the new getAllOrdersSimple endpoint that shows all orders including completed ones
+      // Use the new getAllOrdersSimple endpoint that shows all orders including completed ones.
+      // Sending deviceId "all" so orders from every machine (coffee, fried/noodle, ice cream)
+      // land in the history — the server treats "all" (or missing) as "no device filter".
       const response = await fetch(getApiUrl('/api/motong/getAllOrdersSimple'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ deviceId: "1" })
+        body: JSON.stringify({ deviceId: "all" })
       });
 
       if (response.ok) {

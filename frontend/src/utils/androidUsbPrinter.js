@@ -215,7 +215,7 @@ export class AndroidUSBPrinter {
     
     // Store header
     commands += ESC + '!' + '\x18'; // Double width and height
-    commands += 'K2 COFFEE' + LF;
+    commands += 'K2 AUTOMATED F&B' + LF;
     commands += ESC + '!' + '\x00'; // Normal size
     commands += 'Premium Coffee Experience' + LF;
     commands += '================================' + LF;
@@ -257,8 +257,8 @@ export class AndroidUSBPrinter {
     let receipt = '';
     
     receipt += '================================\n';
-    receipt += '         K2 COFFEE\n';
-    receipt += '   Premium Coffee Experience\n';
+    receipt += '        K2 AUTOMATED F&B\n';
+    receipt += '   Automated Food & Beverage\n';
     receipt += '================================\n';
     receipt += `Order: ${orderData.orderNum || 'N/A'}\n`;
     receipt += `Date: ${currentDate}\n`;
@@ -375,7 +375,7 @@ export class AndroidUSBPrinter {
 </head>
 <body onload="window.print();">
     <div class="header">
-        <div class="store-name">K2 COFFEE</div>
+        <div class="store-name">K2 AUTOMATED F&amp;B</div>
         <div>Premium Coffee Experience</div>
     </div>
     

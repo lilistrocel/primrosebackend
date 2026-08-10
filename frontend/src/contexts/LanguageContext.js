@@ -14,8 +14,8 @@ export const useLanguage = () => {
 const translations = {
   en: {
     // Header
-    brandName: 'K2 Coffee',
-    brandTagline: 'Premium Coffee Experience',
+    brandName: 'K2 Automated F&B',
+    brandTagline: 'Automated Food & Beverage',
     language: 'En',
     
     // Navigation
@@ -100,8 +100,8 @@ const translations = {
   },
   ar: {
     // Header
-    brandName: 'كوفي كي تو',
-    brandTagline: 'تجربة قهوة مميزة',
+    brandName: 'K2 للأطعمة والمشروبات',
+    brandTagline: 'أطعمة ومشروبات آلية',
     language: 'ع',
     
     // Navigation

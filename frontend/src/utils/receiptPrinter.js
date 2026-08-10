@@ -196,7 +196,7 @@ export class ReceiptPrinter {
     
     // Store header
     commands += ESC + '!' + '\x18'; // Double height and width
-    commands += 'K2 COFFEE\n';
+    commands += 'K2 AUTOMATED F&B\n';
     commands += ESC + '!' + '\x00'; // Normal size
     commands += '================================\n';
     
@@ -308,7 +308,7 @@ export class ReceiptPrinter {
 </head>
 <body>
     <div class="header">
-        <div class="store-name">K2 COFFEE</div>
+        <div class="store-name">K2 AUTOMATED F&amp;B</div>
         <div>☕ Premium Coffee Experience ☕</div>
     </div>
     
@@ -360,8 +360,8 @@ export class ReceiptPrinter {
     let receipt = '';
     
     receipt += '================================\n';
-    receipt += '         K2 COFFEE\n';
-    receipt += '   Premium Coffee Experience\n';
+    receipt += '        K2 AUTOMATED F&B\n';
+    receipt += '   Automated Food & Beverage\n';
     receipt += '================================\n';
     receipt += `Order: ${orderData.orderNum || 'N/A'}\n`;
     receipt += `Date: ${currentDate}\n`;

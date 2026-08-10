@@ -185,17 +185,18 @@ function getStatusName(status) {
  */
 router.post('/getAllOrdersSimple', async (req, res) => {
   try {
-    console.log('📋 getAllOrdersSimple called');
-    
-    // Get ALL orders for device (including completed ones)
-    const orders = db.db.prepare(`
-      SELECT * FROM orders 
-      WHERE device_id = ? 
-      ORDER BY created_at DESC 
-      LIMIT 50
-    `).all(1);
-    
-    console.log(`📋 Found ${orders.length} total orders for device 1`);
+    console.log('📋 getAllOrdersSimple called with:', req.body);
+
+    // If a specific deviceId is passed, filter to that device; otherwise (or with
+    // "all") return orders across every machine — the history view wants them all.
+    const rawDeviceId = req.body?.deviceId;
+    const filterDeviceId = rawDeviceId && rawDeviceId !== 'all' ? parseInt(rawDeviceId) : null;
+
+    const orders = filterDeviceId
+      ? db.db.prepare('SELECT * FROM orders WHERE device_id = ? ORDER BY created_at DESC LIMIT 50').all(filterDeviceId)
+      : db.db.prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT 50').all();
+
+    console.log(`📋 Found ${orders.length} total orders${filterDeviceId ? ` for device ${filterDeviceId}` : ' (all devices)'}`);
 
     // Transform orders to match the expected format
     const responseData = orders.map(order => {

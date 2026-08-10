@@ -953,7 +953,7 @@ function MobileKiosk() {
       <MobileHeader>
         <HeaderTitle>
           <Coffee size={20} />
-          K2 Coffee
+          K2 Automated F&amp;B
         </HeaderTitle>
         <HeaderActions>
           <IconButton onClick={() => setCartExpanded(!cartExpanded)} $primary>

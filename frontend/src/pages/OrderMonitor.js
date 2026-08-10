@@ -323,42 +323,27 @@ function OrderMonitor() {
     try {
       setLoading(true);
 
-      // Fetch orders from both coffee machine (device 1) and ice cream machine (device 4)
-      const [coffeeResponse, iceCreamResponse] = await Promise.all([
+      // Fetch from every machine: 1 coffee, 2 fried/noodle, 4 ice cream.
+      const deviceIds = ['1', '2', '4'];
+      const results = await Promise.all(deviceIds.map(deviceId =>
         fetch(getApiUrl(API_ENDPOINTS.ORDER_QUEUE), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId: "1" })
-        }),
-        fetch(getApiUrl(API_ENDPOINTS.ORDER_QUEUE), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId: "4" })
-        })
-      ]);
+          body: JSON.stringify({ deviceId })
+        }).then(r => r.ok ? r.json() : { code: -1, data: [] }).catch(() => ({ code: -1, data: [] }))
+      ));
 
-      let allOrders = [];
-
-      // Process coffee machine orders
-      if (coffeeResponse.ok) {
-        const coffeeData = await coffeeResponse.json();
-        if (coffeeData.code === 0 && coffeeData.data) {
-          allOrders = [...allOrders, ...coffeeData.data];
-          console.log('☕ Coffee orders fetched:', coffeeData.data.length);
-        }
-      }
-
-      // Process ice cream machine orders
-      if (iceCreamResponse.ok) {
-        const iceCreamData = await iceCreamResponse.json();
-        if (iceCreamData.code === 0 && iceCreamData.data) {
-          // Avoid duplicates by filtering out orders already in list
-          const existingIds = new Set(allOrders.map(o => o.id));
-          const newIceCreamOrders = iceCreamData.data.filter(o => !existingIds.has(o.id));
-          allOrders = [...allOrders, ...newIceCreamOrders];
-          console.log('🍦 Ice cream orders fetched:', newIceCreamOrders.length);
-        }
-      }
+      const allOrders = [];
+      const seen = new Set();
+      results.forEach((result, i) => {
+        if (result.code !== 0 || !result.data) return;
+        result.data.forEach(order => {
+          if (seen.has(order.id)) return;
+          seen.add(order.id);
+          allOrders.push(order);
+        });
+        console.log(`📋 Device ${deviceIds[i]} orders fetched:`, result.data.length);
+      });
 
       // Sort by created_at descending (newest first)
       allOrders.sort((a, b) => b.created_at - a.created_at);

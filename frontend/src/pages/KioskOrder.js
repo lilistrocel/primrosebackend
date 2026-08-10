@@ -1825,51 +1825,32 @@ function KioskOrder() {
     setPinSaveError('');
   };
 
-  // Fetch order queue from both coffee (device 1) and ice cream (device 4) machines
+  // Fetch order queue from every machine (device 1 coffee, 2 fried/noodle, 4 ice cream)
   const fetchOrderQueue = async () => {
     try {
       const apiUrl = getApiUrl('api/motong/deviceOrderQueueList');
+      const deviceIds = ['1', '2', '4'];
 
-      // Fetch from both devices in parallel
-      const [coffeeResponse, iceCreamResponse] = await Promise.all([
+      const responses = await Promise.all(deviceIds.map(deviceId =>
         fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId: '1' })
-        }),
-        fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId: '4' })
-        })
-      ]);
+          body: JSON.stringify({ deviceId })
+        }).then(r => r.json()).catch(() => ({ code: -1, data: [] }))
+      ));
 
-      const [coffeeResult, iceCreamResult] = await Promise.all([
-        coffeeResponse.json(),
-        iceCreamResponse.json()
-      ]);
-
-      // Merge orders from both devices and dedupe by order ID
+      // Merge and dedupe by order ID — the endpoint already filters by device_id,
+      // so cross-device duplicates aren't possible, but the dedupe is cheap insurance.
       const allOrders = [];
       const seenIds = new Set();
-
-      if (coffeeResult.code === 0 && coffeeResult.data) {
-        coffeeResult.data.forEach(order => {
-          if (!seenIds.has(order.id)) {
-            seenIds.add(order.id);
-            allOrders.push(order);
-          }
+      responses.forEach(result => {
+        if (result.code !== 0 || !result.data) return;
+        result.data.forEach(order => {
+          if (seenIds.has(order.id)) return;
+          seenIds.add(order.id);
+          allOrders.push(order);
         });
-      }
-
-      if (iceCreamResult.code === 0 && iceCreamResult.data) {
-        iceCreamResult.data.forEach(order => {
-          if (!seenIds.has(order.id)) {
-            seenIds.add(order.id);
-            allOrders.push(order);
-          }
-        });
-      }
+      });
 
       // Sort by creation time (newest first)
       allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

@@ -174,6 +174,36 @@ class DatabaseManager {
         this.db.exec(`ALTER TABLE products ADD COLUMN default_noodle_spec INTEGER DEFAULT 0`);
       }
 
+      // Seed default option_names entries for the fried/noodle machine so the
+      // OptionNamesManagement admin page surfaces editable cards for them.
+      // INSERT OR IGNORE keeps this idempotent — existing edits are preserved.
+      // The option_names table itself is created by migrate-option-names.js; we
+      // only reach for it here if it already exists.
+      const optionNamesTable = this.db.prepare(`
+        SELECT name FROM sqlite_master WHERE type='table' AND name='option_names'
+      `).get();
+      if (optionNamesTable) {
+        const noodleSpecOptions = [
+          ['noodleSpec',   'Noodle Specification', 'إضافة المعكرونة', 'Choose your noodle add-in', 'اختر الإضافة'],
+          ['noodleSpec_0', 'Plain',                'سادة',            'No add-ins',                'بدون إضافات'],
+          ['noodleSpec_1', 'Beef',                 'لحم بقري',        'Beef topping',              'إضافة لحم'],
+          ['noodleSpec_2', 'Soup',                 'شوربة',           'Soup broth',                'مرق الشوربة'],
+          ['noodleSpec_3', 'House Mix',            'خلطة البيت',      'Prefabricated mixture',     'خلطة جاهزة'],
+          ['noodleSpec_4', 'Broccoli',             'بروكلي',          'Broccoli topping',          'إضافة بروكلي'],
+          ['noodleSpec_5', 'Beef & Soup',          'لحم وشوربة',      'Combo — beef with soup',    'كومبو لحم مع شوربة']
+        ];
+        const stmt = this.db.prepare(`
+          INSERT OR IGNORE INTO option_names (option_key, name_en, name_ar, description_en, description_ar)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        let added = 0;
+        for (const row of noodleSpecOptions) {
+          const r = stmt.run(...row);
+          if (r.changes > 0) added++;
+        }
+        if (added > 0) console.log(`🍜 Seeded ${added} noodle-spec option_names entries`);
+      }
+
       // Create latte art designs table
       const latteArtTable = this.db.prepare(`
         SELECT name FROM sqlite_master 

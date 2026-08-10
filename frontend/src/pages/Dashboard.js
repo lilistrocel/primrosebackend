@@ -192,46 +192,54 @@ function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch orders for recent activity
+      // Fetch orders from every machine (device 1 coffee, 2 fried/noodle, 4 ice cream)
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/api/motong/deviceOrderQueueList`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ deviceId: "1" })
+      const deviceIds = ['1', '2', '4'];
+
+      const results = await Promise.all(deviceIds.map(deviceId =>
+        fetch(`${apiBaseUrl}/api/motong/deviceOrderQueueList`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId })
+        }).then(r => r.ok ? r.json() : { code: -1, data: [] }).catch(() => ({ code: -1, data: [] }))
+      ));
+
+      const merged = [];
+      const seen = new Set();
+      results.forEach(result => {
+        if (result.code !== 0 || !result.data) return;
+        result.data.forEach(order => {
+          if (seen.has(order.id)) return;
+          seen.add(order.id);
+          merged.push(order);
+        });
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.code === 0 && data.data) {
-          // Convert orders to dashboard format
-          const recentOrders = data.data.slice(-5).map(order => {
-            const allItems = [
-              ...order.typeList1 || [],
-              ...order.typeList2 || [],
-              ...order.typeList3 || [],
-              ...order.typeList4 || []
-            ];
-            const mainItem = allItems[0];
-            
-            return {
-              id: order.id,
-              name: mainItem ? mainItem.goodsName : 'Unknown',
-              orderNum: order.orderNum,
-              status: order.status === 3 ? 'queuing' : order.status === 4 ? 'processing' : 'completed',
-              time: new Date(order.createdAt).toLocaleTimeString()
-            };
-          });
+      // Convert orders to dashboard format
+      const recentOrders = merged.slice(-5).map(order => {
+        const allItems = [
+          ...order.typeList1 || [],
+          ...order.typeList2 || [],
+          ...order.typeList3 || [],
+          ...order.typeList4 || []
+        ];
+        const mainItem = allItems[0];
 
-          setOrders(recentOrders);
-          setStats(prev => ({
-            ...prev,
-            ordersToday: data.data.length,
-            revenue: data.data.reduce((sum, order) => sum + parseFloat(order.realPrice || 0), 0)
-          }));
-        }
-      }
+        return {
+          id: order.id,
+          name: mainItem ? mainItem.goodsName : 'Unknown',
+          orderNum: order.orderNum,
+          status: order.status === 3 ? 'queuing' : order.status === 4 ? 'processing' : 'completed',
+          time: new Date(order.createdAt).toLocaleTimeString()
+        };
+      });
+
+      setOrders(recentOrders);
+      setStats(prev => ({
+        ...prev,
+        ordersToday: merged.length,
+        revenue: merged.reduce((sum, order) => sum + parseFloat(order.realPrice || 0), 0)
+      }));
     } catch (error) {
       console.error('❌ Error fetching dashboard data:', error);
     }

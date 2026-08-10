@@ -72,7 +72,17 @@ export const defaultOptionNames = {
       en: 'Extra shot',
       ar: 'جرعة إضافية'
     }
-  }
+  },
+
+  // Noodle Specifications (device 2, foodType=1). Value 5 = BeefAndSoup —
+  // the machine's PLC branches on that combo via a dedicated hardware bit.
+  noodleSpec:   { en: 'Noodle Specification', ar: 'إضافة المعكرونة', description: { en: 'Choose your noodle add-in', ar: 'اختر الإضافة' } },
+  noodleSpec_0: { en: 'Plain',                ar: 'سادة',            description: { en: 'No add-ins',                ar: 'بدون إضافات' } },
+  noodleSpec_1: { en: 'Beef',                 ar: 'لحم بقري',        description: { en: 'Beef topping',              ar: 'إضافة لحم' } },
+  noodleSpec_2: { en: 'Soup',                 ar: 'شوربة',           description: { en: 'Soup broth',                ar: 'مرق الشوربة' } },
+  noodleSpec_3: { en: 'House Mix',            ar: 'خلطة البيت',      description: { en: 'Prefabricated mixture',     ar: 'خلطة جاهزة' } },
+  noodleSpec_4: { en: 'Broccoli',             ar: 'بروكلي',          description: { en: 'Broccoli topping',          ar: 'إضافة بروكلي' } },
+  noodleSpec_5: { en: 'Beef & Soup',          ar: 'لحم وشوربة',      description: { en: 'Combo — beef with soup',    ar: 'كومبو لحم مع شوربة' } }
 };
 
 // Function to get option name based on current language
