@@ -274,7 +274,7 @@ function ItemManagement() {
   const filteredItems = products.filter(item => {
     if (activeTab === 'all') return true;
     if (activeTab === 'coffee') return item.type === 2;
-    if (activeTab === 'tea') return item.type === 1;
+    if (activeTab === 'friednoodle') return item.type === 1;
     if (activeTab === 'icecream') return item.type === 3;
     if (activeTab === 'other') return item.type === 4;
     return true;
@@ -305,9 +305,9 @@ function ItemManagement() {
           <div className="stat-change">Most popular</div>
         </StatCard>
         <StatCard>
-          <div className="stat-label">Tea Products</div>
+          <div className="stat-label">Fried / Noodles</div>
           <div className="stat-value">{isLoading ? '...' : products.filter(i => i.type === 1).length}</div>
-          <div className="stat-change">Traditional</div>
+          <div className="stat-change">Machine 2</div>
         </StatCard>
         <StatCard>
           <div className="stat-label">Other Products</div>
@@ -323,8 +323,8 @@ function ItemManagement() {
         <Tab active={activeTab === 'coffee'} onClick={() => setActiveTab('coffee')}>
           Coffee ({isLoading ? '...' : products.filter(i => i.type === 2).length})
         </Tab>
-        <Tab active={activeTab === 'tea'} onClick={() => setActiveTab('tea')}>
-          Tea ({isLoading ? '...' : products.filter(i => i.type === 1).length})
+        <Tab active={activeTab === 'friednoodle'} onClick={() => setActiveTab('friednoodle')}>
+          Fried / Noodles ({isLoading ? '...' : products.filter(i => i.type === 1).length})
         </Tab>
         <Tab active={activeTab === 'icecream'} onClick={() => setActiveTab('icecream')}>
           Ice Cream ({isLoading ? '...' : products.filter(i => i.type === 3).length})

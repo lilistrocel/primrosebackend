@@ -274,6 +274,8 @@ function ItemForm({ item, onClose, onSave }) {
       hasLatteArt: false,
       hasToppingOptions: false,
       defaultToppingType: 0,
+      hasNoodleSpecOptions: false,
+      defaultNoodleSpec: 0,
       defaultBeanCode: 1,
       defaultMilkCode: 1,
       defaultIce: true,
@@ -299,6 +301,8 @@ function ItemForm({ item, onClose, onSave }) {
         hasShotOptions: Boolean(item.has_shot_options),
         hasToppingOptions: Boolean(item.hasToppingOptions || item.has_topping_options),
         defaultToppingType: item.defaultToppingType || item.default_topping_type || 0,
+        hasNoodleSpecOptions: Boolean(item.hasNoodleSpecOptions || item.has_noodle_spec_options),
+        defaultNoodleSpec: item.defaultNoodleSpec || item.default_noodle_spec || 0,
         defaultBeanCode: item.default_bean_code || 1,
         defaultMilkCode: item.default_milk_code || 1,
         defaultIce: Boolean(item.default_ice),
@@ -429,6 +433,8 @@ function ItemForm({ item, onClose, onSave }) {
       hasLatteArt: Boolean(data.hasLatteArt),
       hasToppingOptions: Boolean(data.hasToppingOptions),
       defaultToppingType: parseInt(data.defaultToppingType) || 0,
+      hasNoodleSpecOptions: Boolean(data.hasNoodleSpecOptions),
+      defaultNoodleSpec: parseInt(data.defaultNoodleSpec) || 0,
       defaultBeanCode: parseInt(data.defaultBeanCode) || 1,
       defaultMilkCode: parseInt(data.defaultMilkCode) || 1,
       defaultIce: data.defaultIce === 'true' || data.defaultIce === true,
@@ -451,7 +457,7 @@ function ItemForm({ item, onClose, onSave }) {
   };
 
   const productTypes = [
-    { value: 1, label: 'Tea (奶茶)' },
+    { value: 1, label: 'Fried / Noodles' },
     { value: 2, label: 'Coffee (咖啡)' },
     { value: 3, label: 'Ice Cream (冰淇淋)' },
     { value: 4, label: 'Other (其他)' }
@@ -820,6 +826,35 @@ function ItemForm({ item, onClose, onSave }) {
                           <option value={0}>No Topping</option>
                           <option value={1}>Oreo Crumbs</option>
                           <option value={2}>Crushed Nuts</option>
+                        </Select>
+                      </div>
+                    )}
+                  </FormGroup>
+                )}
+
+                {/* Noodle-line specifications — only shown for fried/noodle products (type 1). */}
+                {watch('type') == 1 && (
+                  <FormGroup>
+                    <label>
+                      <input
+                        type="checkbox"
+                        {...register('hasNoodleSpecOptions')}
+                        style={{ marginRight: '8px' }}
+                      />
+                      🍜 Enable Noodle Specifications
+                    </label>
+                    <div className="helper-text">Rewrites the noodleSpecifications entry in jsonCodeVal at order time. Value 5 = BeefAndSoup (special hardware bit).</div>
+
+                    {watch('hasNoodleSpecOptions') && (
+                      <div style={{ marginTop: '12px', paddingLeft: '24px' }}>
+                        <label>Default Specification</label>
+                        <Select {...register('defaultNoodleSpec')}>
+                          <option value={0}>None (plain)</option>
+                          <option value={1}>Beef</option>
+                          <option value={2}>Soup</option>
+                          <option value={3}>Prefabricated Mixture</option>
+                          <option value={4}>Broccoli</option>
+                          <option value={5}>Beef & Soup</option>
                         </Select>
                       </div>
                     )}

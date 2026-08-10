@@ -164,6 +164,16 @@ class DatabaseManager {
         }
       });
 
+      // Noodle-line spec option (device 2). Enum 0-5 rewritten into jsonCodeVal at order time.
+      if (!columnsResult.some(col => col.name === 'has_noodle_spec_options')) {
+        console.log('🍜 Adding has_noodle_spec_options column to products table...');
+        this.db.exec(`ALTER TABLE products ADD COLUMN has_noodle_spec_options BOOLEAN DEFAULT 0`);
+      }
+      if (!columnsResult.some(col => col.name === 'default_noodle_spec')) {
+        console.log('🍜 Adding default_noodle_spec column to products table...');
+        this.db.exec(`ALTER TABLE products ADD COLUMN default_noodle_spec INTEGER DEFAULT 0`);
+      }
+
       // Create latte art designs table
       const latteArtTable = this.db.prepare(`
         SELECT name FROM sqlite_master 
@@ -886,7 +896,10 @@ class DatabaseManager {
         // Ice cream syrup variant classCodes
         syrup1ClassCode: 'syrup1_class_code',
         syrup2ClassCode: 'syrup2_class_code',
-        syrup3ClassCode: 'syrup3_class_code'
+        syrup3ClassCode: 'syrup3_class_code',
+        // Noodle-line spec option
+        hasNoodleSpecOptions: 'has_noodle_spec_options',
+        defaultNoodleSpec: 'default_noodle_spec'
       };
       
       // Handle ID change specially (dangerous operation)

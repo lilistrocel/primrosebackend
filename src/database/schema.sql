@@ -92,7 +92,12 @@ CREATE TABLE IF NOT EXISTS products (
     iced_class_code VARCHAR(10) DEFAULT NULL, -- classCode for iced version (e.g., 5227)
     double_shot_class_code VARCHAR(10) DEFAULT NULL, -- classCode for double shot version
     iced_and_double_class_code VARCHAR(10) DEFAULT NULL, -- classCode for iced + double shot combo
-    
+
+    -- Noodle-line specifications (device 2). Enum 0-5 rewritten into
+    -- jsonCodeVal's noodleSpecifications entry at order time. 5 = BeefAndSoup special.
+    has_noodle_spec_options BOOLEAN DEFAULT 0,
+    default_noodle_spec INTEGER DEFAULT 0,
+
     status VARCHAR(20) DEFAULT 'active', -- active, inactive, deleted
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

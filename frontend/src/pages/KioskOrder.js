@@ -1306,8 +1306,24 @@ const getProductEmoji = (goodsNameEn, type) => {
   if (name.includes('cappuccino')) return "🥛";
   if (name.includes('latte')) return "🤎";
   if (name.includes('americano')) return "☕";
+
+  // Fried / noodle line (type 1) — pick a fitting food emoji from the name;
+  // fall back to a generic dish icon so we never surface the milk-tea cup here.
+  if (type === 1) {
+    if (name.includes('fries') || name.includes('french')) return "🍟";
+    if (name.includes('wing')) return "🍗";
+    if (name.includes('tender') || name.includes('nugget')) return "🍗";
+    if (name.includes('calamari') || name.includes('squid')) return "🦑";
+    if (name.includes('fish') && name.includes('cake')) return "🍥";
+    if (name.includes('fish')) return "🐟";
+    if (name.includes('onion')) return "🧅";
+    if (name.includes('shrimp') || name.includes('prawn')) return "🍤";
+    if (name.includes('noodle') || name.includes('macaroni') || name.includes('pasta')) return "🍜";
+    if (name.includes('dim sum') || name.includes('dumpling') || name.includes('wonton')) return "🥟";
+    return "🍽️";
+  }
+
   if (type === 2) return "☕"; // Coffee default
-  if (type === 1) return "🧋"; // Tea default
   if (type === 3) return "🍦"; // Ice cream default
   return "☕"; // Default
 };
@@ -1333,10 +1349,8 @@ function KioskOrder() {
   const [showCustomization, setShowCustomization] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [categories, setCategories] = useState([
-    { id: 'All', name: 'All Items', icon: '🍽️' }
-  ]);
+  const [selectedCategory, setSelectedCategory] = useState('Classics');
+  const [categories, setCategories] = useState([]);
   const [orderQueue, setOrderQueue] = useState([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const [frontendStatus, setFrontendStatus] = useState({ enabled: true, message: null });
@@ -1415,10 +1429,6 @@ function KioskOrder() {
 
   // Filter products by category
   const getFilteredProducts = () => {
-    if (selectedCategory === 'All') {
-      return products;
-    }
-    
     return products.filter(product => {
       // Use the actual category field from the database
       if (product.category) {
@@ -1477,10 +1487,9 @@ function KioskOrder() {
           
           console.log('🏷️ KIOSK: Categories with products:', categoriesWithProducts.length);
           
-          const allCategories = [
-            { id: 'All', name: t('allItems'), icon: '🍽️' },
-            ...categoriesWithProducts.map(cat => ({ id: cat.name, name: cat.name, icon: cat.icon }))
-          ];
+          const allCategories = categoriesWithProducts.map(cat => ({
+            id: cat.name, name: cat.name, icon: cat.icon
+          }));
           setCategories(allCategories);
         } else {
           console.error('🏷️ KIOSK: Failed to fetch categories:', result.msg);
@@ -2371,10 +2380,12 @@ function KioskOrder() {
                     product.syrup1ClassCode || product.syrup2ClassCode || product.syrup3ClassCode;
                   // Latte art
                   const hasLatteArt = product.hasLatteArt;
+                  // Fried/noodle specification (device 2)
+                  const hasNoodleSpec = product.hasNoodleSpecOptions || product.has_noodle_spec_options;
 
-                  const hasOptions = hasCoffeeOptions || hasIceCreamOptions || hasLatteArt;
+                  const hasOptions = hasCoffeeOptions || hasIceCreamOptions || hasLatteArt || hasNoodleSpec;
                   console.log('🔄 Product card clicked:', product.goodsNameEn, 'Has options:', hasOptions,
-                    '(coffee:', hasCoffeeOptions, 'icecream:', hasIceCreamOptions, 'latte art:', hasLatteArt, ')');
+                    '(coffee:', hasCoffeeOptions, 'icecream:', hasIceCreamOptions, 'latte art:', hasLatteArt, 'noodle:', hasNoodleSpec, ')');
                   if (hasOptions) {
                     openCustomizationModal(product);
                   } else {
@@ -2485,7 +2496,8 @@ function KioskOrder() {
                         const hasIceCreamOptions = product.hasToppingOptions || product.has_topping_options ||
                           product.syrup1ClassCode || product.syrup2ClassCode || product.syrup3ClassCode;
                         const hasLatteArt = product.hasLatteArt;
-                        const hasOptions = hasCoffeeOptions || hasIceCreamOptions || hasLatteArt;
+                        const hasNoodleSpec = product.hasNoodleSpecOptions || product.has_noodle_spec_options;
+                        const hasOptions = hasCoffeeOptions || hasIceCreamOptions || hasLatteArt || hasNoodleSpec;
 
                         console.log('🔄 Order button clicked:', product.goodsNameEn, 'Has options:', hasOptions);
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera, IceCream } from 'lucide-react';
+import { X, Coffee, Milk, Snowflake, Zap, Palette, Upload, Camera, IceCream, Utensils } from 'lucide-react';
 import { getApiUrl, getImageUrl, getApiBaseUrl } from '../../utils/config';
 import { useLanguage } from '../../contexts/LanguageContext';
 // import { getOptionName, getOptionDescription } from '../../utils/optionNames';
@@ -441,6 +441,7 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         shots: product.default_shots || 1,
         toppingType: product.defaultToppingType || 0, // Ice cream topping
         syrupType: 0, // Ice cream syrup - default to none
+        noodleSpec: product.defaultNoodleSpec ?? product.default_noodle_spec ?? 0, // Fried/noodle spec (0-5)
         latteArt: null,
         latteArtImage: null
       });
@@ -693,6 +694,18 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         console.log(`🍦 Topping: fruitpiecesType = ${options.toppingType}`);
       }
 
+      // Handle fried/noodle specification (noodleSpecifications). Value 5 = BeefAndSoup
+      // (special hardware bit) — the machine's PLC handles that branching itself.
+      if (product.hasNoodleSpecOptions || product.has_noodle_spec_options) {
+        const specIndex = updatedJson.findIndex(item => item.noodleSpecifications !== undefined);
+        if (specIndex >= 0) {
+          updatedJson[specIndex].noodleSpecifications = options.noodleSpec.toString();
+        } else {
+          updatedJson.push({ noodleSpecifications: options.noodleSpec.toString() });
+        }
+        console.log(`🍜 Noodle spec: noodleSpecifications = ${options.noodleSpec}`);
+      }
+
       console.log('🎯 Variant ClassCode System:', {
         originalClassCode: jsonArray.find(item => item.classCode)?.classCode,
         selectedOptions: options,
@@ -742,6 +755,16 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
         updatedJson[shotIndex].ShotCode = options.shots.toString();
       } else if (product.has_shot_options) {
         updatedJson.push({ ShotCode: options.shots.toString() });
+      }
+
+      // Fried/noodle spec (mirrors the variant path's rewrite for the non-variant callers)
+      if (product.hasNoodleSpecOptions || product.has_noodle_spec_options) {
+        const specIndex = updatedJson.findIndex(item => item.noodleSpecifications !== undefined);
+        if (specIndex >= 0) {
+          updatedJson[specIndex].noodleSpecifications = options.noodleSpec.toString();
+        } else {
+          updatedJson.push({ noodleSpecifications: options.noodleSpec.toString() });
+        }
       }
 
       return JSON.stringify(updatedJson);
@@ -894,6 +917,36 @@ function CustomizationModal({ product, isOpen, onClose, onAddToCart }) {
                   <div className="option-name">{getOptionName('fruitpiecesType_2', currentLanguage) || 'Crushed Nuts'}</div>
                   <div className="option-desc">{getOptionDescription('fruitpiecesType_2', currentLanguage) || 'Mixed nuts'}</div>
                 </OptionButton>
+              </OptionGrid>
+            </OptionSection>
+          )}
+
+          {/* Fried/Noodle Specification Selection (device 2, foodType=1).
+              Value 5 = BeefAndSoup — machine has a dedicated hardware bit for it. */}
+          {(product.hasNoodleSpecOptions || product.has_noodle_spec_options) && (
+            <OptionSection>
+              <div className="section-header">
+                <Utensils className="icon" />
+                <div className="title">{getOptionName('noodleSpec', currentLanguage) || 'Specification'}</div>
+              </div>
+              <OptionGrid>
+                {[
+                  { value: 0, key: 'noodleSpec_0', name: 'Plain',        desc: 'No add-ins' },
+                  { value: 1, key: 'noodleSpec_1', name: 'Beef',         desc: 'Beef topping' },
+                  { value: 2, key: 'noodleSpec_2', name: 'Soup',         desc: 'Soup broth' },
+                  { value: 3, key: 'noodleSpec_3', name: 'House Mix',    desc: 'Prefabricated mixture' },
+                  { value: 4, key: 'noodleSpec_4', name: 'Broccoli',     desc: 'Broccoli topping' },
+                  { value: 5, key: 'noodleSpec_5', name: 'Beef & Soup',  desc: 'Combo — beef with soup' }
+                ].map(opt => (
+                  <OptionButton
+                    key={opt.value}
+                    className={selectedOptions.noodleSpec === opt.value ? 'selected' : ''}
+                    onClick={() => updateOption('noodleSpec', opt.value)}
+                  >
+                    <div className="option-name">{getOptionName(opt.key, currentLanguage) || opt.name}</div>
+                    <div className="option-desc">{getOptionDescription(opt.key, currentLanguage) || opt.desc}</div>
+                  </OptionButton>
+                ))}
               </OptionGrid>
             </OptionSection>
           )}

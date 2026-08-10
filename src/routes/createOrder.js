@@ -78,25 +78,26 @@ router.post('/createOrder', async (req, res) => {
 
     const { orderNum, deviceId: providedDeviceId, totalPrice, items, customerId } = value;
     
-    // Auto-determine deviceId based on product types if not explicitly provided
-    // Device mapping: 1 = Coffee (type 2), 4 = Ice Cream (type 3)
-    // If order contains multiple types, use the primary type (first item's type)
+    // Auto-determine deviceId based on product types if not explicitly provided.
+    // Device mapping: 1 = Coffee (type 2), 4 = Ice Cream (type 3), 2 = Fried/Noodle (type 1).
+    // The kiosk is single-item per order today, so mixed orders only reach here via legacy
+    // admin/mobile pages; the mixed branch keeps the pre-existing (imperfect) fallback.
     let deviceId = providedDeviceId;
     if (!deviceId || deviceId === 1) {
-      // Check if order contains ice cream items (type 3)
       const hasIceCream = items.some(item => item.type === 3);
       const hasCoffee = items.some(item => item.type === 2);
-      
-      if (hasIceCream && !hasCoffee) {
-        // Pure ice cream order -> device 4
+      const hasFriedNoodle = items.some(item => item.type === 1);
+
+      if (hasFriedNoodle && !hasCoffee && !hasIceCream) {
+        deviceId = 2;
+        console.log('🍟 Auto-assigning deviceId 2 (Fried/Noodle Machine) for fried/noodle order');
+      } else if (hasIceCream && !hasCoffee && !hasFriedNoodle) {
         deviceId = 4;
         console.log('🍦 Auto-assigning deviceId 4 (Ice Cream Machine) for ice cream order');
-      } else if (hasIceCream && hasCoffee) {
-        // Mixed order - use device 1 (coffee) as default, but log warning
+      } else if ((hasIceCream || hasFriedNoodle) && hasCoffee) {
         deviceId = 1;
-        console.log('⚠️ Mixed order detected (coffee + ice cream). Using deviceId 1 (Coffee Machine). Consider splitting orders.');
+        console.log('⚠️ Mixed order detected (coffee + other machine). Using deviceId 1 (Coffee Machine). Consider splitting orders.');
       } else {
-        // Coffee or other -> device 1
         deviceId = providedDeviceId || 1;
       }
     }
@@ -219,7 +220,7 @@ router.post('/createOrder', async (req, res) => {
     console.log(`📊 Order Summary:`);
     console.log(`   Order ID: ${orderId}`);
     console.log(`   Order Number: ${orderNum}`);
-    console.log(`   Device ID: ${deviceId} ${deviceId === 4 ? '(Ice Cream Machine)' : deviceId === 1 ? '(Coffee Machine)' : ''}`);
+    console.log(`   Device ID: ${deviceId} ${deviceId === 4 ? '(Ice Cream Machine)' : deviceId === 2 ? '(Fried/Noodle Machine)' : deviceId === 1 ? '(Coffee Machine)' : ''}`);
     console.log(`   Total Items: ${items.length}`);
     console.log(`   Total Price: $${totalPrice.toFixed(2)}`);
     console.log(`   Status: Queuing (ready for machine)`);

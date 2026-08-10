@@ -200,6 +200,10 @@ function checkAlerts(matterStatus, deviceStatus, deviceId) {
     // Ice cream machine critical ingredients
     criticalIngredients = ['IceMatter6', 'IceMatter7', 'IceMatter9'];
     deviceType = 'ice cream';
+  } else if (deviceId === 2) {
+    // Fried/noodle machine — real matter codes not yet mapped. Accept the heartbeat,
+    // store the raw JSON above, and skip stock enforcement until the codes are shared.
+    console.log('🍟 Device 2 (fried/noodle) — matter tracking not yet configured; accept and log only');
   }
 
   const criticalOutOfStock = criticalIngredients.filter(ingredient =>

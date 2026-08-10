@@ -47,6 +47,9 @@ const productSchema = Joi.object({
   syrup1ClassCode: Joi.string().max(20).allow('', null).optional(),
   syrup2ClassCode: Joi.string().max(20).allow('', null).optional(),
   syrup3ClassCode: Joi.string().max(20).allow('', null).optional(),
+  // Noodle-line spec option (device 2)
+  hasNoodleSpecOptions: Joi.boolean().default(false),
+  defaultNoodleSpec: Joi.number().integer().min(0).max(5).default(0),
   // Consumption configuration
   milkConsumption: Joi.number().min(0).default(0),
   coffeeBeansConsumption: Joi.number().min(0).default(0),
@@ -109,7 +112,10 @@ router.get('/products', async (req, res) => {
       // Ice cream syrup variant classCodes
       syrup1ClassCode: product.syrup1_class_code || null,
       syrup2ClassCode: product.syrup2_class_code || null,
-      syrup3ClassCode: product.syrup3_class_code || null
+      syrup3ClassCode: product.syrup3_class_code || null,
+      // Noodle-line spec option
+      hasNoodleSpecOptions: Boolean(product.has_noodle_spec_options),
+      defaultNoodleSpec: product.default_noodle_spec || 0
     }));
 
     // Get current ingredient levels for availability checking
@@ -306,6 +312,9 @@ router.put('/products/:id', async (req, res) => {
       syrup1ClassCode: Joi.string().max(20).allow('', null).optional(),
       syrup2ClassCode: Joi.string().max(20).allow('', null).optional(),
       syrup3ClassCode: Joi.string().max(20).allow('', null).optional(),
+      // Noodle-line spec option (device 2)
+      hasNoodleSpecOptions: Joi.boolean().optional(),
+      defaultNoodleSpec: Joi.number().integer().min(0).max(5).optional(),
       // Consumption configuration
       milkConsumption: Joi.number().min(0).optional(),
       coffeeBeansConsumption: Joi.number().min(0).optional(),
