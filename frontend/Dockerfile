@@ -25,8 +25,13 @@ ENV REACT_APP_NFC_WS_URL=$REACT_APP_NFC_WS_URL
 ARG REACT_APP_NFC_TOKEN=
 ENV REACT_APP_NFC_TOKEN=$REACT_APP_NFC_TOKEN
 
-# Build the app
-RUN npm run build
+# Build the app with a fresh BUILD_ID stamped into every API request URL.
+# This ensures old browser caches on kiosk tablets bust on URL change, not just
+# via HTTP headers — handy when devices have a poisoned cache from before
+# Cache-Control: no-store was rolled out.
+RUN export REACT_APP_BUILD_ID=$(date +%s) && \
+    echo "Building frontend with REACT_APP_BUILD_ID=$REACT_APP_BUILD_ID" && \
+    npm run build
 
 # Production stage
 FROM nginx:alpine

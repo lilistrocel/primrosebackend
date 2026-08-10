@@ -175,21 +175,28 @@ const testApiUrl = async (url) => {
 // CONVENIENCE FUNCTIONS
 // ================================================================================
 
+// Per-build cache-buster appended to every API URL. Injected by the frontend
+// Dockerfile at build time so a redeploy invalidates any stale browser cache
+// entries on kiosk tablets without needing a hard reload per device.
+const BUILD_ID = process.env.REACT_APP_BUILD_ID || '';
+
 // Get full API endpoint URL
 export const getApiUrl = (endpoint) => {
   if (!endpoint) {
     console.error('❌ getApiUrl called with undefined endpoint');
     throw new Error('Endpoint is required for getApiUrl');
   }
-  
+
   if (typeof endpoint !== 'string') {
     console.error('❌ getApiUrl called with non-string endpoint:', endpoint);
     throw new Error('Endpoint must be a string');
   }
-  
+
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  return `${baseUrl}/${cleanEndpoint}`;
+  const url = `${baseUrl}/${cleanEndpoint}`;
+  if (!BUILD_ID) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'v=' + BUILD_ID;
 };
 
 // Function to get a full image URL from relative path
