@@ -29,6 +29,7 @@ const inventoryRoute = require('./routes/inventory');
 const orderHistoryRoute = require('./routes/orderHistory');
 const alertDashboardRoute = require('./routes/alertDashboard');
 const customersRoute = require('./routes/customers');
+const customOrdersRoute = require('./routes/customOrders');
 const webSocketManager = require('./websocket/WebSocketManager');
 
 class CoffeeMachineBackend {
@@ -190,6 +191,7 @@ class CoffeeMachineBackend {
     this.app.use('/api/motong/order-history', orderHistoryRoute); // Order history and debugging endpoints
     this.app.use('/api/motong/alert-dashboard', alertDashboardRoute); // Alert dashboard endpoints
     this.app.use('/api/motong/customers', customersRoute); // RFID-linked customer accounts
+    this.app.use('/api/motong/custom-orders', customOrdersRoute); // Bespoke per-customer menu orders (/aldar etc.)
 
     // Alternative route paths (in case machine uses different paths)
     this.app.use('/swoft/api/motong', deviceOrderQueueListRoute);
@@ -209,6 +211,7 @@ class CoffeeMachineBackend {
     this.app.use('/swoft/api/motong/order-history', orderHistoryRoute); // Order history and debugging endpoints
     this.app.use('/swoft/api/motong/alert-dashboard', alertDashboardRoute); // Alert dashboard endpoints
     this.app.use('/swoft/api/motong/customers', customersRoute); // RFID-linked customer accounts
+    this.app.use('/swoft/api/motong/custom-orders', customOrdersRoute); // Bespoke per-customer menu orders
 
     // Root redirect
     this.app.get('/', (req, res) => {

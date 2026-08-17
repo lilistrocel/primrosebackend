@@ -1325,6 +1325,12 @@ const getProductEmoji = (goodsNameEn, type) => {
 
   if (type === 2) return "☕"; // Coffee default
   if (type === 3) return "🍦"; // Ice cream default
+  if (type === 4) {
+    // Egg line (device 3, AbuEgg). Currently just fried egg but leave hooks
+    // for boiled/scrambled if the machine ever adds parameters.
+    if (name.includes('boiled') || name.includes('poach')) return "🥚";
+    return "🍳";
+  }
   return "☕"; // Default
 };
 
@@ -1825,11 +1831,11 @@ function KioskOrder() {
     setPinSaveError('');
   };
 
-  // Fetch order queue from every machine (device 1 coffee, 2 fried/noodle, 4 ice cream)
+  // Fetch order queue from every machine (device 1 coffee, 2 fried/noodle, 3 egg, 4 ice cream)
   const fetchOrderQueue = async () => {
     try {
       const apiUrl = getApiUrl('api/motong/deviceOrderQueueList');
-      const deviceIds = ['1', '2', '4'];
+      const deviceIds = ['1', '2', '3', '4'];
 
       const responses = await Promise.all(deviceIds.map(deviceId =>
         fetch(apiUrl, {
@@ -1886,12 +1892,12 @@ function KioskOrder() {
 
     const handleMatterCodesUpdate = (data) => {
       console.log('🔌 Matter codes updated, refreshing products...');
-      fetchProducts(); // Refresh products to update availability
+      fetchProducts({ background: true }); // Refresh availability without flashing the grid
     };
 
     const handleProductsUpdate = (data) => {
       console.log('🔌 Products updated, refreshing...');
-      fetchProducts();
+      fetchProducts({ background: true });
     };
 
     // Register event listeners
@@ -1930,19 +1936,20 @@ function KioskOrder() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch products from backend
-  const fetchProducts = async () => {
+  // Fetch products from backend.
+  // background:true = silent refresh — keep existing cards mounted so React reconciles
+  // them by key instead of unmounting the whole grid for the skeleton. Prevents the
+  // menu-flash on the 30s poll and on WebSocket-triggered refreshes.
+  const fetchProducts = async ({ background = false } = {}) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       const apiUrl = getApiUrl(API_ENDPOINTS.PRODUCTS);
-      console.log('🍕 KIOSK: Fetching products from:', apiUrl);
+      if (!background) console.log('🍕 KIOSK: Fetching products from:', apiUrl);
       const response = await fetch(apiUrl);
       const result = await response.json();
-      
-      console.log('🍕 KIOSK: API Response:', result);
-      
+
       if (result.code === 0 && result.data) {
-        console.log('🍕 KIOSK: Found', result.data.length, 'products');
+        if (!background) console.log('🍕 KIOSK: Found', result.data.length, 'products');
         // Transform products for kiosk display
         const transformedProducts = result.data.map(product => ({
           ...product,
@@ -1954,12 +1961,11 @@ function KioskOrder() {
         setProducts(transformedProducts);
       } else {
         console.error('🍕 KIOSK: Failed to fetch products:', result.msg);
-        console.error('🍕 KIOSK: Full result:', result);
       }
     } catch (error) {
       console.error('🍕 KIOSK: Error fetching products:', error);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 
@@ -1997,13 +2003,14 @@ function KioskOrder() {
     // Clear caches on kiosk load to ensure fresh data
     clearCachesAndReload();
     
-    fetchProducts(); // Initial fetch
-    
-    // Auto-refresh products every 30 seconds to catch updates
+    fetchProducts(); // Initial fetch — shows skeleton until first response
+
+    // Auto-refresh products every 30 seconds to catch admin edits and availability
+    // changes. Silent (background) so the grid never flashes to placeholders — React
+    // reconciles by product.id in place.
     const interval = setInterval(() => {
-      console.log('🔄 KIOSK: Auto-refreshing products...');
-      fetchProducts();
-    }, 30000); // 30 seconds
+      fetchProducts({ background: true });
+    }, 30000);
     
     return () => clearInterval(interval);
   }, []);

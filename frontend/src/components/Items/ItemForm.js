@@ -460,7 +460,7 @@ function ItemForm({ item, onClose, onSave }) {
     { value: 1, label: 'Fried / Noodles' },
     { value: 2, label: 'Coffee (咖啡)' },
     { value: 3, label: 'Ice Cream (冰淇淋)' },
-    { value: 4, label: 'Other (其他)' }
+    { value: 4, label: 'Eggs' }
   ];
 
   const languages = [

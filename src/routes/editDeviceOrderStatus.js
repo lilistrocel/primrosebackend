@@ -4,10 +4,14 @@ const db = require('../database/db');
 
 const router = express.Router();
 
-// Validation schema for editDeviceOrderStatus request
+// Validation schema for editDeviceOrderStatus request.
+// The egg machine (AbuEgg, deviceId=3) sends orderId + orderGoodsId as JSON strings
+// via .ToString(); the coffee/fried machines send them as numbers. Accept both and
+// coerce — Joi's default convert:true already handles the string→number case, but
+// the explicit alternatives keep the intent obvious.
 const editOrderStatusSchema = Joi.object({
-  orderId: Joi.number().integer().required(),
-  orderGoodsId: Joi.number().integer().required(),
+  orderId: Joi.alternatives().try(Joi.number().integer(), Joi.string()).required(),
+  orderGoodsId: Joi.alternatives().try(Joi.number().integer(), Joi.string()).required(),
   status: Joi.number().integer().valid(-1, 1, 2, 3, 4, 5).required()
 });
 

@@ -276,7 +276,7 @@ function ItemManagement() {
     if (activeTab === 'coffee') return item.type === 2;
     if (activeTab === 'friednoodle') return item.type === 1;
     if (activeTab === 'icecream') return item.type === 3;
-    if (activeTab === 'other') return item.type === 4;
+    if (activeTab === 'eggs') return item.type === 4;
     return true;
   });
 
@@ -310,9 +310,9 @@ function ItemManagement() {
           <div className="stat-change">Machine 2</div>
         </StatCard>
         <StatCard>
-          <div className="stat-label">Other Products</div>
-          <div className="stat-value">{isLoading ? '...' : products.filter(i => i.type >= 3).length}</div>
-          <div className="stat-change">Specialty items</div>
+          <div className="stat-label">Eggs</div>
+          <div className="stat-value">{isLoading ? '...' : products.filter(i => i.type === 4).length}</div>
+          <div className="stat-change">Machine 3</div>
         </StatCard>
       </StatsBar>
 
@@ -329,8 +329,8 @@ function ItemManagement() {
         <Tab active={activeTab === 'icecream'} onClick={() => setActiveTab('icecream')}>
           Ice Cream ({isLoading ? '...' : products.filter(i => i.type === 3).length})
         </Tab>
-        <Tab active={activeTab === 'other'} onClick={() => setActiveTab('other')}>
-          Other ({isLoading ? '...' : products.filter(i => i.type === 4).length})
+        <Tab active={activeTab === 'eggs'} onClick={() => setActiveTab('eggs')}>
+          Eggs ({isLoading ? '...' : products.filter(i => i.type === 4).length})
         </Tab>
       </TabContainer>
 

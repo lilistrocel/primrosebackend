@@ -17,12 +17,37 @@ import Settings from './pages/Settings';
 import LatteArtManagement from './pages/LatteArtManagement';
 import SystemControls from './pages/SystemControls';
 import MobileKiosk from './pages/MobileKiosk';
+import OpsCustomer from './pages/OpsCustomer';
 import OptionNamesManagement from './pages/OptionNamesManagement';
 import CustomerManagement from './pages/CustomerManagement';
 import InventoryDashboard from './pages/InventoryDashboard';
 import InventoryManagement from './pages/InventoryManagement';
 import ProductConsumptionConfig from './pages/ProductConsumptionConfig';
 import AlertDashboard from './pages/AlertDashboard';
+
+// Minimal error boundary — surfaces render errors from the /ops/:customer page
+// instead of letting React unmount and show the body gradient. Only used for
+// bespoke pages we're actively iterating on; the main admin panel keeps its
+// existing behavior.
+class OpsErrorBoundary extends React.Component {
+  constructor(p) { super(p); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error('[ops] render crash:', error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ minHeight: '100vh', background: '#0f172a', color: '#f8fafc', padding: '40px', fontFamily: 'Figtree, sans-serif' }}>
+          <h1 style={{ margin: 0, fontWeight: 500 }}>Ops page crashed</h1>
+          <p style={{ color: '#94a3b8', marginTop: 10 }}>Reload to try again. Details below.</p>
+          <pre style={{ marginTop: 24, padding: 16, background: '#1e293b', borderRadius: 8, color: '#fca5a5', overflowX: 'auto', fontSize: 13 }}>
+            {String(this.state.error && (this.state.error.stack || this.state.error.message || this.state.error))}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const AppContainer = styled.div`
   display: flex;
@@ -117,6 +142,10 @@ function App() {
   const location = useLocation();
   const isKioskMode = location.pathname === '/kiosk';
   const isMobileKioskMode = location.pathname === '/mobile-kiosk';
+  // Counter / server view for bespoke customer menus (/ops/aldar etc.).
+  // No admin PIN — the counter tablet is dedicated hardware and staff
+  // shouldn't have to unlock every shift.
+  const isOpsMode = location.pathname.startsWith('/ops/');
 
   // Full-screen kiosk modes (no PIN required)
   if (isKioskMode) {
@@ -131,6 +160,16 @@ function App() {
     return (
       <LanguageProvider>
         <MobileKiosk />
+      </LanguageProvider>
+    );
+  }
+
+  if (isOpsMode) {
+    return (
+      <LanguageProvider>
+        <OpsErrorBoundary>
+          <OpsCustomer />
+        </OpsErrorBoundary>
       </LanguageProvider>
     );
   }

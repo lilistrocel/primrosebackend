@@ -38,6 +38,7 @@ router.post('/deviceOrderQueueList', async (req, res) => {
     const deviceTypeMap = {
       1: 'Coffee Machine',
       2: 'Fried/Noodle Machine',
+      3: 'Egg Machine',
       4: 'Ice Cream Machine'
     };
     const machineType = deviceTypeMap[deviceIdNum] || `Device ${deviceIdNum}`;

@@ -192,9 +192,9 @@ function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch orders from every machine (device 1 coffee, 2 fried/noodle, 4 ice cream)
+      // Fetch orders from every machine (device 1 coffee, 2 fried/noodle, 3 egg, 4 ice cream)
       const apiBaseUrl = getApiBaseUrl();
-      const deviceIds = ['1', '2', '4'];
+      const deviceIds = ['1', '2', '3', '4'];
 
       const results = await Promise.all(deviceIds.map(deviceId =>
         fetch(`${apiBaseUrl}/api/motong/deviceOrderQueueList`, {

@@ -188,6 +188,18 @@ const INGREDIENT_MAPPING = {
     normalLevel: 100,
     warningLevel: 20,
     criticalLevel: 5
+  },
+
+  // Egg Machine Ingredients (type=4, device=3, AbuEgg)
+  // AbuEgg reports EggMatter1 as boolean 0/1 (1 = egg liquid detected).
+  EggMatter1: {
+    name_cn: "蛋液",
+    name_en: "Egg Liquid",
+    type: "Egg",
+    status: "common.normal",
+    normalLevel: 100,
+    warningLevel: 20,
+    criticalLevel: 5
   }
 };
 

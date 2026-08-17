@@ -79,7 +79,11 @@ router.post('/createOrder', async (req, res) => {
     const { orderNum, deviceId: providedDeviceId, totalPrice, items, customerId } = value;
     
     // Auto-determine deviceId based on product types if not explicitly provided.
-    // Device mapping: 1 = Coffee (type 2), 4 = Ice Cream (type 3), 2 = Fried/Noodle (type 1).
+    // Device mapping:
+    //   type 1 (fried/noodle)  -> device 2
+    //   type 2 (coffee)        -> device 1
+    //   type 3 (ice cream)     -> device 4
+    //   type 4 (eggs, AbuEgg)  -> device 3
     // The kiosk is single-item per order today, so mixed orders only reach here via legacy
     // admin/mobile pages; the mixed branch keeps the pre-existing (imperfect) fallback.
     let deviceId = providedDeviceId;
@@ -87,14 +91,18 @@ router.post('/createOrder', async (req, res) => {
       const hasIceCream = items.some(item => item.type === 3);
       const hasCoffee = items.some(item => item.type === 2);
       const hasFriedNoodle = items.some(item => item.type === 1);
+      const hasEgg = items.some(item => item.type === 4);
 
-      if (hasFriedNoodle && !hasCoffee && !hasIceCream) {
+      if (hasFriedNoodle && !hasCoffee && !hasIceCream && !hasEgg) {
         deviceId = 2;
         console.log('🍟 Auto-assigning deviceId 2 (Fried/Noodle Machine) for fried/noodle order');
-      } else if (hasIceCream && !hasCoffee && !hasFriedNoodle) {
+      } else if (hasIceCream && !hasCoffee && !hasFriedNoodle && !hasEgg) {
         deviceId = 4;
         console.log('🍦 Auto-assigning deviceId 4 (Ice Cream Machine) for ice cream order');
-      } else if ((hasIceCream || hasFriedNoodle) && hasCoffee) {
+      } else if (hasEgg && !hasCoffee && !hasFriedNoodle && !hasIceCream) {
+        deviceId = 3;
+        console.log('🍳 Auto-assigning deviceId 3 (Egg Machine) for egg order');
+      } else if ((hasIceCream || hasFriedNoodle || hasEgg) && hasCoffee) {
         deviceId = 1;
         console.log('⚠️ Mixed order detected (coffee + other machine). Using deviceId 1 (Coffee Machine). Consider splitting orders.');
       } else {
@@ -220,7 +228,7 @@ router.post('/createOrder', async (req, res) => {
     console.log(`📊 Order Summary:`);
     console.log(`   Order ID: ${orderId}`);
     console.log(`   Order Number: ${orderNum}`);
-    console.log(`   Device ID: ${deviceId} ${deviceId === 4 ? '(Ice Cream Machine)' : deviceId === 2 ? '(Fried/Noodle Machine)' : deviceId === 1 ? '(Coffee Machine)' : ''}`);
+    console.log(`   Device ID: ${deviceId} ${deviceId === 4 ? '(Ice Cream Machine)' : deviceId === 3 ? '(Egg Machine)' : deviceId === 2 ? '(Fried/Noodle Machine)' : deviceId === 1 ? '(Coffee Machine)' : ''}`);
     console.log(`   Total Items: ${items.length}`);
     console.log(`   Total Price: $${totalPrice.toFixed(2)}`);
     console.log(`   Status: Queuing (ready for machine)`);

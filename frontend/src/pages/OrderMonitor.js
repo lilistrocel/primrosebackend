@@ -323,8 +323,8 @@ function OrderMonitor() {
     try {
       setLoading(true);
 
-      // Fetch from every machine: 1 coffee, 2 fried/noodle, 4 ice cream.
-      const deviceIds = ['1', '2', '4'];
+      // Fetch from every machine: 1 coffee, 2 fried/noodle, 3 egg, 4 ice cream.
+      const deviceIds = ['1', '2', '3', '4'];
       const results = await Promise.all(deviceIds.map(deviceId =>
         fetch(getApiUrl(API_ENDPOINTS.ORDER_QUEUE), {
           method: 'POST',

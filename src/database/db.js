@@ -204,6 +204,38 @@ class DatabaseManager {
         if (added > 0) console.log(`🍜 Seeded ${added} noodle-spec option_names entries`);
       }
 
+      // Custom orders for bespoke customer menu pages (e.g. /aldar).
+      // Kept separate from the machine `orders` table so the polling / machine
+      // pipeline isn't affected — these are hand-fulfilled by lounge staff.
+      const customOrdersTable = this.db.prepare(`
+        SELECT name FROM sqlite_master WHERE type='table' AND name='custom_orders'
+      `).get();
+      if (!customOrdersTable) {
+        console.log('📇 Creating custom_orders table...');
+        this.db.exec(`
+          CREATE TABLE custom_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_key VARCHAR(60) NOT NULL,
+            table_number VARCHAR(60),
+            items_json TEXT NOT NULL,
+            room_or_table VARCHAR(120),
+            notes TEXT,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        this.db.exec(`CREATE INDEX idx_custom_orders_customer_status ON custom_orders(customer_key, status);`);
+        this.db.exec(`CREATE INDEX idx_custom_orders_created_at ON custom_orders(created_at DESC);`);
+      } else {
+        // Backfill table_number column for older custom_orders tables.
+        const cols = this.db.prepare(`PRAGMA table_info(custom_orders)`).all();
+        if (!cols.some(c => c.name === 'table_number')) {
+          console.log('📇 Adding table_number column to custom_orders...');
+          this.db.exec(`ALTER TABLE custom_orders ADD COLUMN table_number VARCHAR(60)`);
+        }
+      }
+
       // Create latte art designs table
       const latteArtTable = this.db.prepare(`
         SELECT name FROM sqlite_master 
